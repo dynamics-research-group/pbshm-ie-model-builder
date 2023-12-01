@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <!-- <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes"> -->
+    <title>IE builder</title>
+    <link rel="stylesheet" href="./main.css" type="text/css" />
+    <style>
+
+    </style>
+  </head>
+  <body>
+<!-- <canvas id="c"></canvas> -->
+<div id="uiinfo"><p>Standard geometries</p></div>
+<div id="ui">
+  <div class="tiles">
+    <input type="radio" name="voxel" id="cube" value="1"><label for="cube" style="background-position:   -0% -0%"></label></br>
+    <input type="radio" name="voxel" id="sphere" value="2"><label for="sphere" style="background-position: -0% -100%"></label></br>
+    <input type="radio" name="voxel" id="cylinder" value="3"><label for="cylinder" style="background-position: -0% -200%"></label></br>
+    <input type="radio" name="voxel" id="ibeam" value="5"><label for="ibeam" style="background-position: -0% -300%"></label></br>
+    <!-- <input type="radio" name="voxel" id="trapezoid" value="4"><label for="trapezoid" style="background-position: -0% -400%"></label> -->
+    </div>
+  </div>
+
+  <div id="uitwoinfo"><p>Complex geometries</p></div>
+  <div id="uitwo">
+    <div class="tiles">
+      <input type="radio" name="voxel" id="trapezoid" value="4"><label for="trapezoid" style="background-position: -0% -400%"></label>
+    </div>
+  </div>
+  <script  type="importmap">{
+	"imports": {
+		"three": "https://threejs.org/build/three.module.js",
+    "three/addons/": "https://threejs.org/examples/jsm/"
+	}
+}</script>
+<script src="main.js" type="module"></script>
+<!-- <script src="https://unpkg.com/optimization-js@latest/dist/optimization.js"></script>
+<script src="test.js" type="module">  </script> -->
+<!-- <div id="info"></div> -->
+  </body>
+
+
+  </html>

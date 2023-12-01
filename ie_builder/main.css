@@ -1,0 +1,83 @@
+html, body {
+  margin: 0;
+  height: 100%;
+}
+#c {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+/* #info {
+  position: absolute;
+  top: 10px;
+  width: 100%;
+  text-align: right;
+  z-index: 100;
+  display:block;
+} */
+#uiinfo {
+  position: absolute;
+  top: 0px;
+  left: 10px;
+  width: 20%;
+  text-align: left;
+  z-index: 100;
+  display:block;
+  background: rgba(0, 0, 0, 0);
+}
+#ui {
+  position: absolute;
+  left: 10px;
+  top: 40px;
+  background: rgba(0, 0, 0, 0.8);
+  padding: 5px;
+}
+#ui input[type=radio] {
+  width: 0;
+  height: 0;
+  display: none;
+}
+#ui input[type=radio] + label {
+  background-image: url('./geometries.png');
+  background-size: 100% 500%;
+  image-rendering: pixelated;
+  width: 64px;
+  height: 64px;
+  display: inline-block;
+}
+#ui input[type=radio]:checked + label {
+  outline: 3px solid rgb(250, 57, 57);
+}
+#uitwoinfo {
+  position: absolute;
+  top: 330px;
+  left: 10px;
+  width: 20%;
+  text-align: left;
+  z-index: 100;
+  display:block;
+  background: rgba(0, 0, 0, 0);
+}
+#uitwo {
+  position: absolute;
+  left: 10px;
+  top: 370px;
+  background: rgba(0, 0, 0, 0.8);
+  padding: 5px;
+}
+#uitwo input[type=radio] {
+  width: 0;
+  height: 0;
+  display: none;
+}
+#uitwo input[type=radio] + label {
+  background-image: url('./geometries.png');
+  background-size: 100% 500%;
+  image-rendering: pixelated;
+  width: 64px;
+  height: 64px;
+  display: inline-block;
+}
+#uitwo input[type=radio]:checked + label {
+  outline: 3px solid rgb(250, 57, 57);
+}
