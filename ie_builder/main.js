@@ -37,7 +37,7 @@ rotFolder.add(rotateParams, 'z', 0, 360).onChange(rotateGeometryZ);
 
 // Material information
 const material = {"Type": "other"};
-const materialFolder = elementFolder.addFolder('Material type');
+const materialFolder = elementFolder.addFolder('Material');
 const materialTypes = ["metal-ferrousAlloy-steel", "metal-ferrousAlloy-iron", "metal-aluminiumAlloy",
 					   "metal-nickelAlloy", "metal-copperAlloy", "metal-titaniumAlloy", "ceramic-glass",
 					   "ceramic-clayProduct", "ceramic-refractory", "ceramic-abrasive", "ceramic-cement",
@@ -48,7 +48,7 @@ materialFolder.add(material, 'Type', materialTypes).onChange(updateMaterial);
 
 // Contextual information
 const context = {'Type': 'other'};
-const typeFolder = elementFolder.addFolder('Contextual type');
+const typeFolder = elementFolder.addFolder('Contextual');
 const contextualTypes = ["slab", "column", "beam", "block", "cable", "wall", "ground",
                           "plate", "deck", "aerofoil", "wing", "fuselage", "tower", "wheel", "other"];
 typeFolder.add(context, 'Type', contextualTypes).onChange(updateContext);
@@ -61,8 +61,8 @@ const boxParams = {'width': 50,
                    'height': 50,
 				   'depth': 50};
 const sphereParams = {'radius': 25}
-const cylinderParams = {'top_radius': 25,
-   					    'bottom_radius': 25,
+const cylinderParams = {'top_radius': 10,
+   					    'bottom_radius': 10,
 					    'height': 50}
 const trapezoidParams = {"leftTransY": 10,
 						 "leftTransZ": 10,
@@ -147,7 +147,7 @@ function init() {
 	// Default geometries on generation
 	cubeGeo = new THREE.BoxGeometry(boxParams.width, boxParams.height, boxParams.depth);
 	sphereGeo = new THREE.SphereGeometry(sphereParams.radius);
-	cylinderGeo = new ObliqueCylinderGeometry(25, 25, 50);
+	cylinderGeo = new ObliqueCylinderGeometry(cylinderParams.top_radius, cylinderParams.bottom_radius, cylinderParams.height);
 	trapezoidGeo = new TrapezoidGeometry(10, 10, 20, 20, 0, 0, 40, 40, 50);
 	beamGeo = generateBeam("i-beam", beamParams.width, beamParams.h, beamParams.s, beamParams.t, beamParams.b);
 	
@@ -390,7 +390,7 @@ function updateGeometry(mesh, geometry){
 
 
 function initGroundGui(){
-	floorFolder = gui.addFolder('Ground dimensions');
+	floorFolder = gui.addFolder('Ground dimensions (visual only)');
 	floorFolder.add(floorParams, 'width').onChange(generateGeometry);
 	floorFolder.add(floorParams, 'depth').onChange(generateGeometry);
 
@@ -474,7 +474,7 @@ function updateMaterial(){
 
 
 function initBoxGui(){
-	boxFolder = elementFolder.addFolder('Geometry dimensions');
+	boxFolder = elementFolder.addFolder('Geometry');
 	boxFolder.add(boxParams, 'width').onChange(value => updateParameters("width", value));
 	boxFolder.add(boxParams, 'height').onChange(value => updateParameters("height", value));
 	boxFolder.add(boxParams, 'depth').onChange(value => updateParameters("depth", value));
@@ -494,7 +494,7 @@ function initBoxGui(){
   
 
 function initSphereGui(){
-	sphereFolder = elementFolder.addFolder('Geometry dimensions');
+	sphereFolder = elementFolder.addFolder('Geometry');
 	sphereFolder.add(sphereParams, 'radius').onChange(updateParameters);
 	function updateParameters(){
 		if (currentObject.geometry.parameters.radius != sphereParams.radius) {
@@ -509,7 +509,7 @@ function initSphereGui(){
 
 
 function initCylinderGui(){
-	cylinderFolder = elementFolder.addFolder('Geometry dimensions');
+	cylinderFolder = elementFolder.addFolder('Geometry');
 	cylinderFolder.add(cylinderParams, 'top_radius').onChange(value => updateParameters("radiusTop", value));
 	cylinderFolder.add(cylinderParams, 'bottom_radius').onChange(value => updateParameters("radiusBottom", value));
 	cylinderFolder.add(cylinderParams, 'height').onChange(value => updateParameters("height", value));
@@ -529,7 +529,7 @@ function initCylinderGui(){
 
 
 function initTrapezoidGui(){
-	trapezoidFolder = elementFolder.addFolder('Geometry dimensions');
+	trapezoidFolder = elementFolder.addFolder('Geometry');
 	trapezoidFolder.add(trapezoidParams, "leftTransY").onChange(value => updateParameters("leftTransY", value));
 	trapezoidFolder.add(trapezoidParams, "leftTransZ").onChange(value => updateParameters("leftTransZ", value));
 	trapezoidFolder.add(trapezoidParams, "leftDimensY").onChange(value => updateParameters("leftDimensY", value));
@@ -553,7 +553,7 @@ function initTrapezoidGui(){
 
 
 function initBeamGui(){
-	beamFolder = elementFolder.addFolder('Geometry dimensions');
+	beamFolder = elementFolder.addFolder('Geometry');
 	beamFolder.add(beamParams, "width").onChange(value => updateParameters("width", value));
 	beamFolder.add(beamParams, "h").onChange(value => updateParameters("h", value));
 	beamFolder.add(beamParams, "s").onChange(value => updateParameters("s", value));
