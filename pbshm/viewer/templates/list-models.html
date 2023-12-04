@@ -1,0 +1,85 @@
+{% extends 'portal.html'%}
+{% block title %}My Sandbox{% endblock %}
+{% block title_call_to_action %}
+<a href="#model-file-upload" class="btn btn-outline-secondary mr-3">
+    Upload Model
+</a>
+<a href="{{ url_for('ie-tools.edit_model') }}" class="btn btn-outline-info">
+    Add model
+</a>
+{% endblock %}
+{% block content %}
+{% if errors|length > 0 %}
+<div class="card bg-danger text-white">
+    <div class="card-header">Error processing upload</div>
+    <div class="card-body">
+        <p class="card-text">{{ errors }}</p>
+    </div>
+</div>
+{% endif %}
+<div id="model-file-upload" class="card bg-light d-none my-2">
+    <dic class="card-header">IE Model Upload (JSON file)</dic>
+    <div class="card-body">
+        <form method="POST" enctype="multipart/form-data">
+            <div class="input-group d-flex">
+                <div class="custom-file flex-grow-1 ">
+                    <input type="file" name="model" accept="application/json" class="custom-file-input">
+                    <label for="model" class="custom-file-label">Select File</label>
+                </div>
+                <div class="input-group-append">
+                    <input type="submit" name="upload" value="Upload model" class="btn btn-secondary">
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+<table class="table table-borderless table-hover mt-2">
+    <thead class="bg-info text-white">
+        <tr>
+            <th scope="col">Name</th>
+            <th scope="col">Population</th>
+            <th scope="col">Date</th>
+            <th scope="col">Elements</th>
+            <th scope="col">Relationships</th>
+            <th scope="col"></th>
+            <th scope="col"></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for model in models %}
+            <tr>
+                <td class="font-weight-bold py-3">{{ model["name"] }}</td>
+                <td class="font-weight-bold py-3">{{ model["population"] }}</td>
+                <td class="font-weight-bold py-3">{{ model["date"] }}</td>
+                <td class="font-weight-bold py-3">{{ model["elements"] }}</td>
+                <td class="font-weight-bold py-3">{{ model["relationships"] }}</td>
+                <td class="align-middle text-right">
+                    <a href="{{ url_for('ie-tools.edit_model', id=model['id']) }}" class="btn btn-outline-info">
+                        Edit
+                    </a>
+                </td>
+                <td class="align-middle text-right">
+                    <a href="{{ url_for('ie-tools.validate_model', population=model['population'], name=model['name'], timestamp=model['timestamp']) }}" class="btn btn-outline-info">
+                        Validate
+                    </a>
+                </td>
+            </tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
+{% block javascript %}
+    <script type="text/javascript">
+        $(document).ready(function (){
+            console.log("ran setup");
+            $("a[href='#model-file-upload']").click(function(){
+                console.log("clicked");
+                if($("#model-file-upload").hasClass("d-none")){
+                    $("#model-file-upload").removeClass("d-none");
+                }else{
+                    $("#model-file-upload").addClass("d-none");
+                }
+            });
+        });
+    </script>
+{% endblock %}
