@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>IE viewer</title>
+    <link rel="stylesheet" href="{{ url_for('viewer.static', filename='css/main.css') }}" type="text/css" />
+  </head>
+  <body>
+    <div id="info">Description</div>
+    <canvas id="c">
+      <!-- Model is rendered here -->
+    </canvas>
+    <script type="importmap">
+      {
+          "imports":{
+              "three": "https://unpkg.com/three@0.159.0/build/three.module.js",
+              "three/addons/": "https://unpkg.com/three@0.159.0/examples/jsm/"
+          }
+      }
+    </script>
+    <script type="module">
+      import { loadFile } from "{{ url_for('viewer.static', filename='js/main.js') }}";
+      loadFile("{{ url_for('viewer.view_model', id=id) }}");
+    </script>
+  </body>
+</html>
