@@ -1,5 +1,10 @@
 {% extends 'portal.html'%}
 {% block title %}IE Models{% endblock %}
+{% block title_call_to_action %}
+<a href="{{ url_for('builder.build_model') }}" class="btn btn-outline-info">
+    Add model
+</a>
+{% endblock %}
 {% block content %}
 <table class="table table-borderless table-hover mt-2">
     <thead class="bg-info text-white">
