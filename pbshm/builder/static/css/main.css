@@ -38,7 +38,7 @@ html, body {
   display: none;
 }
 #ui input[type=radio] + label {
-  background-image: url('./geometries.png');
+  background-image: url('../geometries.png');
   background-size: 100% 500%;
   image-rendering: pixelated;
   width: 64px;
@@ -71,7 +71,7 @@ html, body {
   display: none;
 }
 #uitwo input[type=radio] + label {
-  background-image: url('./geometries.png');
+  background-image: url('../geometries.png');
   background-size: 100% 500%;
   image-rendering: pixelated;
   width: 64px;
