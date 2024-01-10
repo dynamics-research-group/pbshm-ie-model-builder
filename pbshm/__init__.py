@@ -14,6 +14,8 @@ def create_app(test_config=None):
         NAVIGATION={
             "modules":{
                 "Pathfinder": "pathfinder.population_list",
+                "Viewer": "viewer.list_models",
+                "Builder": "builder.build_model"
             }
         }
     )
@@ -38,6 +40,12 @@ def create_app(test_config=None):
     ## Pathfinder
     from pbshm.pathfinder import pathfinder
     app.register_blueprint(pathfinder.bp, url_prefix="/pathfinder")
+    ## Viewer
+    from pbshm.viewer import routes as viewer_routes
+    app.register_blueprint(viewer_routes.bp, url_prefix="/viewer")
+    ## Builder
+    from pbshm.builder import routes as builder_routes
+    app.register_blueprint(builder_routes.bp, url_prefix="/builder")
     
     #Set Root Page
     app.add_url_rule("/", endpoint="pathfinder.population_list")
