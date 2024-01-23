@@ -28,41 +28,42 @@ class TrapezoidGeometry extends BufferGeometry {
         const origX = width / 2;
         const origY = Math.max(leftTransY+leftDimensY, rightTransY+rightDimensY) / 2;  // height / 2
         const origZ = Math.max(leftTransZ+leftDimensZ, rightTransZ+rightDimensZ) / 2;  // depth / 2
+        this.origLocation = {"x": origX, "y": origY, "z":origZ};
         
         const [lay, laz, lby, lbz, lcy, lcz, ldy, ldz] = getFaceCoords(leftTransY, leftTransZ, leftDimensY, leftDimensZ);
         const [ray, raz, rby, rbz, rcy, rcz, rdy, rdz] = getFaceCoords(rightTransY, rightTransZ, rightDimensY, rightDimensZ);
         
         const vertices = [
         // front
-        { pos: [-origX,     lay, laz], norm: [0, 0, 1], uv: [0, 0], },  // bottom left
-        { pos: [origX, ray, raz], norm: [0, 0, 1], uv: [1, 0], },  // bottom right
-        { pos: [-origX,     lby, lbz], norm: [0, 0, 1], uv: [0, 1], },  // top left
-        { pos: [origX, rby, rbz], norm: [0, 0, 1], uv: [1, 1], },  // top right
+        { pos: [-origX, lay, laz], norm: [0, 0, 1], uv: [0, 0], },  // bottom left
+        { pos: [origX,  ray, raz], norm: [0, 0, 1], uv: [1, 0], },  // bottom right
+        { pos: [-origX, lby, lbz], norm: [0, 0, 1], uv: [0, 1], },  // top left
+        { pos: [origX,  rby, rbz], norm: [0, 0, 1], uv: [1, 1], },  // top right
         // right
         { pos: [origX, ray, raz], norm: [1, 0, 0], uv: [0, 0], },  // lower front (from the perspective of looking at the front)
         { pos: [origX, rdy, rdz], norm: [1, 0, 0], uv: [1, 0], },  // lower back
         { pos: [origX, rby, rbz], norm: [1, 0, 0], uv: [0, 1], },  // upper front
         { pos: [origX, rcy, rcz], norm: [1, 0, 0], uv: [1, 1], },  // upper back
         // back
-        { pos: [origX, rdy, rdz], norm: [0, 0, -1], uv: [0, 0], },  // lower right (as if looking through the front still)
-        { pos: [-origX,     ldy, ldz], norm: [0, 0, -1], uv: [1, 0], },  // lower left
-        { pos: [origX, rcy, rcz], norm: [0, 0, -1], uv: [0, 1], },  // upper right
-        { pos: [-origX,     lcy, lcz], norm: [0, 0, -1], uv: [1, 1], },  // upper left
+        { pos: [origX,  rdy, rdz], norm: [0, 0, -1], uv: [0, 0], },  // lower right (as if looking through the front still)
+        { pos: [-origX, ldy, ldz], norm: [0, 0, -1], uv: [1, 0], },  // lower left
+        { pos: [origX,  rcy, rcz], norm: [0, 0, -1], uv: [0, 1], },  // upper right
+        { pos: [-origX, lcy, lcz], norm: [0, 0, -1], uv: [1, 1], },  // upper left
         // left
         { pos: [-origX, ldy, ldz], norm: [-1, 0, 0], uv: [0, 0], },  // lower back (from the perspective of looking at the front)
         { pos: [-origX, lay, laz], norm: [-1, 0, 0], uv: [1, 0], },  // lower front
         { pos: [-origX, lcy, lcz], norm: [-1, 0, 0], uv: [0, 1], },  // upper back
         { pos: [-origX, lby, lbz], norm: [-1, 0, 0], uv: [1, 1], },  // upper front
         // top
-        { pos: [origX, rcy, rcz], norm: [0, 1, 0], uv: [0, 0], },  // right back
-        { pos: [-origX,     lcy, lcz], norm: [0, 1, 0], uv: [1, 0], },  // left back
-        { pos: [origX, rby, rbz], norm: [0, 1, 0], uv: [0, 1], },  // right front
-        { pos: [-origX,     lby, lbz], norm: [0, 1, 0], uv: [1, 1], },  // left front
+        { pos: [origX,  rcy, rcz], norm: [0, 1, 0], uv: [0, 0], },  // right back
+        { pos: [-origX, lcy, lcz], norm: [0, 1, 0], uv: [1, 0], },  // left back
+        { pos: [origX,  rby, rbz], norm: [0, 1, 0], uv: [0, 1], },  // right front
+        { pos: [-origX, lby, lbz], norm: [0, 1, 0], uv: [1, 1], },  // left front
         // bottom
-        { pos: [origX, ray, raz], norm: [0, -1, 0], uv: [0, 0], },  // right front
-        { pos: [-origX,     lay, laz], norm: [0, -1, 0], uv: [1, 0], },  // left front
-        { pos: [origX, rdy, rdz], norm: [0, -1, 0], uv: [0, 1], },  // right back
-        { pos: [-origX,     ldy, ldz], norm: [0, -1, 0], uv: [1, 1], },  // left back
+        { pos: [origX,  ray, raz], norm: [0, -1, 0], uv: [0, 0], },  // right front
+        { pos: [-origX, lay, laz], norm: [0, -1, 0], uv: [1, 0], },  // left front
+        { pos: [origX,  rdy, rdz], norm: [0, -1, 0], uv: [0, 1], },  // right back
+        { pos: [-origX, ldy, ldz], norm: [0, -1, 0], uv: [1, 1], },  // left back
         ];
 
         // Create the geometry

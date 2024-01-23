@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { colours } from './globals.js';
 import { TrapezoidGeometry } from './trapezoid.js';
 import {ObliqueCylinderGeometry} from './obliqueCylinder.js'
@@ -53,70 +54,12 @@ function geometryDetails(element, scaleFactor=100){
             geometry.rotateZ(Math.PI/2);  // rotate because cylinder is horizontal in json but vertical in webGL
         }
         else if (element[SHAPE] == "i-beam" || element[SHAPE] == "c-beam"){
-            /* i-beam labels:
-                -> ---------------  <-
-                t  |             |   |
-                -> ------   ------   |
-                        |   |        |
-                        | s |        |h
-                        |   |        |
-                   ------   ------   |
-                   |             |   |
-                   ---------------  <-
-                          b
-            */
             const width = element[DIMENS].length / scaleFactor;
             const h = element[DIMENS].h / scaleFactor;
             const s = element[DIMENS].s / scaleFactor;
             const t = element[DIMENS].t / scaleFactor;
             const b = element[DIMENS].b / scaleFactor;
-            // Get position of where the i-beam is to be located
-            const x = element[COORDS][0];
-            const y = element[COORDS][1];
-            const z = element[COORDS][2];
-            // Create three cuboids to represent the beam
-            const bottomGeom = new THREE.BoxGeometry(width, t, b);
-            const middleGeom = new THREE.BoxGeometry(width, h-(t*2), s);
-            const topGeom = new THREE.BoxGeometry(width, t, b);
-            const bottom = new THREE.Mesh(bottomGeom, material);
-            const middle = new THREE.Mesh(middleGeom, material);
-            const top = new THREE.Mesh(topGeom, material);
-
-            // Translate the locations for each of the three parts of the i-beam
-            // x and z locations are the same for each part (except c-beam)
-            const posx = x + (width / 2);
-            const posz = z - (b / 2);
-            
-            // y location is different for each part
-
-            // bottom
-            bottom.position.x = posx;
-            bottom.position.y = y + (t / 2);
-            bottom.position.z = posz;
-            
-            // middle
-            if (element[SHAPE] == "i-beam"){
-                middle.position.x = posx;
-                middle.position.y = y + (h / 2);
-                middle.position.z = posz;
-            }
-            else if (element[SHAPE] == "c-beam"){
-                middle.position.x = posx;
-                middle.position.y = y + (h / 2);
-                middle.position.z = z - b + (s / 2);
-            }
-            
-            // top
-            top.position.x = posx;
-            top.position.y = y + h - (t / 2);
-            top.position.z = posz;
-            
-            const shape = new THREE.Group();
-            shape.add(bottom);
-            shape.add(middle);
-            shape.add(top);
-            shape.name = element[EL_NAME];
-            return shape;
+            geometry = generateBeam(element[SHAPE], width=4, h=4, s=1, t=1, b=1)
         }
         else if (element[SHAPE] == "other"){
             console.log("Element", EL_NAME, "is shape other.");
@@ -200,4 +143,36 @@ function geometryDetails(element, scaleFactor=100){
 }
 
 
-export {geometryDetails};
+/* i-beam labels:
+    -> ---------------  <-
+    t  |             |   |
+    -> ------   ------   |
+            |   |        |
+            | s |        |h
+            |   |        |
+        ------   ------   |
+        |             |   |
+        ---------------  <-
+                b
+*/
+function generateBeam(type, width=4, h=4, s=1, t=1, b=1){
+    // Create three cuboids to represent the beam
+    const bottomGeom = new THREE.BoxGeometry(width, t, b);
+    const middleGeom = new THREE.BoxGeometry(width, h-(t*2), s);
+    const topGeom = new THREE.BoxGeometry(width, t, b);
+
+    // Translate the locations for each of the three parts of the i-beam
+    // x and z locations are the same for each part (except c-beam)
+    bottomGeom.translate(0, (t/2)-(h/2), 0);
+    topGeom.translate(0, (h/2)-(t/2), 0);
+    if (type == "c-beam"){
+        middleGeom.translate(0, 0, - b + (s / 2));
+    }
+    const geometry = mergeGeometries([bottomGeom, middleGeom, topGeom]);
+    geometry.type = "BeamGeometry";
+    geometry.parameters = {"width":width, "h":h, "s":s, "t":t, "b":b};
+    return geometry;
+}
+
+
+export {geometryDetails, generateBeam};
