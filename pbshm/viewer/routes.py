@@ -52,3 +52,9 @@ def view_model(id):
 @authenticate_request("viewer-explore")
 def explore_model(id):
     return render_template("explore-model.html", id=id)
+
+# Build Route
+@bp.route("/")
+@authenticate_request("builder-model")
+def build_model():
+    return render_template("build-model.html")
