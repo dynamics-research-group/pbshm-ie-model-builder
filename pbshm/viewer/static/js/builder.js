@@ -1,9 +1,10 @@
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
-import {ObliqueCylinderGeometry} from './obliqueCylinder.js';
-import {TrapezoidGeometry} from './trapezoid.js'
-import {generateBeam} from './geometryHelper.js';
+//import {ObliqueCylinderGeometry} from '../../../viewer/static/js/obliqueCylinder.js';
+import {ObliqueCylinderGeometry} from  {{ url_for('viewer.static', filename='js/obliqueCylinder.js') }}
+import {TrapezoidGeometry} from '../../../viewer/static/js/trapezoid.js'
+import {generateBeam} from '../../../viewer/static/js/geometryHelper.js';
 import {glToJson, jsonToGl} from './translationHelper.js';
 
 
