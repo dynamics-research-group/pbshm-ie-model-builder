@@ -6,7 +6,7 @@ from bson.objectid import ObjectId
 
 # Create the tools blueprint
 bp = Blueprint(
-    "viewer", 
+    "ie-visualiser", 
     __name__, 
     template_folder="templates",
     static_folder="static"
@@ -14,7 +14,7 @@ bp = Blueprint(
 
 # List Route
 @bp.route("/")
-@authenticate_request("viewer-list")
+@authenticate_request("ie-visualiser-list")
 def list_models():
     # Load Models
     models = []
@@ -33,7 +33,7 @@ def list_models():
 
 # View Route
 @bp.route("/model/<id>/view")
-@authenticate_request("viewer-json")
+@authenticate_request("ie-visualiser-json")
 def view_model(id):
     # Load Model
     models = []
@@ -49,12 +49,12 @@ def view_model(id):
 
 # Explore Route
 @bp.route("/model/<id>/explore")
-@authenticate_request("viewer-explore")
+@authenticate_request("ie-visualiser-explore")
 def explore_model(id):
     return render_template("explore-model.html", id=id)
 
 # Build Route
-@bp.route("/")
-@authenticate_request("builder-model")
+@bp.route("/build")
+@authenticate_request("ie-visualiser-model")
 def build_model():
     return render_template("build-model.html")

@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>IE viewer</title>
-    <link rel="stylesheet" href="{{ url_for('viewer.static', filename='css/main.css') }}" type="text/css" />
+    <link rel="stylesheet" href="{{ url_for('ie-visualiser.static', filename='css/viewer.css') }}" type="text/css" />
   </head>
   <body>
     <div id="info">Description</div>
@@ -20,8 +20,8 @@
       }
     </script>
     <script type="module">
-      import { loadFile } from "{{ url_for('viewer.static', filename='js/main.js') }}";
-      loadFile("{{ url_for('viewer.view_model', id=id) }}");
+      import { loadFile } from "{{ url_for('ie-visualiser.static', filename='js/viewer.js') }}";
+      loadFile("{{ url_for('ie-visualiser.view_model', id=id) }}");
     </script>
   </body>
 </html>

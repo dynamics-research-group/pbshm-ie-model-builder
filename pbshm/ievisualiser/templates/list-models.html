@@ -1,7 +1,7 @@
 {% extends 'portal.html'%}
 {% block title %}IE Models{% endblock %}
 {% block title_call_to_action %}
-<a href="{{ url_for('builder.build_model') }}" class="btn btn-outline-info">
+<a href="{{ url_for('ie-visualiser.build_model') }}" class="btn btn-outline-info">
     Add model
 </a>
 {% endblock %}
@@ -26,7 +26,7 @@
                 <td class="font-weight-bold py-3">{{ model["elements"] }}</td>
                 <td class="font-weight-bold py-3">{{ model["relationships"] }}</td>
                 <td class="align-middle text-right">
-                    <a href="{{ url_for('viewer.explore_model', id=model['id']) }}" class="btn btn-outline-info">
+                    <a href="{{ url_for('ie-visualiser.explore_model', id=model['id']) }}" class="btn btn-outline-info">
                         View
                     </a>
                 </td>
