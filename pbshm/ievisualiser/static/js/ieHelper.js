@@ -13,7 +13,8 @@ function extractShapes(rawtext){
 	for (var i=0; i<elements.length; i++){
 		try {
 				const element_type = elements[i].contextual.type;
-				const element_name = [elements[i].name, elements[i].material.type.name, elements[i].material.type.type.name].join(" ");	// for debugging
+				const element_name = elements[i].name;
+				const element_material = elements[i].material.type.name + "-" + elements[i].material.type.type.name;
 				let shape_name;
 				let method = elements[i].geometry.type.type.name;
 				if (method != "translate" && method != "translateAndScale"){
@@ -38,8 +39,15 @@ function extractShapes(rawtext){
 				const coords = [elements[i].coordinates.global.translational.x.value,
 								elements[i].coordinates.global.translational.y.value,
 								elements[i].coordinates.global.translational.z.value];
-				details.push([element_name, element_type, shape_name, dimensions,
-					          coords, rotation, method, faces]);
+				details.push({"element_name": element_name,
+								"element_type": element_type,  // e.g. column, plate (determines geometry colour)
+								"element_material": element_material,  // e.g. metal, ceramic
+								"shape": shape_name,  // e.g. cuboid, sphere
+								"dimensions": dimensions,  // e.g. length, width, radius
+								"coords": coords,  // (x,y,z) position of bottom left, front, corner of the "shape_name"
+								"rotation": rotation,  // how much rotation is needed on each axis
+								"method": method,  // e.g. is it translate or translateAndScale
+								"faces": faces});  // used by translateAndScale
 		}
 		catch(err) {
 				// Error typically occurs because there are no dimensions associated with the element.
@@ -106,20 +114,19 @@ function plotIE(shapes) {
 	scene.add(light2);
 
 	// Add ground	 
-	// const material = new THREE.MeshPhongMaterial({color: 0xaaaaaa});
-    // const floor = new THREE.Mesh(new THREE.BoxGeometry(maxX-minX, 1, maxX-minX), material);
 	const planeGeometry = new THREE.PlaneGeometry((maxX-minX)*2, (maxX-minX)*2);
 	planeGeometry.rotateX( - Math.PI / 2 );
 	const floor = new THREE.Mesh( planeGeometry, new THREE.MeshBasicMaterial( { visible: true } ) );
 	floor.position.set((minX + maxX) / 2, 0, (minZ + maxZ) / 2)
+	floor.name = "floor";
 	scene.add(floor);
 	
 	// Print the name of the currently selected element
 	picker.setup(scene, camera);
 	picker.clearPickPosition();
     document.addEventListener('mousedown', picker.selectPickPosition, false);
-    window.addEventListener('mouseout', picker.clearPickPosition);
-    window.addEventListener('mouseleave', picker.clearPickPosition);
+    //window.addEventListener('mouseout', picker.clearPickPosition);
+    //window.addEventListener('mouseleave', picker.clearPickPosition);
 
 
     function resizeRendererToDisplaySize( renderer ) {

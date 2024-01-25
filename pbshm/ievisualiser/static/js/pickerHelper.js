@@ -1,9 +1,11 @@
 import * as THREE from 'three';
+import {glToJson} from './translationHelper.js';
 
 /* Print the current element selected onto the screen. */
 
 
 let scene, camera;  // setup() must be run to configure these
+const scaleFactor = 100;
 
 
 class PickHelper {
@@ -21,7 +23,8 @@ class PickHelper {
         if ( intersectedObjects.length) {
             // pick the first object. It's the closest one
             this.pickedObject = intersectedObjects[ 0 ].object;
-            document.getElementById("info").innerHTML = this.pickedObject.name;
+            let info = getIEInfo(this.pickedObject);
+            document.getElementById("info").innerHTML = info;
         }
         else{
             document.getElementById("info").innerHTML = "";
@@ -55,6 +58,26 @@ function clearPickPosition() {
 function setup(usedScene, usedCamera){
     scene = usedScene;
     camera = usedCamera;
+}
+
+
+function getIEInfo(element){
+    if (element.name == "floor"){
+        return '';
+    }
+    let info = "<b>Name:</b> " + element.name + "</br>";
+    info += "<b>Translation: </b>";
+    info += "x: " + Math.round(glToJson(element, "x", element.position.x) * scaleFactor, 2) + "&emsp;";
+    info += "y: " + Math.round(glToJson(element, "y", element.position.y) * scaleFactor, 2) + "&emsp;";
+    info += "z: " + Math.round(glToJson(element, "z", element.position.z) * scaleFactor, 2) + "</br>";
+    info += "<b>Rotation: </b>";
+    info += "x: " + element.rotation._x + "&emsp;";
+    info += "y: " + element.rotation._y + "&emsp;";
+    info += "z: " + element.rotation._z + "</br>";
+    info += "<b>Material type: </b>" + element.ie_material + "</br>";
+    info += "<b>Contextual type: </b>" + element.ie_type + "</br>";
+    info += "<b>Dimensions: </b>" + element.dimens_info;
+    return info;
 }
 
 const canvas = document.querySelector( '#c');
