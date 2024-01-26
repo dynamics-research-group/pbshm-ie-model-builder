@@ -10,6 +10,7 @@ function extractShapes(rawtext){
 	let details = [];
 	let rotation;
 	let faces;
+	let nGround = 0;
 	for (var i=0; i<elements.length; i++){
 		try {
 				const element_type = elements[i].contextual.type;
@@ -50,8 +51,21 @@ function extractShapes(rawtext){
 								"faces": faces});  // used by translateAndScale
 		}
 		catch(err) {
-				// Error typically occurs because there are no dimensions associated with the element.
-				// Pass, and main.js will instead choose to create a network graph if no elements had any dimensions.
+				// Check if the error is because it's a ground element
+				if (elements[i].type == "ground") {
+					details.push({"full_info": elements[i],
+								"element_name": elements[i].name,
+								"element_type": "ground",
+								"shape": "sphere",
+								"dimensions": {"radius":1},
+								"coords": [-200, 100+(nGround*400), 0],
+								"rotation": undefined,
+								"method": "translate",
+								"faces": undefined});
+					nGround += 1;
+				}
+				// If it's not ground then the error typically occurs because there are no dimensions associated with the element.
+				// Pass, and viewer.js will instead choose to create a network graph if no elements had any dimensions.
 				;
 		}
 	}
