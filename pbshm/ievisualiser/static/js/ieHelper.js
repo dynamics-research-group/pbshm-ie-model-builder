@@ -64,12 +64,20 @@ function extractShapes(rawtext){
 								"faces": undefined});
 					nGround += 1;
 				}
-				// If it's not ground then the error typically occurs because there are no dimensions associated with the element.
-				// Pass, and viewer.js will instead choose to create a network graph if no elements had any dimensions.
+				// If it's not ground then the error typically occurs because
+				// there are no dimensions associated with the element.
 				;
 		}
 	}
-  return details;
+	// Return element details if there are any. If we only find ground then return nothing.
+	// Then viewer.js will instead choose to create a network graph if nothing is returned.
+	for (const el of details){
+		if (el.element_type != "ground"){
+			return details;
+		}
+
+	}
+	return [];
 }
 
 
