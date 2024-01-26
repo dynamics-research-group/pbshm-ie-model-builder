@@ -7,7 +7,6 @@ import {ObliqueCylinderGeometry} from './obliqueCylinder.js'
 
 function geometryDetails(element, scaleFactor=100){
     let geometry, x, y, z  // used by threejs
-    let dimens_info;  // textual information displayed on the screen
     
     // Threejs automatically puts a shape's (x,y,z) coords in the centre.
     // We want the given coords to be in the bottom, left, front corner.
@@ -18,7 +17,6 @@ function geometryDetails(element, scaleFactor=100){
             const width = element["dimensions"].length / scaleFactor;	// called length in json
             const depth = element["dimensions"].width / scaleFactor;
             const height = element["dimensions"].height / scaleFactor;
-            dimens_info = "length: " + width + "&emsp; width: " + depth + "&emsp; height: " + height;
             x = (element["coords"][0] / scaleFactor) + (width / 2);
             y = (element["coords"][1] / scaleFactor) + (height / 2);
             z = (element["coords"][2] / scaleFactor) + (depth / 2);
@@ -26,7 +24,6 @@ function geometryDetails(element, scaleFactor=100){
         }
         else if (element["shape"] == "sphere") {
             const radius = element["dimensions"].radius
-            dimens_info = "radius: " + radius
             x = (element["coords"][0] / scaleFactor) + (radius / 2);
             y = (element["coords"][1] / scaleFactor) + (radius / 2);
             z = (element["coords"][2] / scaleFactor) + (radius / 2);
@@ -41,7 +38,6 @@ function geometryDetails(element, scaleFactor=100){
             else {
                 length = element["dimensions"].thickness
             }
-            dimens_info = "radius: " + radius + "&emsp; height: " + length;
             x = (element["coords"][0] / scaleFactor) + (radius / 2);
             y = (element["coords"][1] / scaleFactor) + (length / 2);
             z = (element["coords"][2] / scaleFactor) + (radius / 2);
@@ -54,7 +50,6 @@ function geometryDetails(element, scaleFactor=100){
             const s = element["dimensions"].s / scaleFactor;
             const t = element["dimensions"].t / scaleFactor;
             const b = element["dimensions"].b / scaleFactor;
-            dimens_info = "width: " + width + "&emsp; h: " + h + "&emsp; s: " + s + "&emsp; t: " + t + "&emsp; b: " + b;
             geometry = generateBeam(element["shape"], width=4, h=4, s=1, t=1, b=1)
         }
         else if (element["shape"] == "other"){
@@ -74,16 +69,6 @@ function geometryDetails(element, scaleFactor=100){
             const width = element["dimensions"].length / scaleFactor;	// called length in json
             const height = Math.max(leftTransY+leftDimensY, rightTransY+rightDimensY);
             const depth = Math.max(leftTransZ+leftDimensZ, rightTransZ+rightDimensZ);
-            dimens_info = "leftTransY: " + leftTransY +
-                          "&emsp; leftTransZ: " + leftTransZ +
-                          "&emsp; leftTransZ: " + leftTransZ +
-                          "&emsp; leftDimensY: " + leftDimensY +
-                          "&emsp; leftDimensZ: " + leftDimensZ +
-                          "&emsp; rightTransY: " + rightTransY +
-                          "&emsp; rightTransZ: " + rightTransZ +
-                          "&emsp; rightDimensY: " + rightDimensY +
-                          "&emsp; rightDimensZ: " + rightDimensZ +
-                          "&emsp; width: " + width;
             x = (element["coords"][0] / scaleFactor) + (width / 2);
             y = (element["coords"][1] / scaleFactor) + (height / 2);
             z = (element["coords"][2] / scaleFactor) + (depth / 2);
@@ -101,12 +86,6 @@ function geometryDetails(element, scaleFactor=100){
             const rightRadius = element["faces"].left.dimensions.radius.value / scaleFactor;
             const skewY = rightTransY - leftTransY;
             const skewZ = -(rightTransZ - leftTransZ);  // z is in different direction in json to with webGL
-            dimens_info = "leftTransY: " + leftTransY +
-                          "&emsp; leftTransZ: " + leftTransZ +
-                          "&emsp; leftTransZ: " + leftTransZ +
-                          "&emsp; rightTransY: " + rightTransY +
-                          "&emsp; rightTransZ: " + rightTransZ +
-                          "&emsp; length: " + width;
             geometry = new ObliqueCylinderGeometry(rightRadius, leftRadius, width, skewY, skewZ);
             // Rotate because cylinder is assumed horizontal in json but automatically vertical in webGL
             geometry.rotateZ(Math.PI/2);
@@ -125,7 +104,6 @@ function geometryDetails(element, scaleFactor=100){
     const shape = new THREE.Mesh(geometry, material);
     shape.full_info = element["full_info"];
     shape.name = element["element_name"];
-    shape.dimens_info = dimens_info;
     shape.position.x = x;
     shape.position.y = y;
     shape.position.z = z;
