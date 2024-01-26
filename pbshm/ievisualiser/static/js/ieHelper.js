@@ -39,9 +39,9 @@ function extractShapes(rawtext){
 				const coords = [elements[i].coordinates.global.translational.x.value,
 								elements[i].coordinates.global.translational.y.value,
 								elements[i].coordinates.global.translational.z.value];
-				details.push({"element_name": element_name,
+				details.push({"full_info": elements[i],
+				                "element_name": element_name,
 								"element_type": element_type,  // e.g. column, plate (determines geometry colour)
-								"element_material": element_material,  // e.g. metal, ceramic
 								"shape": shape_name,  // e.g. cuboid, sphere
 								"dimensions": dimensions,  // e.g. length, width, radius
 								"coords": coords,  // (x,y,z) position of bottom left, front, corner of the "shape_name"

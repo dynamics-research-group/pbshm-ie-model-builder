@@ -123,9 +123,8 @@ function geometryDetails(element, scaleFactor=100){
     }
     const material = new THREE.MeshPhongMaterial({color: colours[element["element_type"]]});
     const shape = new THREE.Mesh(geometry, material);
+    shape.full_info = element["full_info"];
     shape.name = element["element_name"];
-    shape.ie_material = element["element_material"];
-    shape.ie_type = element["element_type"];
     shape.dimens_info = dimens_info;
     shape.position.x = x;
     shape.position.y = y;

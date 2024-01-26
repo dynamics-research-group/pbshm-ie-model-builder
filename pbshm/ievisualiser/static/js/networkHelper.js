@@ -18,11 +18,11 @@ function plotNetworkFromFile(rawtext){
     // Store the edges in both directions of the bi-directional graph
     let edgeCoords = [...Array(nElements)].map(e => Array());
     let edges = [...Array(nElements)].map(e => Array());
-    let elNames = [];
+    let elInfo = [];
     let elTypes = [];
     let counts = new Array(nElements); for (let i=0; i<nElements; ++i) counts[i] = 0;
     elements.forEach((node) => {
-        elNames.push(node.name);
+        elInfo.push(node.name);
         if (node.type == "regular"){
             elTypes.push(node.contextual.type)
         }
@@ -32,8 +32,8 @@ function plotNetworkFromFile(rawtext){
     });
     let i1, i2, i, x, y, z;
     for (i=0; i<relat.length; i++){
-        i1 = elNames.indexOf(relat[i].elements[0].name);
-        i2 = elNames.indexOf(relat[i].elements[1].name);
+        i1 = elInfo.indexOf(relat[i].elements[0].name);
+        i2 = elInfo.indexOf(relat[i].elements[1].name);
         edges[i1].push(i2);
         edges[i2].push(i1);
         counts[i1]++;
@@ -52,15 +52,15 @@ function plotNetworkFromFile(rawtext){
     for (i=0; i<edgeCoords.length; i++){
         totalCoords += edgeCoords[i].length;
     }
-    for (i=0; i<elNames.length; i++){
+    for (i=0; i<elInfo.length; i++){
         try {
-            elNames[i] = [elNames[i], elements[i].material.type.name, elements[i].material.type.type.name].join(" ");
+            elInfo[i] = elements[i]
         } catch {;}  // no material type given
     }
     // If none were given then calculate where to position the nodes.
     if (totalCoords == 0){
         nodeCoords = fruchterman_reingold(edges);
-        drawNetwork(nodeCoords, edges, elTypes, elNames, true)
+        drawNetwork(nodeCoords, edges, elTypes, elInfo, true)
     }
     // If joint coordinates were given then use them to decide on node coordinates
     else{
@@ -68,7 +68,7 @@ function plotNetworkFromFile(rawtext){
             return arr.slice();
         });
         nodeCoords = getNodeCoords(tempEdges, edgeCoords, counts);
-        drawNetwork(nodeCoords, edges, elTypes, elNames);
+        drawNetwork(nodeCoords, edges, elTypes, elInfo);
     }
     
 }
@@ -102,7 +102,7 @@ function getNodeCoords(edges, edgeCoords, counts){
     return nodeCoords;
 }
 
-function drawNetwork(coords, edges, elTypes, elNames, threeD=true){
+function drawNetwork(coords, edges, elTypes, elInfo, threeD=true){
     const nNodes = coords.length;
     let minX = 0;
     let minY = 0
@@ -164,7 +164,7 @@ function drawNetwork(coords, edges, elTypes, elNames, threeD=true){
                      coords[i][0],
                      coords[i][1],
                      coords[i][2],
-                     elNames[i]);
+                     elInfo[i]);
     }
     
     // Plot the edges
@@ -187,8 +187,8 @@ function drawNetwork(coords, edges, elTypes, elNames, threeD=true){
 	picker.setup(scene, camera);
 	picker.clearPickPosition();
     document.addEventListener('mousedown', picker.selectPickPosition, false);
-    window.addEventListener('mouseout', picker.clearPickPosition);
-    window.addEventListener('mouseleave', picker.clearPickPosition);
+    // window.addEventListener('mouseout', picker.clearPickPosition);
+    // window.addEventListener('mouseleave', picker.clearPickPosition);
 
     function render() {
       if ( resizeRendererToDisplaySize( renderer ) ) {
@@ -212,10 +212,11 @@ function drawNetwork(coords, edges, elTypes, elNames, threeD=true){
     }
     
     // Add a shape to the scene
-    function makeInstance(geometry, color, x, y, z, name) {
+    function makeInstance(geometry, color, x, y, z, info) {
       const material = new THREE.MeshPhongMaterial({color});
       const shape = new THREE.Mesh(geometry, material);
-      shape.name = name;
+      shape.name = info['name'];
+      shape.full_info = info;
       scene.add(shape);
       shape.position.x = x;
       shape.position.y = y;

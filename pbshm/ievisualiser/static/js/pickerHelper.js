@@ -61,24 +61,47 @@ function setup(usedScene, usedCamera){
 }
 
 
-function getIEInfo(element){
-    if (element.name == "floor"){
-        return '';
+function getsubinfo(subElement){
+    let info = '';
+    const keys = Object.keys(subElement);
+    if (keys[0] != "0"){  // there are subsubelements to process
+        for  (const key of keys){
+            if (typeof(subElement[key]) == "number"){
+                info += "<b>" + key + ": </b>" + JSON.stringify(subElement[key]) + "</br>"
+            }
+            else if (Array.isArray(subElement[key])) {
+                for (const subsub of subElement[key]) {
+                    info += getsubinfo(subsub);
+                }
+            }
+            else {
+                info += "<b>" + key + ": </b>" + getsubinfo(subElement[key]);
+            }
+        }
     }
-    let info = "<b>Name:</b> " + element.name + "</br>";
-    info += "<b>Translation: </b>";
-    info += "x: " + Math.round(glToJson(element, "x", element.position.x) * scaleFactor, 2) + "&emsp;";
-    info += "y: " + Math.round(glToJson(element, "y", element.position.y) * scaleFactor, 2) + "&emsp;";
-    info += "z: " + Math.round(glToJson(element, "z", element.position.z) * scaleFactor, 2) + "</br>";
-    info += "<b>Rotation: </b>";
-    info += "x: " + element.rotation._x + "&emsp;";
-    info += "y: " + element.rotation._y + "&emsp;";
-    info += "z: " + element.rotation._z + "</br>";
-    info += "<b>Material type: </b>" + element.ie_material + "</br>";
-    info += "<b>Contextual type: </b>" + element.ie_type + "</br>";
-    info += "<b>Dimensions: </b>" + element.dimens_info;
+    else {
+        info += subElement;
+    }
+    return info + "</br>";
+}
+
+function getIEInfo(element){
+    // List the properties to force them to be printed in the desired order
+    let info = '';
+    try {
+        const keys = Object.keys(element.full_info);
+        const properties = ["name", "description", "type", "coordinates", "contextual", "geometry", "material"];
+        for (const subInfo of properties){
+            if (keys.includes(subInfo)) {
+                info += "<h3><b>" + subInfo + ": </b></h3>" + getsubinfo(element.full_info[subInfo]);
+            }
+        }
+    } catch (TypeError) {
+        ;  // User has not clicked on an element
+    }
     return info;
 }
+
 
 const canvas = document.querySelector( '#c');
 const pickPosition = { x: 0, y: 0 };
