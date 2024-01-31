@@ -10,8 +10,9 @@ function extractShapes(rawtext){
 	let details = [];
 	let rotation;
 	let faces;
-	let nGround = 0;
-	for (var i=0; i<elements.length; i++){
+	let elCoords = {};  // for locating ground connections
+	let i;
+	for (i=0; i<elements.length; i++){
 		try {
 				const element_type = elements[i].contextual.type;
 				const element_name = elements[i].name;
@@ -49,37 +50,80 @@ function extractShapes(rawtext){
 								"rotation": rotation,  // how much rotation is needed on each axis
 								"method": method,  // e.g. is it translate or translateAndScale
 								"faces": faces});  // used by translateAndScale
+				elCoords[element_name] = coords;
 		}
 		catch(err) {
-				// Check if the error is because it's a ground element
-				if (elements[i].type == "ground") {
-					details.push({"full_info": elements[i],
-								"element_name": elements[i].name,
-								"element_type": "ground",
-								"shape": "sphere",
-								"dimensions": {"radius":1},
-								"coords": [-200, 100+(nGround*400), 0],
-								"rotation": undefined,
-								"method": "translate",
-								"faces": undefined});
-					nGround += 1;
-				}
 				// If it's not ground then the error typically occurs because
 				// there are no dimensions associated with the element.
 				;
 		}
 	}
-	// Return element details if there are any. If we only find ground then return nothing.
-	// Then viewer.js will instead choose to create a network graph if nothing is returned.
-	for (const el of details){
-		if (el.element_type != "ground"){
-			return details;
-		}
-
+	// If there are no element details, return this info and a network graph will instead be created
+	if (details.length == 0){
+		return details;
 	}
-	return [];
+
+	const groundLocs = getGroundLocations(data, elCoords);
+	for (i=0; i<elements.length; i++){
+		// Check if the error is because it's a ground element
+		if (elements[i].type == "ground") {
+			details.push({"full_info": elements[i],
+						"element_name": elements[i].name,
+						"element_type": "ground",
+						"shape": "sphere",
+						"dimensions": {"radius":1},
+						"coords": groundLocs[elements[i].name],
+						"rotation": undefined,
+						"method": "translate",
+						"faces": undefined});
+		}
+	}
+	
+	return details;
 }
 
+
+function getGroundLocations(data, elCoords){
+	const elements = data.models.irreducibleElement.elements;
+	const relationships  = data.models.irreducibleElement.relationships;
+	let ground_element_names = [];
+	let locations = {};
+	for (var i=0; i<elements.length; i++){
+		if (elements[i].type == "ground") {
+			ground_element_names.push(elements[i].name)
+		}
+	}
+	let n1, n2, coords;
+	let nameMatch, otherEl;
+	for (i=0; i<relationships.length; i++){
+        n1 = relationships[i].elements[0].name;
+        n2 = relationships[i].elements[1].name;
+		nameMatch = undefined;
+		otherEl = undefined;
+		if (ground_element_names.includes(n1)) {
+			nameMatch = n1;
+			otherEl = n2;
+		} 
+		else if (ground_element_names.includes(n2)) {
+			nameMatch = n2;
+			otherEl = n1;
+		}
+		if (nameMatch != undefined) {
+			try {
+				// Check if coordinates are given
+				coords = [relationships[i].elements[0].coordinates.global.translational.x.value,
+						  relationships[i].elements[0].coordinates.global.translational.y.value,
+				          relationships[i].elements[0].coordinates.global.translational.z.value];
+				
+			} catch {
+				// If not, then find out where the other relationship element is.
+				coords = elCoords[otherEl];
+			}
+			locations[nameMatch] = coords;
+		}
+	}
+	return locations;
+}
 
 
 function plotIE(shapes) {
