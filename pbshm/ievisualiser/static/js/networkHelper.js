@@ -3,8 +3,9 @@ import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { Line2 } from 'three/addons/lines/Line2.js';
+import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 
-import { contextual_colours } from './globals.js';
+import { contextual_colours, material_colours, geometry_colours } from './globals.js';
 import * as picker from './pickerHelper.js';
 
 
@@ -19,21 +20,15 @@ function plotNetworkFromFile(rawtext){
     let edgeCoords = [...Array(nElements)].map(e => Array());
     let edges = [...Array(nElements)].map(e => Array());
     let elInfo = [];
-    let elTypes = [];
+    let elNames = [];
     let counts = new Array(nElements); for (let i=0; i<nElements; ++i) counts[i] = 0;
     elements.forEach((node) => {
-        elInfo.push(node.name);
-        if (node.type == "regular"){
-            elTypes.push(node.contextual.type)
-        }
-        else {
-            elTypes.push(node.type)  // if not regular then it's the ground
-        }
+        elNames.push(node.name);
     });
     let i1, i2, i, x, y, z;
     for (i=0; i<relat.length; i++){
-        i1 = elInfo.indexOf(relat[i].elements[0].name);
-        i2 = elInfo.indexOf(relat[i].elements[1].name);
+        i1 = elNames.indexOf(relat[i].elements[0].name);
+        i2 = elNames.indexOf(relat[i].elements[1].name);
         edges[i1].push(i2);
         edges[i2].push(i1);
         counts[i1]++;
@@ -52,7 +47,7 @@ function plotNetworkFromFile(rawtext){
     for (i=0; i<edgeCoords.length; i++){
         totalCoords += edgeCoords[i].length;
     }
-    for (i=0; i<elInfo.length; i++){
+    for (i=0; i<elNames.length; i++){
         try {
             elInfo[i] = elements[i]
         } catch {;}  // no material type given
@@ -60,7 +55,7 @@ function plotNetworkFromFile(rawtext){
     // If none were given then calculate where to position the nodes.
     if (totalCoords == 0){
         nodeCoords = fruchterman_reingold(edges);
-        drawNetwork(nodeCoords, edges, elTypes, elInfo, true)
+        drawNetwork(nodeCoords, edges, elInfo, true)
     }
     // If joint coordinates were given then use them to decide on node coordinates
     else{
@@ -68,7 +63,7 @@ function plotNetworkFromFile(rawtext){
             return arr.slice();
         });
         nodeCoords = getNodeCoords(tempEdges, edgeCoords, counts);
-        drawNetwork(nodeCoords, edges, elTypes, elInfo);
+        drawNetwork(nodeCoords, edges, elInfo);
     }
     
 }
@@ -102,7 +97,7 @@ function getNodeCoords(edges, edgeCoords, counts){
     return nodeCoords;
 }
 
-function drawNetwork(coords, edges, elTypes, elInfo, threeD=true){
+function drawNetwork(coords, edges, elInfo, threeD=true){
     const nNodes = coords.length;
     let minX = 0;
     let minY = 0
@@ -153,18 +148,19 @@ function drawNetwork(coords, edges, elTypes, elInfo, threeD=true){
   
     // Add ambient light because otherwise the shadow from the directional light is too dark
     const color = 0xFFFFFF;
-    const intensity2 = 1;
+    const intensity2 = 3;
     const light2 = new THREE.AmbientLight(color, intensity2);
     scene.add(light2);
     
     // Plot the nodes
+    let elements = [];
     for (let i=0; i<nNodes; i++){
-        makeInstance(new THREE.SphereGeometry(1, 12, 8),
-                     colours[elTypes[i]],
-                     coords[i][0],
-                     coords[i][1],
-                     coords[i][2],
-                     elInfo[i]);
+        const shape = makeInstance(new THREE.SphereGeometry(2, 12, 8),
+                                    coords[i][0],
+                                    coords[i][1],
+                                    coords[i][2],
+                                    elInfo[i]);
+        elements.push(shape);
     }
     
     // Plot the edges
@@ -190,6 +186,33 @@ function drawNetwork(coords, edges, elTypes, elInfo, threeD=true){
     // window.addEventListener('mouseout', picker.clearPickPosition);
     // window.addEventListener('mouseleave', picker.clearPickPosition);
 
+
+    	// GUI for changing the colour scheme
+	const gui = new GUI();
+	gui.add({colour_scheme:'contextual'},
+	        'colour_scheme', ['contextual', 'material', 'geometry']).onChange( value => {updateColourScheme(value)} );
+	
+
+	function updateColourScheme(scheme){
+		if (scheme == "material") {
+			for (let i=0; i<elements.length; i++) {
+				if (elements[i].el_contextual != "ground") {
+					elements[i].material.color.setHex(material_colours[elements[i].el_material]);
+				}
+			}
+		} else if (scheme == "contextual") {
+			for (let i=0; i<elements.length; i++) {
+				elements[i].material.color.setHex(contextual_colours[elements[i].el_contextual]);
+			}
+		} else if (scheme == "geometry") {
+			for (let i=0; i<elements.length; i++) {
+				if (elements[i].el_contextual != "ground") {
+					elements[i].material.color.setHex(geometry_colours[elements[i].el_geometry]);
+				}
+			}
+		}
+	}
+
     function render() {
       if ( resizeRendererToDisplaySize( renderer ) ) {
         const canvas = renderer.domElement;
@@ -212,15 +235,42 @@ function drawNetwork(coords, edges, elTypes, elInfo, threeD=true){
     }
     
     // Add a shape to the scene
-    function makeInstance(geometry, color, x, y, z, info) {
-      const material = new THREE.MeshPhongMaterial({color});
+    function makeInstance(geometry, x, y, z, info) {
+        // Get contextual, material and geometry information used by colour picker
+        let element_type;
+        let element_material;
+        let element_geom;
+        if (info.type != "ground") {
+            element_type = info.contextual.type;
+            // Material and geometry may have two or three bits of information
+            try {
+                element_material = [info.material.type.name, info.material.type.type.name, info.material.type.type.type.name].join("-");
+            } catch(TypeError) {
+                try {
+                    element_material = [info.material.type.name, info.material.type.type.name].join("-");
+                } catch(TypeError) {
+                    element_material = info.material.type.name;
+                }
+            }
+            try {
+                element_geom = [info.geometry.type.name, info.geometry.type.type.name, info.geometry.type.type.type.name].join("-");
+            } catch(TypeError) {
+                element_geom = [info.geometry.type.name, info.geometry.type.type.name].join("-");
+            }
+        } else {
+            element_type = "ground";
+        }
+      const material = new THREE.MeshPhongMaterial({color:contextual_colours[element_type]});
       const shape = new THREE.Mesh(geometry, material);
       shape.name = info['name'];
       shape.full_info = info;
-      scene.add(shape);
+      shape.el_material = element_material;
+      shape.el_contextual = element_type;
+      shape.el_geometry = element_geom;
       shape.position.x = x;
       shape.position.y = y;
       shape.position.z = z;
+      scene.add(shape);
       return shape;
     }
     
