@@ -1,6 +1,9 @@
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+
 import { geometryDetails } from './geometryHelper.js';
+import { contextual_colours, material_colours, geometry_colours } from './globals.js';
 import * as picker from './pickerHelper.js';
 
 
@@ -16,7 +19,19 @@ function extractShapes(rawtext){
 		try {
 				const element_type = elements[i].contextual.type;
 				const element_name = elements[i].name;
-				const element_material = elements[i].material.type.name + "-" + elements[i].material.type.type.name;
+				// Material and geometry may have two or three bits of information
+				let element_material;
+				try {
+					element_material = [elements[i].material.type.name, elements[i].material.type.type.name, elements[i].material.type.type.type.name].join("-");
+				} catch(TypeError) {
+					element_material = [elements[i].material.type.name, elements[i].material.type.type.name].join("-");
+				}
+				let element_geom;
+				try {
+					element_geom = [elements[i].geometry.type.name, elements[i].geometry.type.type.name, elements[i].geometry.type.type.type.name].join("-");
+				} catch(TypeError) {
+					element_geom = [elements[i].geometry.type.name, elements[i].geometry.type.type.name].join("-");
+				}
 				let shape_name;
 				let method = elements[i].geometry.type.type.name;
 				if (method != "translate" && method != "translateAndScale"){
@@ -43,7 +58,9 @@ function extractShapes(rawtext){
 								elements[i].coordinates.global.translational.z.value];
 				details.push({"full_info": elements[i],
 				                "element_name": element_name,
-								"element_type": element_type,  // e.g. column, plate (determines geometry colour)
+								"element_type": element_type,  // e.g. "column", "plate"
+								"element_material": element_material,  // e.g. "ceramic-cement"
+								"element_geometry": element_geom,  // e.g. "shell-translate-sphere"
 								"shape": shape_name,  // e.g. cuboid, sphere
 								"dimensions": dimensions,  // e.g. length, width, radius
 								"coords": coords,  // (x,y,z) position of bottom left, front, corner of the "shape_name"
@@ -134,13 +151,14 @@ function plotIE(shapes) {
 
 	// Some shapes are too big to easily display, so find the range
 	// of x, y and z values (for calculating FOV) and then scale them down.
+	let elements = [];  // for accessing all IEs in the model
 	let minX = 0;
 	let minZ = 0;
 	let maxX = 0;
 	let maxY = 0;
 	let maxZ = 0;
 	const scaleFactor = 100;
-	for (var i=0; i<shapes.length; i++){
+	for (let i=0; i<shapes.length; i++){
 		const shape = geometryDetails(shapes[i], scaleFactor);
 		maxX = Math.max(maxX, shape.position.x);
 		maxY = Math.max(maxY, shape.position.y);
@@ -148,6 +166,7 @@ function plotIE(shapes) {
 		minX = Math.min(minX, shape.position.x);
 		minZ = Math.min(minZ, shape.position.z);
 		scene.add(shape);
+		elements.push(shape);
 	}
 
 	// Set up the display
@@ -194,6 +213,32 @@ function plotIE(shapes) {
     //window.addEventListener('mouseout', picker.clearPickPosition);
     //window.addEventListener('mouseleave', picker.clearPickPosition);
 
+
+	// GUI for changing the colour scheme
+	const gui = new GUI();
+	gui.add({colour_scheme:'contextual'},
+	        'colour_scheme', ['contextual', 'material', 'geometry']).onChange( value => {updateColourScheme(value)} );
+	
+
+	function updateColourScheme(scheme){
+		if (scheme == "material") {
+			for (let i=0; i<elements.length; i++) {
+				if (elements[i].el_contextual != "ground") {
+					elements[i].material.color.setHex(material_colours[elements[i].el_material]);
+				}
+			}
+		} else if (scheme == "contextual") {
+			for (let i=0; i<elements.length; i++) {
+				elements[i].material.color.setHex(contextual_colours[elements[i].el_contextual]);
+			}
+		} else if (scheme == "geometry") {
+			for (let i=0; i<elements.length; i++) {
+				if (elements[i].el_contextual != "ground") {
+					elements[i].material.color.setHex(geometry_colours[elements[i].el_geometry]);
+				}
+			}
+		}
+	}
 
     function resizeRendererToDisplaySize( renderer ) {
         const canvas = renderer.domElement;

@@ -4,7 +4,7 @@ import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { Line2 } from 'three/addons/lines/Line2.js';
 
-import { colours} from './globals.js';
+import { contextual_colours } from './globals.js';
 import * as picker from './pickerHelper.js';
 
 
