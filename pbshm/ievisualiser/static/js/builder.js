@@ -15,6 +15,8 @@ let pointer, raycaster, isShiftDown = false;
 // Gui handlers
 const gui = new GUI();
 const elementFolder = gui.addFolder('Element');
+const elName = {'name': ''}
+elementFolder.add(elName, 'name').onChange(updateElementName);
 let floorFolder, boxFolder, sphereFolder, cylinderFolder, trapezoidFolder, beamFolder, folders, currentFolder;
 
 
@@ -291,6 +293,7 @@ function onPointerDown( event ) {
 			}
 			// If the ground plane has been selected, or anywhere outside of this then there'll be no current folder.
 			if (currentFolder != undefined){
+				elementFolder.children[0].setValue(currentObject.name);
 				transFolder.children[0].setValue(glToJson(currentObject, "x", currentObject.position.x));
 				transFolder.children[1].setValue(glToJson(currentObject, "y", currentObject.position.y));
 				transFolder.children[2].setValue(glToJson(currentObject, "z", currentObject.position.z));
@@ -399,6 +402,11 @@ function initGroundGui(){
 		planeGeometry.rotateX( - Math.PI / 2 );
 		updateGeometry(plane, planeGeometry);
 	}
+}
+
+
+function updateElementName(){
+	currentObject.name = elName.name;
 }
 
 
