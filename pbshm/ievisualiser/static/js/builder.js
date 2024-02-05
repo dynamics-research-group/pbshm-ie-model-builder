@@ -43,7 +43,7 @@ const materialFolder = elementFolder.addFolder('Material');
 const materialTypes = ["metal-ferrousAlloy-steel", "metal-ferrousAlloy-iron", "metal-aluminiumAlloy",
 					   "metal-nickelAlloy", "metal-copperAlloy", "metal-titaniumAlloy", "ceramic-glass",
 					   "ceramic-clayProduct", "ceramic-refractory", "ceramic-abrasive", "ceramic-cement",
-					   "ceramic-advancedCmeramic", "polymer-thermoplastic", "polymer-thermoset", "polymer-elastomer",
+					   "ceramic-advancedCeramic", "polymer-thermoplastic", "polymer-thermoset", "polymer-elastomer",
 					   "composite-particleReinforced", "composite-fibreReinforced", "composite-structural"];
 materialFolder.add(material, 'Type', materialTypes).onChange(updateMaterial);
 
