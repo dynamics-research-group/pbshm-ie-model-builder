@@ -61,29 +61,49 @@ function setup(usedScene, usedCamera){
 }
 
 
-function getsubinfo(subElement){
+/*** Print information on the selected element ***/
+
+function addTabs(level){
+    let text = '';
+    for (let i=0; i<level; i++){
+        text += '&emsp;'
+    }
+    return text;
+}
+
+
+function getsubinfo(subElement, level=1){
     let info = '';
     const keys = Object.keys(subElement);
     if (keys[0] != "0"){  // there are subsubelements to process
         for  (const key of keys){
             if (typeof(subElement[key]) == "number"){
-                info += "<b>" + key + ": </b>" + JSON.stringify(subElement[key]) + "</br>"
+                if (key != "type" && key != "name") {
+                    info += addTabs(level);
+                    info += '<span class="card-subtitle card-subtitle' + level + ' text-muted">' + key + ': </span></br>';
+                }
+                info += addTabs(level+1);
+                info += '<span class="card-text1">' + JSON.stringify(subElement[key]) + '</span>';
             }
             else if (Array.isArray(subElement[key])) {
                 for (const subsub of subElement[key]) {
-                    info += getsubinfo(subsub);
+                    info += getsubinfo(subsub, level+1) + '</br>';
                 }
             }
             else {
-                info += "<b>" + key + ": </b>" + getsubinfo(subElement[key]);
+                info += addTabs(level);
+                info += '<span class="card-subtitle card-subtitle' + level + ' text-muted">' + key + ': </span></br>';
+                info += getsubinfo(subElement[key], level+1)
             }
         }
     }
     else {
-        info += subElement;
+        info += addTabs(level);
+        info += '<span class="card-text1">' + subElement + '</span>';
     }
     return info + "</br>";
 }
+
 
 function getIEInfo(element){
     // List the properties to force them to be printed in the desired order
@@ -93,11 +113,17 @@ function getIEInfo(element){
         const properties = ["name", "description", "type", "coordinates", "contextual", "geometry", "material"];
         for (const subInfo of properties){
             if (keys.includes(subInfo)) {
-                info += "<h3><b>" + subInfo + ": </b></h3>" + getsubinfo(element.full_info[subInfo]);
+                info += '<div style="width: 18rem;">';
+                info += '<h3 class="card-title">' + subInfo + ': </h3>' + getsubinfo(element.full_info[subInfo]);
+                info +=  '</div>';
             }
         }
     } catch (TypeError) {
         ;  // User has not clicked on an element
+    }
+    info = info.replaceAll(/(<\/br>){1}(&emsp;){2,}<span class="card-text1">/g, ' <span class="card-text1">');
+    while (info.includes("</br></br></br>")){
+        info = info.replaceAll("</br></br></br>", "</br></br>")
     }
     return info;
 }
