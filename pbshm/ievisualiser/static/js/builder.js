@@ -15,8 +15,8 @@ let pointer, raycaster, isShiftDown = false;
 // Gui handlers
 const gui = new GUI();
 const elementFolder = gui.addFolder('Element');
-const elName = {'name': ''}
-elementFolder.add(elName, 'name').onChange(updateElementName);
+const elName = {'Name': ''}
+elementFolder.add(elName, 'Name').onChange(updateElementName);
 let floorFolder, boxFolder, sphereFolder, cylinderFolder, trapezoidFolder, beamFolder, folders, currentFolder;
 
 
@@ -406,7 +406,7 @@ function initGroundGui(){
 
 
 function updateElementName(){
-	currentObject.name = elName.name;
+	currentObject.name = elName.Name;
 }
 
 
