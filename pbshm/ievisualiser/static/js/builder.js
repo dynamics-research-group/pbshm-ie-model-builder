@@ -17,7 +17,7 @@ const gui = new GUI();
 const elementFolder = gui.addFolder('Element');
 const elName = {'Name': ''}
 elementFolder.add(elName, 'Name').onChange(updateElementName);
-let floorFolder, boxFolder, sphereFolder, obliqueCylinderFolder, trapezoidFolder, beamFolder, folders, currentFolder;
+let floorFolder, boxFolder, sphereFolder, cylinderFolder, obliqueCylinderFolder, trapezoidFolder, beamFolder, folders, currentFolder;
 
 
 // Coordinates folders
@@ -63,6 +63,8 @@ const boxParams = {'width': 50,
                    'height': 50,
 				   'depth': 50};
 const sphereParams = {'radius': 25}
+const cylinderParams = {'radius': 25,
+   			   		    'height': 50}
 const obliqueCylinderParams = {'top_radius': 25,
    			   		    	   'bottom_radius': 25,
 					           'height': 50,
@@ -93,16 +95,18 @@ const beamMaterial = new THREE.MeshLambertMaterial( { color: 0xf58231} );
 const obliqueCylinderMaterial = new THREE.MeshLambertMaterial( { color: 0xF8DE7E} );
 const materials = {"BoxGeometry": boxMaterial,
 				   "SphereGeometry": sphereMaterial,
+				   "CylinderGeometry": cylinderMaterial,
 				   "ObliqueCylinderGeometry": obliqueCylinderMaterial,
 				   "TrapezoidGeometry": trapezoidMaterial,
 				   "BeamGeometry": beamMaterial}
 
 
 let rollOverMesh;
-let cubeGeo, sphereGeo, obliqueCylinderGeo, trapezoidGeo, beamGeo;
+let cubeGeo, sphereGeo, cylinderGeo, obliqueCylinderGeo, trapezoidGeo, beamGeo;
 const rollOverMaterial = new THREE.MeshBasicMaterial( { color: 0xff0000, opacity: 0.5, transparent: true } );
 const rollOverCubeGeo = new THREE.BoxGeometry(boxParams.width, boxParams.height, boxParams.depth);
 const rollOverSphereGeo = new THREE.SphereGeometry(sphereParams.radius);
+const rollOverCylinderGeo = new THREE.CylinderGeometry(cylinderParams.radius, cylinderParams.radius, cylinderParams.height);
 const rollOverObliqueCylinderGeo = new ObliqueCylinderGeometry(obliqueCylinderParams.top_radius,
 															   obliqueCylinderParams.top_radius,
 															   obliqueCylinderParams.height,
@@ -156,6 +160,7 @@ function init() {
 	// Default geometries on generation
 	cubeGeo = new THREE.BoxGeometry(boxParams.width, boxParams.height, boxParams.depth);
 	sphereGeo = new THREE.SphereGeometry(sphereParams.radius);
+	cylinderGeo = new THREE.CylinderGeometry(cylinderParams.radius, cylinderParams.radius, cylinderParams.height);
 	obliqueCylinderGeo = new ObliqueCylinderGeometry(obliqueCylinderParams.top_radius,
 													 obliqueCylinderParams.bottom_radius,
 													 obliqueCylinderParams.height,
@@ -201,11 +206,12 @@ function init() {
 
 	initBoxGui()
 	initSphereGui();
+	initCylinderGui();
 	initObliqueCylinderGui();
 	initTrapezoidGui();
 	initBeamGui();
 	initGroundGui();  // Not added to list of folders so it is always visible
-	folders = [boxFolder, sphereFolder, obliqueCylinderFolder, trapezoidFolder, beamFolder, coordsFolder, typeFolder, materialFolder];
+	folders = [boxFolder, sphereFolder, cylinderFolder, obliqueCylinderFolder, trapezoidFolder, beamFolder, coordsFolder, typeFolder, materialFolder];
 	folders.forEach(folder => folder.hide()); // Initially hide all folders, then show only the ones we want when required
 
 }
@@ -275,6 +281,10 @@ function onPointerDown( event ) {
 			} else if (geometryType == "SphereGeometry"){
 				sphereFolder.children[0].setValue(currentObject.geometry.parameters.radius);
 				currentFolder = sphereFolder;
+			} else if (geometryType == "CylinderGeometry"){
+				cylinderFolder.children[0].setValue(currentObject.geometry.parameters.radiusTop);
+				cylinderFolder.children[1].setValue(currentObject.geometry.parameters.height);
+				currentFolder = cylinderFolder;
 			} else if (geometryType == "ObliqueCylinderGeometry"){
 				obliqueCylinderFolder.children[0].setValue(currentObject.geometry.parameters.radiusTop);
 				obliqueCylinderFolder.children[1].setValue(currentObject.geometry.parameters.radiusBottom);
@@ -379,6 +389,10 @@ function allowUncheck() {
 			rollOverMesh.geometry = rollOverSphereGeo;
 			currentGeometry = sphereGeo;
 			currentFolder = sphereFolder;
+		} else if (currentId == "cylinder"){
+			rollOverMesh.geometry = rollOverCylinderGeo;
+			currentGeometry = cylinderGeo;
+			currentFolder = cylinderFolder;	
 		} else if (currentId == "obliqueCylinder"){
 			rollOverMesh.geometry = rollOverObliqueCylinderGeo;
 			currentGeometry = obliqueCylinderGeo;
@@ -521,6 +535,28 @@ function initSphereGui(){
 		if (currentObject.geometry.parameters.radius != sphereParams.radius) {
 			updateGeometry(currentObject, new THREE.SphereGeometry(sphereParams.radius));
 			if (currentObject.position.y < sphereParams.radius){
+				posParams.y = 0;
+				moveGeometryY();
+			}
+		}
+	}
+}
+
+
+function initCylinderGui(){
+	cylinderFolder = elementFolder.addFolder('Geometry');
+	cylinderFolder.add(cylinderParams, 'radius').onChange(value => updateParameters("radiusTop", value));
+	cylinderFolder.add(cylinderParams, 'height').onChange(value => updateParameters("height", value));
+	function updateParameters(changedParam, value){
+		if (currentObject.geometry.parameters[changedParam] != value){  // don't regenerate to the object if we're just updating the gui
+			const newParams = {...currentObject.geometry.parameters};
+			newParams[changedParam] = value;
+			if (changedParam == "radiusTop"){
+				newParams["radiusBottom"] = value;  // they must be the same
+			}
+			updateGeometry(currentObject,
+						new THREE.CylinderGeometry(newParams.radiusTop, newParams.radiusBottom, newParams.height));
+			if (changedParam == "height"){
 				posParams.y = 0;
 				moveGeometryY();
 			}

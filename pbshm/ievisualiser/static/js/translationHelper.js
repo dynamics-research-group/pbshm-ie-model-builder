@@ -17,7 +17,7 @@ function conversionAmount(currentObject, dimension){
             case "z":
                 return currentObject.geometry.parameters.radius;
         }
-    } else if (currentObject.geometry.type == "ObliqueCylinderGeometry"){
+    } else if (currentObject.geometry.type == "CylinderGeometry" || currentObject.geometry.type == "ObliqueCylinderGeometry"){
         const radius = Math.max(currentObject.geometry.parameters.radiusBottom,
                                 currentObject.geometry.parameters.radiusTop);
         switch (dimension) {
