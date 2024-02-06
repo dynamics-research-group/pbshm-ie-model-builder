@@ -7,14 +7,6 @@ html, body {
   height: 100%;
   display: block;
 }
-/* #info {
-  position: absolute;
-  top: 10px;
-  width: 100%;
-  text-align: right;
-  z-index: 100;
-  display:block;
-} */
 #uiinfo {
   position: absolute;
   top: 0px;
@@ -39,7 +31,7 @@ html, body {
 }
 #ui input[type=radio] + label {
   background-image: url('../images/geometries.png');
-  background-size: 100% 500%;
+  background-size: 100% 600%;
   image-rendering: pixelated;
   width: 64px;
   height: 64px;
@@ -72,7 +64,7 @@ html, body {
 }
 #uitwo input[type=radio] + label {
   background-image: url('../images/geometries.png');
-  background-size: 100% 500%;
+  background-size: 100% 600%;
   image-rendering: pixelated;
   width: 64px;
   height: 64px;

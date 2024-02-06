@@ -49,6 +49,8 @@ class ObliqueCylinderGeometry extends THREE.BufferGeometry {
 			radiusTop: radiusTop,
 			radiusBottom: radiusBottom,
 			height: height,
+			topSkewX: topSkewX,
+			topSkewZ: topSkewZ,
 			radialSegments: radialSegments,
 			heightSegments: heightSegments,
 			openEnded: openEnded,
