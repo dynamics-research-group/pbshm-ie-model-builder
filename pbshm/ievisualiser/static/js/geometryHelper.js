@@ -162,10 +162,14 @@ function generateBeam(type, width=4, h=4, s=1, t=1, b=1){
     bottomGeom.translate(0, (t/2)-(h/2), 0);
     topGeom.translate(0, (h/2)-(t/2), 0);
     if (type == "c-beam"){
-        middleGeom.translate(0, 0, - b + (s / 2));
+        middleGeom.translate(0, 0, (- b + s) / 2);
     }
     const geometry = mergeGeometries([bottomGeom, middleGeom, topGeom]);
-    geometry.type = "BeamGeometry";
+    if (type == "c-beam"){
+        geometry.type = "CBeamGeometry";
+    } else {
+        geometry.type = "IBeamGeometry";
+    }
     geometry.parameters = {"width":width, "h":h, "s":s, "t":t, "b":b};
     return geometry;
 }

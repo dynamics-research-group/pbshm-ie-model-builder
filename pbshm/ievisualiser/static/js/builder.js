@@ -91,18 +91,20 @@ const boxMaterial = new THREE.MeshLambertMaterial( { color: 0xe6194b} );
 const sphereMaterial = new THREE.MeshLambertMaterial( { color: 0x3cb44b} );
 const cylinderMaterial = new THREE.MeshLambertMaterial( { color: 0xffe119} );
 const trapezoidMaterial = new THREE.MeshLambertMaterial( { color: 0x4363d8} );
-const beamMaterial = new THREE.MeshLambertMaterial( { color: 0xf58231} );
-const obliqueCylinderMaterial = new THREE.MeshLambertMaterial( { color: 0xF8DE7E} );
+const iBeamMaterial = new THREE.MeshLambertMaterial( { color: 0xf58231} );
+const cBeamMaterial = new THREE.MeshLambertMaterial( { color: 0xfbceb1} );
+const obliqueCylinderMaterial = new THREE.MeshLambertMaterial( { color: 0xf8de7e} );
 const materials = {"BoxGeometry": boxMaterial,
 				   "SphereGeometry": sphereMaterial,
 				   "CylinderGeometry": cylinderMaterial,
 				   "ObliqueCylinderGeometry": obliqueCylinderMaterial,
 				   "TrapezoidGeometry": trapezoidMaterial,
-				   "BeamGeometry": beamMaterial}
+				   "IBeamGeometry": iBeamMaterial,
+				   "CBeamGeometry": cBeamMaterial}
 
 
 let rollOverMesh;
-let cubeGeo, sphereGeo, cylinderGeo, obliqueCylinderGeo, trapezoidGeo, beamGeo;
+let cubeGeo, sphereGeo, cylinderGeo, obliqueCylinderGeo, trapezoidGeo, iBeamGeo, cBeamGeo;
 const rollOverMaterial = new THREE.MeshBasicMaterial( { color: 0xff0000, opacity: 0.5, transparent: true } );
 const rollOverCubeGeo = new THREE.BoxGeometry(boxParams.width, boxParams.height, boxParams.depth);
 const rollOverSphereGeo = new THREE.SphereGeometry(sphereParams.radius);
@@ -117,11 +119,12 @@ const rollOverTrapezoidGeo = new TrapezoidGeometry(trapezoidParams.leftTransY, t
 												   trapezoidParams.rightTransY, trapezoidParams.rightTransZ,
 												   trapezoidParams.rightDimensY, trapezoidParams.rightDimensZ,
 												   trapezoidParams.width);
-const rollOverBeamGeo = generateBeam("i-beam", beamParams.width, beamParams.h, beamParams.s, beamParams.t, beamParams.b);
+const rollOverIBeamGeo = generateBeam("i-beam", beamParams.width, beamParams.h, beamParams.s, beamParams.t, beamParams.b);
+const rollOverCBeamGeo = generateBeam("c-beam", beamParams.width, beamParams.h, beamParams.s, beamParams.t, beamParams.b);
+
 let planeGeometry;
 
-let currentVoxel = 0;  // new generic object to be added
-let currentId;
+let currentId;  // name of the new geometry object to be added
 let currentGeometry;
 let currentObject;  // specific existing object to be edited
 const objects = [];  // list of all objects in the scene
@@ -153,7 +156,7 @@ function init() {
 	controls.update();
 	
 	// Roll-over helpers
-	rollOverMesh = new THREE.Mesh(rollOverBeamGeo, rollOverMaterial);
+	rollOverMesh = new THREE.Mesh(rollOverIBeamGeo, rollOverMaterial);
 	rollOverMesh.visible = false;
 	scene.add( rollOverMesh );
 
@@ -167,7 +170,8 @@ function init() {
 													 obliqueCylinderParams.top_skew_x,
 													 obliqueCylinderParams.top_skew_z);
 	trapezoidGeo = new TrapezoidGeometry(10, 10, 20, 20, 0, 0, 40, 40, 50);
-	beamGeo = generateBeam("i-beam", beamParams.width, beamParams.h, beamParams.s, beamParams.t, beamParams.b);
+	iBeamGeo = generateBeam("i-beam", beamParams.width, beamParams.h, beamParams.s, beamParams.t, beamParams.b);
+	cBeamGeo = generateBeam("c-beam", beamParams.width, beamParams.h, beamParams.s, beamParams.t, beamParams.b);
 	
 	// To detect where the user has clicked
 	raycaster = new THREE.Raycaster();
@@ -225,7 +229,7 @@ function onWindowResize() {
 
 
 function onPointerMove( event ) {
-	if (currentVoxel > 0){
+	if (currentId != undefined){
 		pointer.set( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1 );
 		raycaster.setFromCamera( pointer, camera );
 		const intersects = raycaster.intersectObjects( objects, false );
@@ -252,7 +256,7 @@ function onPointerDown( event ) {
 				objects.splice( objects.indexOf( intersect.object ), 1 );
 			}
 		} else {
-			if (currentVoxel > 0){
+			if (currentId != undefined){
 				// create new object
 				const voxel = new THREE.Mesh(currentGeometry, materials[currentGeometry.type]);
 				voxel.position.copy( intersect.point ).add( intersect.face.normal );
@@ -303,7 +307,7 @@ function onPointerDown( event ) {
 				trapezoidFolder.children[7].setValue(currentObject.geometry.parameters.rightDimensZ);
 				trapezoidFolder.children[8].setValue(currentObject.geometry.parameters.width);
 				currentFolder = trapezoidFolder;
-			} else if (geometryType == "BeamGeometry"){
+			} else if (geometryType == "IBeamGeometry" || geometryType == "CBeamGeometry"){
 				beamFolder.children[0].setValue(currentObject.geometry.parameters["width"]);
 				beamFolder.children[1].setValue(currentObject.geometry.parameters["h"]);
 				beamFolder.children[2].setValue(currentObject.geometry.parameters["s"]);
@@ -375,11 +379,9 @@ function allowUncheck() {
 	if ( this.id === currentId ) {
 		this.checked = false;
 		currentId = undefined;
-		currentVoxel = 0;
 		rollOverMesh.visible = false;
 	} else {
 		currentId = this.id;
-		currentVoxel = parseInt( this.value );
 		rollOverMesh.geometry.dispose()
 		if (currentId == "cube"){
 			rollOverMesh.geometry = rollOverCubeGeo;
@@ -402,8 +404,12 @@ function allowUncheck() {
 			currentGeometry = trapezoidGeo;
 			currentFolder = trapezoidFolder;
 		} else if (currentId == "ibeam"){
-			rollOverMesh.geometry = rollOverBeamGeo;
-			currentGeometry = beamGeo;
+			rollOverMesh.geometry = rollOverIBeamGeo;
+			currentGeometry = iBeamGeo;
+			currentFolder = beamFolder;
+		} else if (currentId == "cbeam"){
+			rollOverMesh.geometry = rollOverCBeamGeo;
+			currentGeometry = cBeamGeo;
 			currentFolder = beamFolder;
 		}
 		rollOverMesh.visible = true;
@@ -623,7 +629,12 @@ function initBeamGui(){
 		if (currentObject.geometry.parameters[changedParam] != value){  // don't regenerate to the object if we're just updating the gui
 			const newParams = {...currentObject.geometry.parameters};
 			newParams[changedParam] = value;
-			const newGeom = generateBeam("i-beam", newParams.width, newParams.h, newParams.s, newParams.t, newParams.b, posParams.x, posParams.y, posParams.z);
+			let newGeom;
+			if (currentObject.geometry.type == "IBeamGeometry") {
+				newGeom = generateBeam("i-beam", newParams.width, newParams.h, newParams.s, newParams.t, newParams.b, posParams.x, posParams.y, posParams.z);
+			} else {
+				newGeom = generateBeam("c-beam", newParams.width, newParams.h, newParams.s, newParams.t, newParams.b, posParams.x, posParams.y, posParams.z);
+			}
 			currentObject.geometry.dispose();
 			currentObject.geometry = newGeom;
 			if (changedParam == "h"){

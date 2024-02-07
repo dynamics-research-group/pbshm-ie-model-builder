@@ -28,7 +28,7 @@ function conversionAmount(currentObject, dimension){
             case "z":
                 return radius;
         }
-    } else if (currentObject.geometry.type == "BeamGeometry"){
+    } else if (currentObject.geometry.type == "IBeamGeometry" || currentObject.geometry.type == "CBeamGeometry"){
         switch (dimension) {
             case "x":
                 return currentObject.geometry.parameters.width / 2;
