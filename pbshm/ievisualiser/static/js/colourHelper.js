@@ -47,6 +47,7 @@ const geometry_colours = {"beam-rectangular": 0x00B9E8,
                           "solid-translate-sphere": 0x7C0902,
                           "solid-translate-cylinder": 0xFE6F5E,
                           "solid-translate-other": 0xFB607F,
+                          "shell-translate-cuboid": 0x90EE90,
                           "shell-translate-sphere": 0x8DB600,
                           "shell-translate-cylinder": 0x7BA05B,
                           "shell-translate-other": 0x568203,
@@ -70,12 +71,13 @@ function addColourFolders(gui, elements) {
         elementGeometries.add(elements[i].el_geometry);
     }
 
-    gui.add({colour_scheme:'contextual'},
-    'colour_scheme', ['contextual', 'material', 'geometry']).onChange( value => {updateColourScheme(value)} );
+    const coloursFolder = gui.addFolder('Colours');
+    coloursFolder.add({'colour scheme':'contextual'},
+    'colour scheme', ['contextual', 'material', 'geometry']).onChange( value => {updateColourScheme(value)} );
 
-    gui.addColor(ground_colour, "ground").onChange(value => {updateGroundColour(value);});
+    coloursFolder.addColor(ground_colour, "ground").onChange(value => {updateGroundColour(value);});
 
-    const contextualColoursFolder = gui.addFolder('Contextual Colours');
+    const contextualColoursFolder = coloursFolder.addFolder('Contextual Colours');
     for (const [key, value] of Object.entries(contextual_colours)) {
     // Only show a colour option if there's an element that uses it
     if (elementContexts.has(key)) {
@@ -83,7 +85,7 @@ function addColourFolders(gui, elements) {
     }
     }
 
-    const materialColoursFolder = gui.addFolder('Material Colours');
+    const materialColoursFolder = coloursFolder.addFolder('Material Colours');
     materialColoursFolder.hide();
     for (const [key, value] of Object.entries(material_colours)) {
     // Only show a colour option if there's an element that uses it
@@ -92,7 +94,7 @@ function addColourFolders(gui, elements) {
     }
     }
 
-    const geometryColoursFolder = gui.addFolder('Geometry Colours');
+    const geometryColoursFolder = coloursFolder.addFolder('Geometry Colours');
     geometryColoursFolder.hide();
     for (const [key, value] of Object.entries(geometry_colours)) {
     // Only show a colour option if there's an element that uses it
