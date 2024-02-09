@@ -3,7 +3,7 @@ import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 
 import { geometryDetails } from './geometryHelper.js';
-import { contextual_colours, material_colours, geometry_colours } from './globals.js';
+import { addColourFolders } from './colourHelper.js';
 import * as picker from './pickerHelper.js';
 
 
@@ -87,6 +87,8 @@ function extractShapes(rawtext){
 			details.push({"full_info": elements[i],
 						"element_name": elements[i].name,
 						"element_type": "ground",
+						"element_material": "ground",
+						"element_geometry": "ground",
 						"shape": "sphere",
 						"dimensions": {"radius":1},
 						"coords": groundLocs[elements[i].name],
@@ -216,29 +218,8 @@ function plotIE(shapes) {
 
 	// GUI for changing the colour scheme
 	const gui = new GUI();
-	gui.add({colour_scheme:'contextual'},
-	        'colour_scheme', ['contextual', 'material', 'geometry']).onChange( value => {updateColourScheme(value)} );
-	
+	addColourFolders(gui, elements);
 
-	function updateColourScheme(scheme){
-		if (scheme == "material") {
-			for (let i=0; i<elements.length; i++) {
-				if (elements[i].el_contextual != "ground") {
-					elements[i].material.color.setHex(material_colours[elements[i].el_material]);
-				}
-			}
-		} else if (scheme == "contextual") {
-			for (let i=0; i<elements.length; i++) {
-				elements[i].material.color.setHex(contextual_colours[elements[i].el_contextual]);
-			}
-		} else if (scheme == "geometry") {
-			for (let i=0; i<elements.length; i++) {
-				if (elements[i].el_contextual != "ground") {
-					elements[i].material.color.setHex(geometry_colours[elements[i].el_geometry]);
-				}
-			}
-		}
-	}
 
     function resizeRendererToDisplaySize( renderer ) {
         const canvas = renderer.domElement;

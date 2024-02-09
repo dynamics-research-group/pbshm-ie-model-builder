@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
-import { contextual_colours } from './globals.js';
+import { ground_colour, contextual_colours } from './colourHelper.js';
 import { TrapezoidGeometry } from './trapezoid.js';
 import {ObliqueCylinderGeometry} from './obliqueCylinder.js'
 
@@ -101,7 +101,13 @@ function geometryDetails(element, scaleFactor=100){
     else {
         console.error("Unknown handling method", element["method"]);
     }
-    const material = new THREE.MeshPhongMaterial({color: contextual_colours[element["element_type"]]});
+    let colour;
+    if (element["element_type"] == "ground"){
+        colour = ground_colour;
+    } else {
+        colour = contextual_colours[element["element_type"]];
+    }
+    const material = new THREE.MeshPhongMaterial({color: colour});
     const shape = new THREE.Mesh(geometry, material);
     shape.full_info = element["full_info"];
     shape.name = element["element_name"];

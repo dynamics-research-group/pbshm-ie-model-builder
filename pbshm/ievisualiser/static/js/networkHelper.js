@@ -5,8 +5,8 @@ import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { Line2 } from 'three/addons/lines/Line2.js';
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 
-import { contextual_colours, material_colours, geometry_colours } from './globals.js';
 import * as picker from './pickerHelper.js';
+import { ground_colour, contextual_colours, addColourFolders } from './colourHelper.js';
 
 
 
@@ -189,29 +189,7 @@ function drawNetwork(coords, edges, elInfo, threeD=true){
 
     	// GUI for changing the colour scheme
 	const gui = new GUI();
-	gui.add({colour_scheme:'contextual'},
-	        'colour_scheme', ['contextual', 'material', 'geometry']).onChange( value => {updateColourScheme(value)} );
-	
-
-	function updateColourScheme(scheme){
-		if (scheme == "material") {
-			for (let i=0; i<elements.length; i++) {
-				if (elements[i].el_contextual != "ground") {
-					elements[i].material.color.setHex(material_colours[elements[i].el_material]);
-				}
-			}
-		} else if (scheme == "contextual") {
-			for (let i=0; i<elements.length; i++) {
-				elements[i].material.color.setHex(contextual_colours[elements[i].el_contextual]);
-			}
-		} else if (scheme == "geometry") {
-			for (let i=0; i<elements.length; i++) {
-				if (elements[i].el_contextual != "ground") {
-					elements[i].material.color.setHex(geometry_colours[elements[i].el_geometry]);
-				}
-			}
-		}
-	}
+    addColourFolders(gui, elements);
 
     function render() {
       if ( resizeRendererToDisplaySize( renderer ) ) {
@@ -260,18 +238,24 @@ function drawNetwork(coords, edges, elInfo, threeD=true){
         } else {
             element_type = "ground";
         }
-      const material = new THREE.MeshPhongMaterial({color:contextual_colours[element_type]});
-      const shape = new THREE.Mesh(geometry, material);
-      shape.name = info['name'];
-      shape.full_info = info;
-      shape.el_material = element_material;
-      shape.el_contextual = element_type;
-      shape.el_geometry = element_geom;
-      shape.position.x = x;
-      shape.position.y = y;
-      shape.position.z = z;
-      scene.add(shape);
-      return shape;
+        let colour;
+        if (element_type == "ground"){
+            colour = ground_colour["ground"];
+        } else {
+            colour = contextual_colours[element_type];
+        }
+        const material = new THREE.MeshPhongMaterial({color: colour});
+        const shape = new THREE.Mesh(geometry, material);
+        shape.name = info['name'];
+        shape.full_info = info;
+        shape.el_material = element_material;
+        shape.el_contextual = element_type;
+        shape.el_geometry = element_geom;
+        shape.position.x = x;
+        shape.position.y = y;
+        shape.position.z = z;
+        scene.add(shape);
+        return shape;
     }
     
     function drawLine(pos1, pos2){
