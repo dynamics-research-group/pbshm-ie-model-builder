@@ -5,8 +5,9 @@ import {ObliqueCylinderGeometry} from './obliqueCylinder.js';
 import {TrapezoidGeometry} from './trapezoid.js'
 import {generateBeam} from './geometryHelper.js';
 import {glToJson, jsonToGl} from './translationHelper.js';
-import { builderColours, addColourFolders, contextualColours, materialColours, cElements,
-	     makeContextColourVisible, makeMaterialColourVisible} from './colourHelper.js';
+import { builderColours, addColourFolders, contextualColours, materialColours, geometryColours,
+	     cElements, materialColourKeys, contextualColourKeys,
+	     makeContextColourVisible, makeMaterialColourVisible, makeGeometryColourVisible} from './colourHelper.js';
 
 
 let camera, scene, renderer, controls;
@@ -43,20 +44,35 @@ rotFolder.add(rotateParams, 'z', 0, 360).onChange(rotateGeometryZ);
 // Material information
 const material = {"Type": "other"};
 const materialFolder = elementFolder.addFolder('Material');
-const materialTypes = ["metal-ferrousAlloy-steel", "metal-ferrousAlloy-iron", "metal-aluminiumAlloy",
-					   "metal-nickelAlloy", "metal-copperAlloy", "metal-titaniumAlloy", "ceramic-glass",
-					   "ceramic-clayProduct", "ceramic-refractory", "ceramic-abrasive", "ceramic-cement",
-					   "ceramic-advancedCeramic", "polymer-thermoplastic", "polymer-thermoset", "polymer-elastomer",
-					   "composite-particle-reinforced", "composite-fibre-reinforced", "composite-structural"];
-materialFolder.add(material, 'Type', materialTypes).onChange(updateMaterial);
+materialFolder.add(material, 'Type', materialColourKeys).onChange(updateMaterial);
 
 
 // Contextual information
 const context = {'Type': 'other'};
 const typeFolder = elementFolder.addFolder('Contextual');
-const contextualTypes = ["slab", "column", "beam", "block", "cable", "wall", "ground",
-                          "plate", "deck", "aerofoil", "wing", "fuselage", "tower", "wheel", "other"];
-typeFolder.add(context, 'Type', contextualTypes).onChange(updateContext);
+typeFolder.add(context, 'Type', contextualColourKeys).onChange(updateContext);
+
+
+// Geometry information
+const geometry = {"Type": undefined}
+const jsonGeometryMappings = {"box": ["solid-translate-cuboid", "shell-translate-cuboid",
+                                       "solid-translate-other", "shell-translate-other", "other"], 
+                              "sphere": ["solid-translate-sphere", "shell-translate-sphere",
+                                         "solid-translate-other", "shell-translate-other", "other"], 
+                              "cylinder": ["solid-translate-cylinder", "shell-translate-cylinder",
+                                           "solid-translate-other", "shell-translate-other", "other"], 
+                              "beam": ["beam-rectangular", "beam-i-beam", "beam-other", "other"], 
+                              "trapezoid": ["solid-translateAndScale-cuboid", "shell-translateAndScale-cuboid",
+                                            "solid-translateAndScale-other", "shell-translateAndScale-other", "other"], 
+                              "obliqueCylinder": ["solid-translateAndScale-cylinder", "shell-translateAndScale-cylinder",
+                                                  "solid-translateAndScale-other", "shell-translateAndScale-other", "other"]};
+const geometryKeys = Object.keys(jsonGeometryMappings);
+geometryKeys.sort();
+const geometryFolder = elementFolder.addFolder('Geometry');
+for (let i=0; i<geometryKeys.length; i++){
+	geometryFolder.add(geometry, 'Type', jsonGeometryMappings[geometryKeys[i]]).onChange(updateJsonGeometry);
+	geometryFolder.children[i].hide();
+}
 
 
 // Geometry folders
@@ -271,13 +287,16 @@ function onPointerDown( event ) {
 				boxFolder.children[1].setValue(currentObject.geometry.parameters.height);
 				boxFolder.children[2].setValue(currentObject.geometry.parameters.depth);
 				currentFolder = boxFolder;
+				showGeometryDropdown("box");
 			} else if (geometryType == "SphereGeometry"){
 				sphereFolder.children[0].setValue(currentObject.geometry.parameters.radius);
 				currentFolder = sphereFolder;
+				showGeometryDropdown("sphere");
 			} else if (geometryType == "CylinderGeometry"){
 				cylinderFolder.children[0].setValue(currentObject.geometry.parameters.radiusTop);
 				cylinderFolder.children[1].setValue(currentObject.geometry.parameters.height);
 				currentFolder = cylinderFolder;
+				showGeometryDropdown("cylinder");
 			} else if (geometryType == "ObliqueCylinderGeometry"){
 				obliqueCylinderFolder.children[0].setValue(currentObject.geometry.parameters.radiusTop);
 				obliqueCylinderFolder.children[1].setValue(currentObject.geometry.parameters.radiusBottom);
@@ -285,6 +304,7 @@ function onPointerDown( event ) {
 				obliqueCylinderFolder.children[3].setValue(currentObject.geometry.parameters.topSkewX);
 				obliqueCylinderFolder.children[4].setValue(currentObject.geometry.parameters.topSkewZ);
 				currentFolder = obliqueCylinderFolder;
+				showGeometryDropdown("obliqueCylinder");
 			} else if  (geometryType == "TrapezoidGeometry"){
 				trapezoidFolder.children[0].setValue(currentObject.geometry.parameters.leftTransY);
 				trapezoidFolder.children[1].setValue(currentObject.geometry.parameters.leftTransZ);
@@ -296,6 +316,7 @@ function onPointerDown( event ) {
 				trapezoidFolder.children[7].setValue(currentObject.geometry.parameters.rightDimensZ);
 				trapezoidFolder.children[8].setValue(currentObject.geometry.parameters.width);
 				currentFolder = trapezoidFolder;
+				showGeometryDropdown("trapezoid");
 			} else if (geometryType == "IBeamGeometry" || geometryType == "CBeamGeometry"){
 				beamFolder.children[0].setValue(currentObject.geometry.parameters["width"]);
 				beamFolder.children[1].setValue(currentObject.geometry.parameters["h"]);
@@ -303,6 +324,7 @@ function onPointerDown( event ) {
 				beamFolder.children[3].setValue(currentObject.geometry.parameters["t"]);
 				beamFolder.children[4].setValue(currentObject.geometry.parameters["b"]);
 				currentFolder = beamFolder;
+				showGeometryDropdown("beam");
 			} else {
 				// Need to deselect if we click away so we don't accidentally edit something else (e.g. the plane)
 				currentFolder = undefined;
@@ -513,6 +535,25 @@ function updateMaterial(){
 }
 
 
+function updateJsonGeometry(){
+	currentObject.el_geometry = geometry.Type;
+	makeGeometryColourVisible(geometry.Type);
+	if (gui.children[0].children[0].getValue() == "geometry") {
+		currentObject.material.color.setHex(geometryColours[currentObject.el_geometry]);
+	}
+	render();
+}
+
+function showGeometryDropdown(geom){
+	// Hide whichever geometry dropdown is on display
+	for (let i=0; i<geometryKeys.length; i++){
+		geometryFolder.children[i].hide();
+	}
+	// Show the desired dropdown
+	geometryFolder.children[geometryKeys.indexOf(geom)].show();
+}
+
+
 function initBoxGui(){
 	boxFolder = elementFolder.addFolder('Geometry');
 	boxFolder.add(boxParams, 'width').onChange(value => updateParameters("width", value));
@@ -646,6 +687,9 @@ function initBeamGui(){
 }
 
 
+
 function render() {
 	renderer.render( scene, camera );
 }
+
+

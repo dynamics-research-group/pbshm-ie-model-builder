@@ -202,5 +202,5 @@ function makeGeometryColourVisible(geometry){
 }
 
 
-export {groundColour, builderColours, contextualColours, materialColours, geometryColours, cElements,
+export {groundColour, builderColours, contextualColours, materialColours, geometryColours, cElements, materialColourKeys, contextualColourKeys,
         addColourFolders, makeContextColourVisible, makeMaterialColourVisible, makeGeometryColourVisible};
