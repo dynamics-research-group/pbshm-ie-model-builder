@@ -5,6 +5,8 @@ import {ObliqueCylinderGeometry} from './obliqueCylinder.js';
 import {TrapezoidGeometry} from './trapezoid.js'
 import {generateBeam} from './geometryHelper.js';
 import {glToJson, jsonToGl} from './translationHelper.js';
+import { builderColours, addColourFolders, contextualColours, materialColours, cElements,
+	     makeContextColourVisible, makeMaterialColourVisible} from './colourHelper.js';
 
 
 let camera, scene, renderer, controls;
@@ -14,6 +16,7 @@ let pointer, raycaster, isShiftDown = false;
 
 // Gui handlers
 const gui = new GUI();
+addColourFolders(gui, render, "builder");
 const elementFolder = gui.addFolder('Element');
 const elName = {'Name': ''}
 elementFolder.add(elName, 'Name').onChange(updateElementName);
@@ -44,7 +47,7 @@ const materialTypes = ["metal-ferrousAlloy-steel", "metal-ferrousAlloy-iron", "m
 					   "metal-nickelAlloy", "metal-copperAlloy", "metal-titaniumAlloy", "ceramic-glass",
 					   "ceramic-clayProduct", "ceramic-refractory", "ceramic-abrasive", "ceramic-cement",
 					   "ceramic-advancedCeramic", "polymer-thermoplastic", "polymer-thermoset", "polymer-elastomer",
-					   "composite-particleReinforced", "composite-fibreReinforced", "composite-structural"];
+					   "composite-particle-reinforced", "composite-fibre-reinforced", "composite-structural"];
 materialFolder.add(material, 'Type', materialTypes).onChange(updateMaterial);
 
 
@@ -85,22 +88,6 @@ const beamParams = {"width": 80,
 				    "t": 10,
 				    "b": 30}
 
-
-// Geometry materials (for webgl buffers)
-const boxMaterial = new THREE.MeshLambertMaterial( { color: 0xe6194b} );
-const sphereMaterial = new THREE.MeshLambertMaterial( { color: 0x3cb44b} );
-const cylinderMaterial = new THREE.MeshLambertMaterial( { color: 0xffe119} );
-const trapezoidMaterial = new THREE.MeshLambertMaterial( { color: 0x4363d8} );
-const iBeamMaterial = new THREE.MeshLambertMaterial( { color: 0xf58231} );
-const cBeamMaterial = new THREE.MeshLambertMaterial( { color: 0xfbceb1} );
-const obliqueCylinderMaterial = new THREE.MeshLambertMaterial( { color: 0xf8de7e} );
-const materials = {"BoxGeometry": boxMaterial,
-				   "SphereGeometry": sphereMaterial,
-				   "CylinderGeometry": cylinderMaterial,
-				   "ObliqueCylinderGeometry": obliqueCylinderMaterial,
-				   "TrapezoidGeometry": trapezoidMaterial,
-				   "IBeamGeometry": iBeamMaterial,
-				   "CBeamGeometry": cBeamMaterial}
 
 
 let rollOverMesh;
@@ -208,6 +195,7 @@ function init() {
 
 	window.addEventListener( 'resize', onWindowResize );
 
+	
 	initBoxGui()
 	initSphereGui();
 	initCylinderGui();
@@ -258,7 +246,7 @@ function onPointerDown( event ) {
 		} else {
 			if (currentId != undefined){
 				// create new object
-				const voxel = new THREE.Mesh(currentGeometry, materials[currentGeometry.type]);
+				const voxel = new THREE.Mesh(currentGeometry, new THREE.MeshLambertMaterial({color: builderColours[currentGeometry.type]}));
 				voxel.position.copy( intersect.point ).add( intersect.face.normal );
 				voxel.position.divideScalar( 50 ).floor().multiplyScalar( 50 ).addScalar( 25 );
 				// We need to know the current angle so that when we change the object's angle we don't
@@ -266,11 +254,12 @@ function onPointerDown( event ) {
 				voxel.currentAngleX = 0;
 				voxel.currentAngleY = 0;
 				voxel.currentAngleZ = 0;
-				voxel.contextual_type = "other";
+				voxel.contextual_type = undefined;
 				voxel.material_type = undefined;
 				scene.add( voxel );
 				objects.push( voxel );
 				currentObject = voxel;
+				cElements.push(voxel);
 			} else {
 				// select existing object to edit
 				currentObject = intersect.object;
@@ -327,8 +316,8 @@ function onPointerDown( event ) {
 				rotFolder.children[0].setValue(currentObject.rotation.x * (180 / Math.PI));
 				rotFolder.children[1].setValue(currentObject.rotation.y * (180 / Math.PI));
 				rotFolder.children[2].setValue(currentObject.rotation.z * (180 / Math.PI));
-				typeFolder.children[0].setValue(currentObject.contextual_type);
-				materialFolder.children[0].setValue(currentObject.material_type);
+				typeFolder.children[0].setValue(currentObject.el_contextual);
+				materialFolder.children[0].setValue(currentObject.el_material);
 				coordsFolder.show();
 				typeFolder.show();
 				materialFolder.show();
@@ -505,12 +494,22 @@ function rotateGeometryZ(){
 
 
 function updateContext(){
-	currentObject.contextual_type = context.Type;
+	currentObject.el_contextual = context.Type;
+	makeContextColourVisible(context.Type);
+	if (gui.children[0].children[0].getValue() == "contextual") {
+		currentObject.material.color.setHex(contextualColours[currentObject.el_contextual]);
+	}
+	render();
 }
 
 
 function updateMaterial(){
-	currentObject.material_type = material.Type;
+	currentObject.el_material = material.Type;
+	makeMaterialColourVisible(material.Type);
+	if (gui.children[0].children[0].getValue() == "material") {
+		currentObject.material.color.setHex(materialColours[currentObject.el_material]);
+	}
+	render();
 }
 
 

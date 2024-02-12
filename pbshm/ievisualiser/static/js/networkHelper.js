@@ -6,7 +6,8 @@ import { Line2 } from 'three/addons/lines/Line2.js';
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 
 import * as picker from './pickerHelper.js';
-import { ground_colour, contextual_colours, addColourFolders } from './colourHelper.js';
+import { groundColour, contextualColours, addColourFolders, cElements,
+         makeContextColourVisible, makeMaterialColourVisible, makeGeometryColourVisible } from './colourHelper.js';
 
 
 
@@ -145,6 +146,10 @@ function drawNetwork(coords, edges, elInfo, threeD=true){
     const controls = new OrbitControls(camera, canvas);
     controls.target.set(0, 0, 0);	// where the camera looks
     controls.update();
+
+    // GUI for changing the colour scheme
+	const gui = new GUI();
+    addColourFolders(gui, render, "contextual");
   
     // Add ambient light because otherwise the shadow from the directional light is too dark
     const color = 0xFFFFFF;
@@ -153,14 +158,18 @@ function drawNetwork(coords, edges, elInfo, threeD=true){
     scene.add(light2);
     
     // Plot the nodes
-    let elements = [];
     for (let i=0; i<nNodes; i++){
         const shape = makeInstance(new THREE.SphereGeometry(2, 12, 8),
                                     coords[i][0],
                                     coords[i][1],
                                     coords[i][2],
                                     elInfo[i]);
-        elements.push(shape);
+        cElements.push(shape);
+        if (shape.el_contextual != "ground") {
+			makeContextColourVisible(shape.el_contextual);
+			makeMaterialColourVisible(shape.el_material);
+			makeGeometryColourVisible(shape.el_geometry);
+		}
     }
     
     // Plot the edges
@@ -187,10 +196,7 @@ function drawNetwork(coords, edges, elInfo, threeD=true){
     // window.addEventListener('mouseleave', picker.clearPickPosition);
 
 
-    	// GUI for changing the colour scheme
-	const gui = new GUI();
-    addColourFolders(gui, elements);
-
+    
     function render() {
       if ( resizeRendererToDisplaySize( renderer ) ) {
         const canvas = renderer.domElement;
@@ -240,9 +246,9 @@ function drawNetwork(coords, edges, elInfo, threeD=true){
         }
         let colour;
         if (element_type == "ground"){
-            colour = ground_colour["ground"];
+            colour = groundColour["ground"];
         } else {
-            colour = contextual_colours[element_type];
+            colour = contextualColours[element_type];
         }
         const material = new THREE.MeshPhongMaterial({color: colour});
         const shape = new THREE.Mesh(geometry, material);

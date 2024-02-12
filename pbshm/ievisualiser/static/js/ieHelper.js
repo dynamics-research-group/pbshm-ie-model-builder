@@ -3,7 +3,7 @@ import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 
 import { geometryDetails } from './geometryHelper.js';
-import { addColourFolders } from './colourHelper.js';
+import { addColourFolders, makeContextColourVisible, makeMaterialColourVisible, makeGeometryColourVisible, cElements } from './colourHelper.js';
 import * as picker from './pickerHelper.js';
 
 
@@ -151,9 +151,14 @@ function plotIE(shapes) {
 	const scene = new THREE.Scene();
 	scene.background = new THREE.Color(0xf0f0f0);
 
+	// GUI for changing the colour scheme
+	const gui = new GUI();
+	addColourFolders(gui, render, "contextual");
+
 	// Some shapes are too big to easily display, so find the range
 	// of x, y and z values (for calculating FOV) and then scale them down.
 	let elements = [];  // for accessing all IEs in the model
+	// To know how big the floor needs to be
 	let minX = 0;
 	let minZ = 0;
 	let maxX = 0;
@@ -169,8 +174,18 @@ function plotIE(shapes) {
 		minZ = Math.min(minZ, shape.position.z);
 		scene.add(shape);
 		elements.push(shape);
+		if (shape.el_contextual != "ground") {
+			makeContextColourVisible(shape.el_contextual);
+			makeMaterialColourVisible(shape.el_material);
+			makeGeometryColourVisible(shape.el_geometry);
+		}
+		cElements.push(shape);
 	}
 
+
+	
+        
+    
 	// Set up the display
 	const fov = maxY;	// field of view - determines width of near and far planes
 	const aspect = 2;	// the canvas default	(300 x 150)
@@ -215,11 +230,7 @@ function plotIE(shapes) {
     //window.addEventListener('mouseout', picker.clearPickPosition);
     //window.addEventListener('mouseleave', picker.clearPickPosition);
 
-
-	// GUI for changing the colour scheme
-	const gui = new GUI();
-	addColourFolders(gui, elements);
-
+	
 
     function resizeRendererToDisplaySize( renderer ) {
         const canvas = renderer.domElement;

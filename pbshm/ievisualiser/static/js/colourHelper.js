@@ -1,17 +1,27 @@
-const ground_colour = {"ground": 0xaaaaaa};
+const groundColour = {"ground": 0xaaaaaa};
 
-const contextual_colours = {"slab":0xa96645, "column":0x58C2EB, "beam":0x7b6bb0,
+
+const builderColours = {"BoxGeometry": 0xe6194b,
+						"SphereGeometry": 0x3cb44b,
+						"CylinderGeometry": 0xffe119,
+						"ObliqueCylinderGeometry": 0xf8de7e,
+						"TrapezoidGeometry": 0x4363d8,
+						"IBeamGeometry": 0xf58231,
+						"CBeamGeometry": 0xfbceb1}
+
+
+const contextualColours = {"slab":0xa96645, "column":0x58C2EB, "beam":0x7b6bb0,
                  "block":0x783372, "cable":0x71c1fe, "wall":0x5363cc,
                  "plate":0xd1dfb9, "deck":0xe59bc1,
                  "aerofoil":0x79a9b9, "wing":0xf1c533, "fuselage":0x47620e,
-                 "tower":0x401952, "wheel":0xe7c5c7, "other":0xe3b694};
+                 "tower":0x401952, "wheel":0xe7c5c7, "other":0x63452c};
 
 
 /*  metals: red,
     ceramics: green,
     polymers: blue
     composites: purple */
-const material_colours = {"metal-ferrousAlloy":0xEE204E,
+const materialColours = {"metal-ferrousAlloy":0xEE204E,
                           "metal-ferrousAlloy-steel":0xAB274F,
                           "metal-ferrousAlloy-iron":0x7C0902,
                           "metal-aluminiumAlloy":0xFE6F5E,
@@ -29,14 +39,15 @@ const material_colours = {"metal-ferrousAlloy":0xEE204E,
                           "polymer-elastomer":0x6CB4EE,
                           "composite-particle-reinforced":0xB284BE,
                           "composite-fibre-reinforced":0x702963,
-                          "composite-structural":0x9966CC};
+                          "composite-structural":0x9966CC,
+                          "other":0x63452c};
 
 
 /* beams : blue,
    plates: purple,
    solids: red,
    shells: green */
-const geometry_colours = {"beam-rectangular": 0x00B9E8,
+const geometryColours = {"beam-rectangular": 0x00B9E8,
                           "beam-circular": 0x5D8AA8,
                           "beam-i-beam": 0x6CB4EE,
                           "beam-other": 0x0070BB,
@@ -56,58 +67,67 @@ const geometry_colours = {"beam-rectangular": 0x00B9E8,
                           "solid-translateAndScale-other": 0xC51E3A,
                           "shell-translateAndScale-cuboid": 0x004225,
                           "shell-translateAndScale-cylinder": 0xACE1AF,
-                          "shell-translateAndScale-other": 0xADFF2F};
+                          "shell-translateAndScale-other": 0xADFF2F,
+                          "other":0x63452c};
 
 
+const contextualColourKeys = Object.keys(contextualColours);
+contextualColourKeys.sort();
+const materialColourKeys = Object.keys(materialColours);
+materialColourKeys.sort();
+const geometryColourKeys = Object.keys(geometryColours);
+geometryColourKeys.sort();
 
-function addColourFolders(gui, elements) {
-    // Find out what contexts, materials and geometries are used by the elements
-    let elementContexts = new Set();
-    let elementMaterials = new Set();
-	let elementGeometries = new Set();
-    for (let i=0; i<elements.length; i++) {
-        elementContexts.add(elements[i].el_contextual);
-        elementMaterials.add(elements[i].el_material);
-        elementGeometries.add(elements[i].el_geometry);
-    }
 
+let contextualColoursFolder, materialColoursFolder, geometryColoursFolder;
+let cElements = [];
+
+
+function addColourFolders(gui, render, defaultScheme="contextual") {
+    // Find out what contexts, materials and geometries are used by the cElements
     const coloursFolder = gui.addFolder('Colours');
-    coloursFolder.add({'colour scheme':'contextual'},
-    'colour scheme', ['contextual', 'material', 'geometry']).onChange( value => {updateColourScheme(value)} );
-
-    coloursFolder.addColor(ground_colour, "ground").onChange(value => {updateGroundColour(value);});
-
-    const contextualColoursFolder = coloursFolder.addFolder('Contextual Colours');
-    for (const [key, value] of Object.entries(contextual_colours)) {
-    // Only show a colour option if there's an element that uses it
-    if (elementContexts.has(key)) {
-        contextualColoursFolder.addColor(contextual_colours, key).onChange( value => {updateColourScheme('contextual')} );;
+    let schemes;
+    if (defaultScheme == 'builder'){
+        schemes = ['builder', 'contextual', 'material', 'geometry'];
+    } else {
+        schemes = ['contextual', 'material', 'geometry'];
     }
+    coloursFolder.add({'colour scheme':defaultScheme},
+                       'colour scheme',
+                       schemes).onChange( value => {updateColourScheme(value)} );
+
+    coloursFolder.addColor(groundColour, "ground").onChange(value => {updateGroundColour(value);});
+    
+    // Initially hide all colours in the gui, and then make them visible when an element requires it
+    let i ;
+    contextualColoursFolder = coloursFolder.addFolder('Contextual Colours');
+    if (defaultScheme == 'builder'){
+        contextualColoursFolder.hide();
+    }
+    for (i=0; i<contextualColourKeys.length; i++) {
+        contextualColoursFolder.addColor(contextualColours, contextualColourKeys[i]).onChange( value => {updateColourScheme('contextual')} );;
+        contextualColoursFolder.children[i].hide();
     }
 
-    const materialColoursFolder = coloursFolder.addFolder('Material Colours');
+    materialColoursFolder = coloursFolder.addFolder('Material Colours');
     materialColoursFolder.hide();
-    for (const [key, value] of Object.entries(material_colours)) {
-    // Only show a colour option if there's an element that uses it
-    if (elementMaterials.has(key)) {
-        materialColoursFolder.addColor(material_colours, key).onChange( value => {updateColourScheme('material')} );;
-    }
+    for (i=0; i<materialColourKeys.length; i++) {
+        materialColoursFolder.addColor(materialColours, materialColourKeys[i]).onChange( value => {updateColourScheme('material')} );;
+        materialColoursFolder.children[i].hide();
     }
 
-    const geometryColoursFolder = coloursFolder.addFolder('Geometry Colours');
+    geometryColoursFolder = coloursFolder.addFolder('Geometry Colours');
     geometryColoursFolder.hide();
-    for (const [key, value] of Object.entries(geometry_colours)) {
-    // Only show a colour option if there's an element that uses it
-    if (elementGeometries.has(key)) {
-        geometryColoursFolder.addColor(geometry_colours, key).onChange( value => {updateColourScheme('geometry')} );;
-    }
+    for (i=0; i<geometryColourKeys.length; i++) {
+        geometryColoursFolder.addColor(geometryColours, geometryColourKeys[i]).onChange( value => {updateColourScheme('geometry')} );;
+        geometryColoursFolder.children[i].hide();
     }
 
 
     function updateGroundColour(value){
-        for (let i=0; i<elements.length; i++) {
-            if (elements[i].el_contextual == "ground") {
-                elements[i].material.color.setHex(value);
+        for (let i=0; i<cElements.length; i++) {
+            if (cElements[i].el_contextual == "ground") {
+                cElements[i].material.color.setHex(value);
             }
         }
     }
@@ -118,31 +138,69 @@ function addColourFolders(gui, elements) {
             contextualColoursFolder.hide();
             materialColoursFolder.show();
             geometryColoursFolder.hide();
-            for (let i=0; i<elements.length; i++) {
-                if (elements[i].el_contextual != "ground") {
-                    elements[i].material.color.setHex(material_colours[elements[i].el_material]);
+            for (let i=0; i<cElements.length; i++) {
+                if (cElements[i].el_contextual != "ground") {
+                    cElements[i].material.color.setHex(materialColours[cElements[i].el_material]);
                 }
             }
         } else if (scheme == "contextual") {
             contextualColoursFolder.show();
             materialColoursFolder.hide();
             geometryColoursFolder.hide();
-            for (let i=0; i<elements.length; i++) {
-                if (elements[i].el_contextual != "ground") {
-                    elements[i].material.color.setHex(contextual_colours[elements[i].el_contextual]);
+            for (let i=0; i<cElements.length; i++) {
+                if (cElements[i].el_contextual != "ground") {
+                    cElements[i].material.color.setHex(contextualColours[cElements[i].el_contextual]);
                 }
             }
         } else if (scheme == "geometry") {
             contextualColoursFolder.hide();
             materialColoursFolder.hide();
             geometryColoursFolder.show();
-            for (let i=0; i<elements.length; i++) {
-                if (elements[i].el_contextual != "ground") {
-                    elements[i].material.color.setHex(geometry_colours[elements[i].el_geometry]);
+            for (let i=0; i<cElements.length; i++) {
+                if (cElements[i].el_contextual != "ground") {
+                    cElements[i].material.color.setHex(geometryColours[cElements[i].el_geometry]);
+                }
+            }
+        } else if (scheme == "builder") {
+            contextualColoursFolder.hide();
+            materialColoursFolder.hide();
+            geometryColoursFolder.hide();
+            for (let i=0; i<cElements.length; i++) {
+                if (cElements[i].el_contextual != "ground") {
+                    cElements[i].material.color.setHex(builderColours[cElements[i].geometry.type]);
                 }
             }
         }
+        render();
     }
 }
 
-export {ground_colour, contextual_colours, material_colours, geometry_colours, addColourFolders};
+/* Update the list of colours to include the contextual/material/geometry colour used by a given element.
+   Called from builder.js */
+function makeContextColourVisible(context){
+    if (context != undefined) {  // context will be undefined if the element has only just been created
+        const i = contextualColourKeys.indexOf(context);
+        contextualColoursFolder.children[i].show();
+    }
+}
+
+
+function makeMaterialColourVisible(material){
+    if (material != undefined) {
+        const i = materialColourKeys.indexOf(material);
+        if (i == -1) { console.log(material)};
+        materialColoursFolder.children[i].show();
+    }
+}
+
+
+function makeGeometryColourVisible(geometry){
+    if (geometry != undefined) {
+        const i = geometryColourKeys.indexOf(geometry);
+        geometryColoursFolder.children[i].show();
+    }
+}
+
+
+export {groundColour, builderColours, contextualColours, materialColours, geometryColours, cElements,
+        addColourFolders, makeContextColourVisible, makeMaterialColourVisible, makeGeometryColourVisible};
