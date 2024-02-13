@@ -78,27 +78,29 @@ for (let i=0; i<geometryKeys.length; i++){
 // Geometry folders
 const floorParams = {'width': 1000,
 					 'depth': 1000};
-const boxParams = {'width': 50,
+const boxParams = {'length': 50,
                    'height': 50,
-				   'depth': 50};
+				   'width': 50};
 const sphereParams = {'radius': 25}
 const cylinderParams = {'radius': 25,
-   			   		    'height': 50}
-const obliqueCylinderParams = {'top_radius': 25,
-   			   		    	   'bottom_radius': 25,
-					           'height': 50,
-					           'top_skew_x': 0,
-					           'top_skew_z': 0}
-const trapezoidParams = {"leftTransY": 10,
-						 "leftTransZ": 10,
-						 "leftDimensY": 20,
-						 "leftDimensZ": 20,
-						 "rightTransY": 0,
-						 "rightTransZ": 0,
-						 "rightDimensY": 40,
-						 "rightDimensZ": 40,
-						 "width": 50}
-const beamParams = {"width": 80,
+   			   		    'length': 50}
+const obliqueCylinderParams = {'Faces left radius': 25,
+   			   		    	   'Faces right radius': 25,
+							   'Faces Left Trans. y': 0,
+							   'Faces Left Trans. z': 0,
+							   'Faces Right Trans. y': 0,
+							   'Faces Right Trans. z': 0,
+ 							   'length': 50}
+const trapezoidParams = {"Faces Left Trans. y": 10,
+						 "Faces Left Trans. z": 10,
+						 "Faces Left Height": 20,
+						 "Faces Left Width": 20,
+						 "Faces Right Trans. y": 0,
+						 "Faces Right Trans. z": 0,
+						 "Faces Right Height": 40,
+						 "Faces Right Width": 40,
+						 "length": 50}
+const beamParams = {"length": 80,
 				    "h": 40,
 				    "s": 10,
 				    "t": 10,
@@ -109,21 +111,21 @@ const beamParams = {"width": 80,
 let rollOverMesh;
 let cubeGeo, sphereGeo, cylinderGeo, obliqueCylinderGeo, trapezoidGeo, iBeamGeo, cBeamGeo;
 const rollOverMaterial = new THREE.MeshBasicMaterial( { color: 0xff0000, opacity: 0.5, transparent: true } );
-const rollOverCubeGeo = new THREE.BoxGeometry(boxParams.width, boxParams.height, boxParams.depth);
+const rollOverCubeGeo = new THREE.BoxGeometry(boxParams.length, boxParams.height, boxParams.width);
 const rollOverSphereGeo = new THREE.SphereGeometry(sphereParams.radius);
-const rollOverCylinderGeo = new THREE.CylinderGeometry(cylinderParams.radius, cylinderParams.radius, cylinderParams.height);
-const rollOverObliqueCylinderGeo = new ObliqueCylinderGeometry(obliqueCylinderParams.top_radius,
-															   obliqueCylinderParams.top_radius,
-															   obliqueCylinderParams.height,
-															   obliqueCylinderParams.top_skew_x,
-															   obliqueCylinderParams.top_skew_z);
-const rollOverTrapezoidGeo = new TrapezoidGeometry(trapezoidParams.leftTransY, trapezoidParams.leftTransZ,
-												   trapezoidParams.leftDimensY, trapezoidParams.leftDimensZ,
-												   trapezoidParams.rightTransY, trapezoidParams.rightTransZ,
-												   trapezoidParams.rightDimensY, trapezoidParams.rightDimensZ,
-												   trapezoidParams.width);
-const rollOverIBeamGeo = generateBeam("i-beam", beamParams.width, beamParams.h, beamParams.s, beamParams.t, beamParams.b);
-const rollOverCBeamGeo = generateBeam("c-beam", beamParams.width, beamParams.h, beamParams.s, beamParams.t, beamParams.b);
+const rollOverCylinderGeo = new THREE.CylinderGeometry(cylinderParams.radius, cylinderParams.radius, cylinderParams.length);
+const rollOverObliqueCylinderGeo = new ObliqueCylinderGeometry(obliqueCylinderParams['Faces left radius'],
+															   obliqueCylinderParams['Faces left radius'],
+															   obliqueCylinderParams.length,
+															   obliqueCylinderParams['Faces Right Trans. y']  - obliqueCylinderParams['Faces Left Trans. y'] ,
+															   -(obliqueCylinderParams['Faces Right Trans. z']  - obliqueCylinderParams['Faces Left Trans. z']));
+const rollOverTrapezoidGeo = new TrapezoidGeometry(trapezoidParams['Faces Left Trans. y'], trapezoidParams['Faces Left Trans. z'],
+												   trapezoidParams['Faces Left Height'], trapezoidParams['Faces Left Width'],
+												   trapezoidParams['Faces Right Trans. y'], trapezoidParams['Faces Right Trans. z'],
+												   trapezoidParams['Faces Right Height'], trapezoidParams['Faces Right Width'],
+												   trapezoidParams.length);
+const rollOverIBeamGeo = generateBeam("i-beam", beamParams.length, beamParams.h, beamParams.s, beamParams.t, beamParams.b);
+const rollOverCBeamGeo = generateBeam("c-beam", beamParams.length, beamParams.h, beamParams.s, beamParams.t, beamParams.b);
 rollOverCylinderGeo.rotateZ(Math.PI/2);
 rollOverObliqueCylinderGeo.rotateZ(Math.PI/2);
 let planeGeometry;
@@ -165,17 +167,17 @@ function init() {
 	scene.add( rollOverMesh );
 
 	// Default geometries on generation
-	cubeGeo = new THREE.BoxGeometry(boxParams.width, boxParams.height, boxParams.depth);
+	cubeGeo = new THREE.BoxGeometry(boxParams.length, boxParams.height, boxParams.width);
 	sphereGeo = new THREE.SphereGeometry(sphereParams.radius);
-	cylinderGeo = new THREE.CylinderGeometry(cylinderParams.radius, cylinderParams.radius, cylinderParams.height);
-	obliqueCylinderGeo = new ObliqueCylinderGeometry(obliqueCylinderParams.top_radius,
-													 obliqueCylinderParams.bottom_radius,
-													 obliqueCylinderParams.height,
-													 obliqueCylinderParams.top_skew_x,
-													 obliqueCylinderParams.top_skew_z);
+	cylinderGeo = new THREE.CylinderGeometry(cylinderParams.radius, cylinderParams.radius, cylinderParams.length);
+	obliqueCylinderGeo = new ObliqueCylinderGeometry(obliqueCylinderParams['Faces left radius'],
+													 obliqueCylinderParams['Faces right radius'],
+													 obliqueCylinderParams.length,
+													 obliqueCylinderParams['Faces Right Trans. y']  - obliqueCylinderParams['Faces Left Trans. y'] ,
+													 -(obliqueCylinderParams['Faces Right Trans. z']  - obliqueCylinderParams['Faces Left Trans. z']));
 	trapezoidGeo = new TrapezoidGeometry(10, 10, 20, 20, 0, 0, 40, 40, 50);
-	iBeamGeo = generateBeam("i-beam", beamParams.width, beamParams.h, beamParams.s, beamParams.t, beamParams.b);
-	cBeamGeo = generateBeam("c-beam", beamParams.width, beamParams.h, beamParams.s, beamParams.t, beamParams.b);
+	iBeamGeo = generateBeam("i-beam", beamParams.length, beamParams.h, beamParams.s, beamParams.t, beamParams.b);
+	cBeamGeo = generateBeam("c-beam", beamParams.length, beamParams.h, beamParams.s, beamParams.t, beamParams.b);
 	
 	// To detect where the user has clicked
 	raycaster = new THREE.Raycaster();
@@ -263,27 +265,31 @@ function onPointerDown( event ) {
 		} else {
 			if (currentId != undefined){
 				if (currentId == "cube"){
-					currentGeometry = new THREE.BoxGeometry(boxParams.width, boxParams.height, boxParams.depth);;
+					currentGeometry = new THREE.BoxGeometry(boxParams.length, boxParams.height, boxParams.width);;
 				} else if (currentId == "sphere"){
 					currentGeometry = new THREE.SphereGeometry(sphereParams.radius);;
 				} else if (currentId == "cylinder"){
-					currentGeometry = new THREE.CylinderGeometry(cylinderParams.radius, cylinderParams.radius, cylinderParams.height);;
+					currentGeometry = new THREE.CylinderGeometry(cylinderParams.radius, cylinderParams.radius, cylinderParams.length);;
 					// Rotate because cylinder is assumed horizontal in json but vertical in webGL
 					currentGeometry.rotateZ(Math.PI/2);
 				} else if (currentId == "obliqueCylinder"){
-					currentGeometry = new ObliqueCylinderGeometry(obliqueCylinderParams.top_radius,
-						obliqueCylinderParams.bottom_radius,
-						obliqueCylinderParams.height,
-						obliqueCylinderParams.top_skew_x,
-						obliqueCylinderParams.top_skew_z);
+					currentGeometry = new ObliqueCylinderGeometry(obliqueCylinderParams['Faces left radius'],
+						obliqueCylinderParams['Faces right radius'],
+						obliqueCylinderParams.length,
+						obliqueCylinderParams['Faces Right Trans. y']  - obliqueCylinderParams['Faces Left Trans. y'] ,
+						-(obliqueCylinderParams['Faces Right Trans. z']  - obliqueCylinderParams['Faces Left Trans. z']));
+					currentGeometry.parameters['Faces Left Trans. y'] = obliqueCylinderParams['Faces Left Trans. y']
+					currentGeometry.parameters['Faces Left Trans. z'] = obliqueCylinderParams['Faces Left Trans. z']
+					currentGeometry.parameters['Faces Right Trans. y'] = obliqueCylinderParams['Faces Right Trans. y']
+					currentGeometry.parameters['Faces Right Trans. z'] = obliqueCylinderParams['Faces Right Trans. z']
 					// Rotate because cylinder is assumed horizontal in json but vertical in webGL
 					currentGeometry.rotateZ(Math.PI/2);
 				} else if (currentId == "trapezoid"){
-					currentGeometry = new TrapezoidGeometry(10, 10, 20, 20, 0, 0, 40, 40, 50);;
+					currentGeometry = new TrapezoidGeometry(10, 10, 20, 20, 0, 0, 40, 40, 50);
 				} else if (currentId == "ibeam"){
-					currentGeometry = generateBeam("i-beam", beamParams.width, beamParams.h, beamParams.s, beamParams.t, beamParams.b);;
+					currentGeometry = generateBeam("i-beam", beamParams.length, beamParams.h, beamParams.s, beamParams.t, beamParams.b);;
 				} else if (currentId == "cbeam"){
-					currentGeometry = generateBeam("c-beam", beamParams.width, beamParams.h, beamParams.s, beamParams.t, beamParams.b);;
+					currentGeometry = generateBeam("c-beam", beamParams.length, beamParams.h, beamParams.s, beamParams.t, beamParams.b);;
 				}
 
 				// create new object
@@ -326,8 +332,10 @@ function onPointerDown( event ) {
 				obliqueCylinderFolder.children[0].setValue(currentObject.geometry.parameters.radiusTop);
 				obliqueCylinderFolder.children[1].setValue(currentObject.geometry.parameters.radiusBottom);
 				obliqueCylinderFolder.children[2].setValue(currentObject.geometry.parameters.height);
-				obliqueCylinderFolder.children[3].setValue(currentObject.geometry.parameters.topSkewX);
-				obliqueCylinderFolder.children[4].setValue(currentObject.geometry.parameters.topSkewZ);
+				obliqueCylinderFolder.children[3].setValue(currentObject.geometry.parameters['Faces Left Trans. y']);
+				obliqueCylinderFolder.children[4].setValue(currentObject.geometry.parameters['Faces Left Trans. z']);
+				obliqueCylinderFolder.children[5].setValue(currentObject.geometry.parameters['Faces Right Trans. y']);
+				obliqueCylinderFolder.children[6].setValue(currentObject.geometry.parameters['Faces Right Trans. z']);
 				currentFolder = obliqueCylinderFolder;
 				showGeometryDropdown("obliqueCylinder");
 			} else if  (geometryType == "TrapezoidGeometry"){
@@ -574,9 +582,9 @@ function showGeometryDropdown(geom){
 
 function initBoxGui(){
 	boxFolder = elementFolder.addFolder('Geometry');
-	boxFolder.add(boxParams, 'width').onChange(value => updateParameters("width", value));
+	boxFolder.add(boxParams, 'length').onChange(value => updateParameters("width", value));
 	boxFolder.add(boxParams, 'height').onChange(value => updateParameters("height", value));
-	boxFolder.add(boxParams, 'depth').onChange(value => updateParameters("depth", value));
+	boxFolder.add(boxParams, 'width').onChange(value => updateParameters("depth", value));
 	function updateParameters(changedParam, value){
 		if (currentObject.geometry.parameters[changedParam] != value){  // don't regenerate to the object if we're just updating the gui
 			const newParams = {...currentObject.geometry.parameters};
@@ -610,7 +618,7 @@ function initSphereGui(){
 function initCylinderGui(){
 	cylinderFolder = elementFolder.addFolder('Geometry');
 	cylinderFolder.add(cylinderParams, 'radius').onChange(value => updateParameters("radiusTop", value));
-	cylinderFolder.add(cylinderParams, 'height').onChange(value => updateParameters("height", value));
+	cylinderFolder.add(cylinderParams, 'length').onChange(value => updateParameters("length", value));
 	function updateParameters(changedParam, value){
 		if (currentObject.geometry.parameters[changedParam] != value){  // don't regenerate to the object if we're just updating the gui
 			const newParams = {...currentObject.geometry.parameters};
@@ -619,13 +627,13 @@ function initCylinderGui(){
 				newParams["radiusBottom"] = value;  // they must be the same
 			}
 			updateGeometry(currentObject,
-						new THREE.CylinderGeometry(newParams.radiusTop, newParams.radiusBottom, newParams.height));
+						new THREE.CylinderGeometry(newParams.radiusTop, newParams.radiusBottom, newParams.length));
 			currentObject.geometry.rotateZ(Math.PI/2);
 			render();
-			if (changedParam == "height"){
-				posParams.y = 0;
-				moveGeometryY();
-			}
+			// if (changedParam == "height"){
+			// 	posParams.y = 0;
+			// 	moveGeometryY();
+			// }
 		}
 	}
 }
@@ -633,12 +641,21 @@ function initCylinderGui(){
 
 function initObliqueCylinderGui(){
 	obliqueCylinderFolder = elementFolder.addFolder('Geometry');
-	obliqueCylinderFolder.add(obliqueCylinderParams, 'top_radius').onChange(value => updateParameters("radiusTop", value));
-	obliqueCylinderFolder.add(obliqueCylinderParams, 'bottom_radius').onChange(value => updateParameters("radiusBottom", value));
-	obliqueCylinderFolder.add(obliqueCylinderParams, 'height').onChange(value => updateParameters("height", value));
-	obliqueCylinderFolder.add(obliqueCylinderParams, 'top_skew_x').onChange(value => updateParameters("topSkewX", value));
-	obliqueCylinderFolder.add(obliqueCylinderParams, 'top_skew_z').onChange(value => updateParameters("topSkewZ", value));
+	obliqueCylinderFolder.add(obliqueCylinderParams, 'Faces left radius').onChange(value => updateParameters("radiusTop", value));
+	obliqueCylinderFolder.add(obliqueCylinderParams, 'Faces right radius').onChange(value => updateParameters("radiusBottom", value));
+	obliqueCylinderFolder.add(obliqueCylinderParams, 'length').onChange(value => updateParameters("height", value));
+	obliqueCylinderFolder.add(obliqueCylinderParams, 'Faces Left Trans. y').onChange(value => updateParameters("leftTransY", value));
+	obliqueCylinderFolder.add(obliqueCylinderParams, 'Faces Left Trans. z').onChange(value => updateParameters("leftTransZ", value));
+	obliqueCylinderFolder.add(obliqueCylinderParams, 'Faces Right Trans. y').onChange(value => updateParameters("rightTransY", value));
+	obliqueCylinderFolder.add(obliqueCylinderParams, 'Faces Right Trans. z').onChange(value => updateParameters("rightTransZ", value));
 	function updateParameters(changedParam, value){
+		if (changedParam == "leftTransY" || changedParam == "rightTransY"){
+			changedParam = "topSkewX";
+			value = obliqueCylinderParams['Faces Right Trans. y']  - obliqueCylinderParams['Faces Left Trans. y'];
+		} else if (changedParam == "leftTransZ" || changedParam == "rightTransZ"){
+			changedParam = "topSkewZ";
+			value = -(obliqueCylinderParams['Faces Right Trans. z']  - obliqueCylinderParams['Faces Left Trans. z']);
+		}
 		if (currentObject.geometry.parameters[changedParam] != value){  // don't regenerate to the object if we're just updating the gui
 			const newParams = {...currentObject.geometry.parameters};
 			newParams[changedParam] = value;
@@ -646,35 +663,41 @@ function initObliqueCylinderGui(){
 						new ObliqueCylinderGeometry(newParams.radiusTop, newParams.radiusBottom, newParams.height,
 							                        newParams.topSkewX, newParams.topSkewZ));
 			currentObject.geometry.rotateZ(Math.PI/2);
+			currentObject.geometry.parameters['Faces Left Trans. y'] = obliqueCylinderParams['Faces Left Trans. y']
+			currentObject.geometry.parameters['Faces Left Trans. z'] = obliqueCylinderParams['Faces Left Trans. z']
+			currentObject.geometry.parameters['Faces Right Trans. y'] = obliqueCylinderParams['Faces Right Trans. y']
+			currentObject.geometry.parameters['Faces Right Trans. z'] = obliqueCylinderParams['Faces Right Trans. z']
 			render();
-			if (changedParam == "height"){
-				posParams.y = 0;
-				moveGeometryY();
-			}
+			// if (changedParam == "height"){
+			// 	posParams.y = 0;
+			// 	moveGeometryY();
+			// }
 		}
 	}
 }
 
 
+
+
 function initTrapezoidGui(){
 	trapezoidFolder = elementFolder.addFolder('Geometry');
-	trapezoidFolder.add(trapezoidParams, "leftTransY").onChange(value => updateParameters("leftTransY", value));
-	trapezoidFolder.add(trapezoidParams, "leftTransZ").onChange(value => updateParameters("leftTransZ", value));
-	trapezoidFolder.add(trapezoidParams, "leftDimensY").onChange(value => updateParameters("leftDimensY", value));
-	trapezoidFolder.add(trapezoidParams, "leftDimensZ").onChange(value => updateParameters("leftDimensZ", value));
-	trapezoidFolder.add(trapezoidParams, "rightTransY").onChange(value => updateParameters("rightTransY", value));
-	trapezoidFolder.add(trapezoidParams, "rightTransZ").onChange(value => updateParameters("rightTransZ", value));
-	trapezoidFolder.add(trapezoidParams, "rightDimensY").onChange(value => updateParameters("rightDimensY", value));
-	trapezoidFolder.add(trapezoidParams, "rightDimensZ").onChange(value => updateParameters("rightDimensZ", value));
-	trapezoidFolder.add(trapezoidParams, "width").onChange(value => updateParameters("width", value));
+	trapezoidFolder.add(trapezoidParams, "Faces Left Trans. y").onChange(value => updateParameters("leftTransY", value));
+	trapezoidFolder.add(trapezoidParams, "Faces Left Trans. z").onChange(value => updateParameters("leftTransZ", value));
+	trapezoidFolder.add(trapezoidParams, "Faces Left Height").onChange(value => updateParameters("leftDimensY", value));
+	trapezoidFolder.add(trapezoidParams, "Faces Left Width").onChange(value => updateParameters("leftDimensZ", value));
+	trapezoidFolder.add(trapezoidParams, "Faces Right Trans. y").onChange(value => updateParameters("rightTransY", value));
+	trapezoidFolder.add(trapezoidParams, "Faces Right Trans. z").onChange(value => updateParameters("rightTransZ", value));
+	trapezoidFolder.add(trapezoidParams, "Faces Right Height").onChange(value => updateParameters("rightDimensY", value));
+	trapezoidFolder.add(trapezoidParams, "Faces Right Width").onChange(value => updateParameters("rightDimensZ", value));
+	trapezoidFolder.add(trapezoidParams, "length").onChange(value => updateParameters("width", value));
 	function updateParameters(changedParam, value){
 		if (currentObject.geometry.parameters[changedParam] != value){  // don't regenerate to the object if we're just updating the gui
 			const newParams = {...currentObject.geometry.parameters};
 			newParams[changedParam] = value;
 			updateGeometry(currentObject,
-							new TrapezoidGeometry(newParams.leftTransY, newParams.leftTransZ, newParams.leftDimensY, newParams.leftDimensZ,
-												newParams.rightTransY, newParams.rightTransZ, newParams.rightDimensY, newParams.rightDimensZ,
-												newParams.width));
+				new TrapezoidGeometry(newParams.leftTransY, newParams.leftTransZ, newParams.leftDimensY, newParams.leftDimensZ,
+									newParams.rightTransY, newParams.rightTransZ, newParams.rightDimensY, newParams.rightDimensZ,
+									newParams.width));
 		}
 	}
 }
@@ -682,7 +705,7 @@ function initTrapezoidGui(){
 
 function initBeamGui(){
 	beamFolder = elementFolder.addFolder('Geometry');
-	beamFolder.add(beamParams, "width").onChange(value => updateParameters("width", value));
+	beamFolder.add(beamParams, "length").onChange(value => updateParameters("width", value));
 	beamFolder.add(beamParams, "h").onChange(value => updateParameters("h", value));
 	beamFolder.add(beamParams, "s").onChange(value => updateParameters("s", value));
 	beamFolder.add(beamParams, "t").onChange(value => updateParameters("t", value));

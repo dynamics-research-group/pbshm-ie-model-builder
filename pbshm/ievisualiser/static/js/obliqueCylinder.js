@@ -55,7 +55,11 @@ class ObliqueCylinderGeometry extends THREE.BufferGeometry {
 			heightSegments: heightSegments,
 			openEnded: openEnded,
 			thetaStart: thetaStart,
-			thetaLength: thetaLength
+			thetaLength: thetaLength,
+			'Faces Left Trans. Value y': undefined,  // used for json
+			'Faces Left Trans. Value z': undefined,
+			'Faces Right Trans. Value y': undefined,
+			'Faces Right Trans. Value z': undefined,
 		};
 
 		const scope = this;
