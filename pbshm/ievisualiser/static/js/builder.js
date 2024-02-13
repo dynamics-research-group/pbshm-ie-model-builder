@@ -21,6 +21,7 @@ addColourFolders(gui, render, "builder");
 const elementFolder = gui.addFolder('Element');
 const elName = {'Name': ''}
 elementFolder.add(elName, 'Name').onChange(updateElementName);
+elementFolder.hide();
 let floorFolder, boxFolder, sphereFolder, cylinderFolder, obliqueCylinderFolder, trapezoidFolder, beamFolder, folders, currentFolder;
 
 
@@ -223,8 +224,7 @@ function init() {
 	initTrapezoidGui();
 	initBeamGui();
 	initGroundGui();  // Not added to list of folders so it is always visible
-	folders = [boxFolder, sphereFolder, cylinderFolder, obliqueCylinderFolder, trapezoidFolder,
-		       beamFolder, coordsFolder, typeFolder, materialFolder, geometryFolder];
+	folders = [boxFolder, sphereFolder, cylinderFolder, obliqueCylinderFolder, trapezoidFolder, beamFolder];
 	folders.forEach(folder => folder.hide()); // Initially hide all folders, then show only the ones we want when required
 
 }
@@ -311,8 +311,10 @@ function onPointerDown( event ) {
 				currentObject = voxel;
 				cElements.push(voxel);
 			} else {
-				// select existing object to edit
-				currentObject = intersect.object;
+				// select existing object to edit unless it's the floor
+				if (intersect.object.name != "plane") {
+					currentObject = intersect.object;
+				}
 			}
 			folders.forEach(folder => folder.hide());
 			const geometryType = currentObject.geometry.type;
@@ -376,6 +378,7 @@ function onPointerDown( event ) {
 				rotFolder.children[2].setValue(currentObject.rotation.z * (180 / Math.PI));
 				typeFolder.children[0].setValue(currentObject.el_contextual);
 				materialFolder.children[0].setValue(currentObject.el_material);
+				elementFolder.show();
 				coordsFolder.show();
 				typeFolder.show();
 				materialFolder.show();
