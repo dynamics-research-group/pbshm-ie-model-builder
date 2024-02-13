@@ -124,7 +124,8 @@ const rollOverTrapezoidGeo = new TrapezoidGeometry(trapezoidParams.leftTransY, t
 												   trapezoidParams.width);
 const rollOverIBeamGeo = generateBeam("i-beam", beamParams.width, beamParams.h, beamParams.s, beamParams.t, beamParams.b);
 const rollOverCBeamGeo = generateBeam("c-beam", beamParams.width, beamParams.h, beamParams.s, beamParams.t, beamParams.b);
-
+rollOverCylinderGeo.rotateZ(Math.PI/2);
+rollOverObliqueCylinderGeo.rotateZ(Math.PI/2);
 let planeGeometry;
 
 let currentId;  // name of the new geometry object to be added
@@ -261,6 +262,30 @@ function onPointerDown( event ) {
 			}
 		} else {
 			if (currentId != undefined){
+				if (currentId == "cube"){
+					currentGeometry = new THREE.BoxGeometry(boxParams.width, boxParams.height, boxParams.depth);;
+				} else if (currentId == "sphere"){
+					currentGeometry = new THREE.SphereGeometry(sphereParams.radius);;
+				} else if (currentId == "cylinder"){
+					currentGeometry = new THREE.CylinderGeometry(cylinderParams.radius, cylinderParams.radius, cylinderParams.height);;
+					// Rotate because cylinder is assumed horizontal in json but vertical in webGL
+					currentGeometry.rotateZ(Math.PI/2);
+				} else if (currentId == "obliqueCylinder"){
+					currentGeometry = new ObliqueCylinderGeometry(obliqueCylinderParams.top_radius,
+						obliqueCylinderParams.bottom_radius,
+						obliqueCylinderParams.height,
+						obliqueCylinderParams.top_skew_x,
+						obliqueCylinderParams.top_skew_z);
+					// Rotate because cylinder is assumed horizontal in json but vertical in webGL
+					currentGeometry.rotateZ(Math.PI/2);
+				} else if (currentId == "trapezoid"){
+					currentGeometry = new TrapezoidGeometry(10, 10, 20, 20, 0, 0, 40, 40, 50);;
+				} else if (currentId == "ibeam"){
+					currentGeometry = generateBeam("i-beam", beamParams.width, beamParams.h, beamParams.s, beamParams.t, beamParams.b);;
+				} else if (currentId == "cbeam"){
+					currentGeometry = generateBeam("c-beam", beamParams.width, beamParams.h, beamParams.s, beamParams.t, beamParams.b);;
+				}
+
 				// create new object
 				const voxel = new THREE.Mesh(currentGeometry, new THREE.MeshLambertMaterial({color: builderColours[currentGeometry.type]}));
 				voxel.position.copy( intersect.point ).add( intersect.face.normal );
@@ -396,31 +421,24 @@ function allowUncheck() {
 		rollOverMesh.geometry.dispose()
 		if (currentId == "cube"){
 			rollOverMesh.geometry = rollOverCubeGeo;
-			currentGeometry = cubeGeo;
 			currentFolder = boxFolder;
 		} else if (currentId == "sphere"){
 			rollOverMesh.geometry = rollOverSphereGeo;
-			currentGeometry = sphereGeo;
 			currentFolder = sphereFolder;
 		} else if (currentId == "cylinder"){
 			rollOverMesh.geometry = rollOverCylinderGeo;
-			currentGeometry = cylinderGeo;
 			currentFolder = cylinderFolder;	
 		} else if (currentId == "obliqueCylinder"){
 			rollOverMesh.geometry = rollOverObliqueCylinderGeo;
-			currentGeometry = obliqueCylinderGeo;
 			currentFolder = obliqueCylinderFolder;
 		} else if (currentId == "trapezoid"){
 			rollOverMesh.geometry = rollOverTrapezoidGeo;
-			currentGeometry = trapezoidGeo;
 			currentFolder = trapezoidFolder;
 		} else if (currentId == "ibeam"){
 			rollOverMesh.geometry = rollOverIBeamGeo;
-			currentGeometry = iBeamGeo;
 			currentFolder = beamFolder;
 		} else if (currentId == "cbeam"){
 			rollOverMesh.geometry = rollOverCBeamGeo;
-			currentGeometry = cBeamGeo;
 			currentFolder = beamFolder;
 		}
 		rollOverMesh.visible = true;
@@ -602,6 +620,8 @@ function initCylinderGui(){
 			}
 			updateGeometry(currentObject,
 						new THREE.CylinderGeometry(newParams.radiusTop, newParams.radiusBottom, newParams.height));
+			currentObject.geometry.rotateZ(Math.PI/2);
+			render();
 			if (changedParam == "height"){
 				posParams.y = 0;
 				moveGeometryY();
@@ -625,6 +645,8 @@ function initObliqueCylinderGui(){
 			updateGeometry(currentObject,
 						new ObliqueCylinderGeometry(newParams.radiusTop, newParams.radiusBottom, newParams.height,
 							                        newParams.topSkewX, newParams.topSkewZ));
+			currentObject.geometry.rotateZ(Math.PI/2);
+			render();
 			if (changedParam == "height"){
 				posParams.y = 0;
 				moveGeometryY();
