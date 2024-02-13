@@ -73,6 +73,7 @@ for (let i=0; i<geometryKeys.length; i++){
 	geometryFolder.add(geometry, 'Type', jsonGeometryMappings[geometryKeys[i]]).onChange(updateJsonGeometry);
 	geometryFolder.children[i].hide();
 }
+geometryFolder.hide();
 
 
 // Geometry folders
@@ -222,7 +223,8 @@ function init() {
 	initTrapezoidGui();
 	initBeamGui();
 	initGroundGui();  // Not added to list of folders so it is always visible
-	folders = [boxFolder, sphereFolder, cylinderFolder, obliqueCylinderFolder, trapezoidFolder, beamFolder, coordsFolder, typeFolder, materialFolder];
+	folders = [boxFolder, sphereFolder, cylinderFolder, obliqueCylinderFolder, trapezoidFolder,
+		       beamFolder, coordsFolder, typeFolder, materialFolder, geometryFolder];
 	folders.forEach(folder => folder.hide()); // Initially hide all folders, then show only the ones we want when required
 
 }
@@ -261,6 +263,7 @@ function onPointerDown( event ) {
 			if ( intersect.object !== plane ) {
 				scene.remove( intersect.object );
 				objects.splice( objects.indexOf( intersect.object ), 1 );
+				cElements.splice( cElements.indexOf( intersect.object ), 1 );
 			}
 		} else {
 			if (currentId != undefined){
@@ -576,12 +579,15 @@ function showGeometryDropdown(geom){
 		geometryFolder.children[i].hide();
 	}
 	// Show the desired dropdown
-	geometryFolder.children[geometryKeys.indexOf(geom)].show();
+	geometryFolder.show();
+	const idx = geometryKeys.indexOf(geom)
+	geometryFolder.children[idx].show();
+	geometryFolder.children[idx].setValue(currentObject.el_geometry);
 }
 
 
 function initBoxGui(){
-	boxFolder = elementFolder.addFolder('Geometry');
+	boxFolder = elementFolder.addFolder('Geometry Dimensions');
 	boxFolder.add(boxParams, 'length').onChange(value => updateParameters("width", value));
 	boxFolder.add(boxParams, 'height').onChange(value => updateParameters("height", value));
 	boxFolder.add(boxParams, 'width').onChange(value => updateParameters("depth", value));
@@ -601,7 +607,7 @@ function initBoxGui(){
   
 
 function initSphereGui(){
-	sphereFolder = elementFolder.addFolder('Geometry');
+	sphereFolder = elementFolder.addFolder('Geometry Dimensions');
 	sphereFolder.add(sphereParams, 'radius').onChange(updateParameters);
 	function updateParameters(){
 		if (currentObject.geometry.parameters.radius != sphereParams.radius) {
@@ -616,7 +622,7 @@ function initSphereGui(){
 
 
 function initCylinderGui(){
-	cylinderFolder = elementFolder.addFolder('Geometry');
+	cylinderFolder = elementFolder.addFolder('Geometry Dimensions');
 	cylinderFolder.add(cylinderParams, 'radius').onChange(value => updateParameters("radiusTop", value));
 	cylinderFolder.add(cylinderParams, 'length').onChange(value => updateParameters("length", value));
 	function updateParameters(changedParam, value){
@@ -640,7 +646,7 @@ function initCylinderGui(){
 
 
 function initObliqueCylinderGui(){
-	obliqueCylinderFolder = elementFolder.addFolder('Geometry');
+	obliqueCylinderFolder = elementFolder.addFolder('Geometry Dimensions');
 	obliqueCylinderFolder.add(obliqueCylinderParams, 'Faces left radius').onChange(value => updateParameters("radiusTop", value));
 	obliqueCylinderFolder.add(obliqueCylinderParams, 'Faces right radius').onChange(value => updateParameters("radiusBottom", value));
 	obliqueCylinderFolder.add(obliqueCylinderParams, 'length').onChange(value => updateParameters("height", value));
@@ -680,7 +686,7 @@ function initObliqueCylinderGui(){
 
 
 function initTrapezoidGui(){
-	trapezoidFolder = elementFolder.addFolder('Geometry');
+	trapezoidFolder = elementFolder.addFolder('Geometry Dimensions');
 	trapezoidFolder.add(trapezoidParams, "Faces Left Trans. y").onChange(value => updateParameters("leftTransY", value));
 	trapezoidFolder.add(trapezoidParams, "Faces Left Trans. z").onChange(value => updateParameters("leftTransZ", value));
 	trapezoidFolder.add(trapezoidParams, "Faces Left Height").onChange(value => updateParameters("leftDimensY", value));
@@ -704,7 +710,7 @@ function initTrapezoidGui(){
 
 
 function initBeamGui(){
-	beamFolder = elementFolder.addFolder('Geometry');
+	beamFolder = elementFolder.addFolder('Geometry Dimensions');
 	beamFolder.add(beamParams, "length").onChange(value => updateParameters("width", value));
 	beamFolder.add(beamParams, "h").onChange(value => updateParameters("h", value));
 	beamFolder.add(beamParams, "s").onChange(value => updateParameters("s", value));
