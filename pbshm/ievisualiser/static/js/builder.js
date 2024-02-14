@@ -6,23 +6,44 @@ import {TrapezoidGeometry} from './trapezoid.js'
 import {generateBeam} from './geometryHelper.js';
 import {glToJson, jsonToGl} from './translationHelper.js';
 import { builderColours, addColourFolders, contextualColours, materialColours, geometryColours,
-	     cElements, materialColourKeys, contextualColourKeys,
+	     cElements, materialColourKeys, contextualColourKeys, resetColour, resetColours,
 	     makeContextColourVisible, makeMaterialColourVisible, makeGeometryColourVisible} from './colourHelper.js';
 
 
 let camera, scene, renderer, controls;
 let plane;
-let pointer, raycaster, isShiftDown = false;
+let pointer, raycaster, isShiftDown = false, isCtrlDown = false;
 
 
 // Gui handlers
 const gui = new GUI();
 addColourFolders(gui, render, "builder");
+
+
+// Folder for defining objects between elements
+let selectedObjects = new Array(2); // Selecting objects for relationships
+let relationships = {};
+const relationFolder = gui.addFolder('Relationships');
+const elRelationship = {'Relationship': 'none',  // current relationship type selected
+                        'Orphan Colour': 0xFDEE00};  // colour of orphaned elements
+const relationshipTypes = {'free': ['none', 'perfect', 'connection', 'joint'],
+'grounded': ['none', 'perfect', 'connection', 'joint', 'boundary']};
+const showOrphans = {'Show orphans': false};
+relationFolder.add(showOrphans, 'Show orphans',).onChange(value => toggleHighlightUnrelated(value));
+relationFolder.addColor(elRelationship,'Orphan Colour');
+relationFolder.add(elRelationship, 'Relationship', relationshipTypes['free']).onChange( value => updateRelationship(value));
+relationFolder.add(elRelationship, 'Relationship', relationshipTypes['grounded']).onChange( value => updateRelationship(value));
+relationFolder.children[2].hide();
+relationFolder.children[3].hide();
+
+
+
 const elementFolder = gui.addFolder('Element');
 const elName = {'Name': ''}
 elementFolder.add(elName, 'Name').onChange(updateElementName);
 elementFolder.hide();
 let floorFolder, boxFolder, sphereFolder, cylinderFolder, obliqueCylinderFolder, trapezoidFolder, beamFolder, folders, currentFolder;
+
 
 
 // Coordinates folders
@@ -111,7 +132,6 @@ const beamParams = {"length": 80,
 
 
 let rollOverMesh;
-let cubeGeo, sphereGeo, cylinderGeo, obliqueCylinderGeo, trapezoidGeo, iBeamGeo, cBeamGeo;
 const rollOverMaterial = new THREE.MeshBasicMaterial( { color: 0xff0000, opacity: 0.5, transparent: true } );
 const rollOverCubeGeo = new THREE.BoxGeometry(boxParams.length, boxParams.height, boxParams.width);
 const rollOverSphereGeo = new THREE.SphereGeometry(sphereParams.radius);
@@ -168,19 +188,6 @@ function init() {
 	rollOverMesh.visible = false;
 	scene.add( rollOverMesh );
 
-	// Default geometries on generation
-	cubeGeo = new THREE.BoxGeometry(boxParams.length, boxParams.height, boxParams.width);
-	sphereGeo = new THREE.SphereGeometry(sphereParams.radius);
-	cylinderGeo = new THREE.CylinderGeometry(cylinderParams.radius, cylinderParams.radius, cylinderParams.length);
-	obliqueCylinderGeo = new ObliqueCylinderGeometry(obliqueCylinderParams['Faces left radius'],
-													 obliqueCylinderParams['Faces right radius'],
-													 obliqueCylinderParams.length,
-													 obliqueCylinderParams['Faces Right Trans. y']  - obliqueCylinderParams['Faces Left Trans. y'] ,
-													 -(obliqueCylinderParams['Faces Right Trans. z']  - obliqueCylinderParams['Faces Left Trans. z']));
-	trapezoidGeo = new TrapezoidGeometry(10, 10, 20, 20, 0, 0, 40, 40, 50);
-	iBeamGeo = generateBeam("i-beam", beamParams.length, beamParams.h, beamParams.s, beamParams.t, beamParams.b);
-	cBeamGeo = generateBeam("c-beam", beamParams.length, beamParams.h, beamParams.s, beamParams.t, beamParams.b);
-	
 	// To detect where the user has clicked
 	raycaster = new THREE.Raycaster();
 	pointer = new THREE.Vector2();
@@ -265,8 +272,56 @@ function onPointerDown( event ) {
 				objects.splice( objects.indexOf( intersect.object ), 1 );
 				cElements.splice( cElements.indexOf( intersect.object ), 1 );
 			}
+		} else if ( isCtrlDown ) {
+			// select object
+			elementFolder.hide();
+			if ( intersect.object !== plane ) {
+				if (selectedObjects[0] == intersect.object) {
+					// If it was already object 0, deselect it
+					resetColour(gui.children[0].children[0].getValue(), intersect.object);
+					// Move object 1 to first place
+					selectedObjects[0] = selectedObjects[1];
+					selectedObjects[1] = undefined;
+					relationFolder.hide();
+				} else if (selectedObjects[1] == intersect.object) {	
+					// If it was already object 1, deselect it
+					resetColour(gui.children[0].children[0].getValue(), intersect.object);
+					selectedObjects[1] = undefined;
+					relationFolder.hide();
+				} else {
+					// Otherwise, select it
+					intersect.object.material.color.setHex(0xFEFEFA);
+					if (selectedObjects[0] == undefined) { 
+						// Assign as object 0 if the space was free
+						selectedObjects[0] = intersect.object;
+					} else {
+						if (selectedObjects[1] != undefined) {	
+							// If two objects are already selected, deselect object 1 (i.e. reset its colour)
+							resetColour(gui.children[0].children[0].getValue(), selectedObjects[1]);
+						}
+						// Assign as object 1
+						selectedObjects[1] = intersect.object;
+						// Two elements are selected so (if they are both named) show the dropdown menu to select their relationship
+						if (selectedObjects[0].name.length > 0 && selectedObjects[1].name.length > 0) {
+							// Show the current relationship they have
+							const currentRelat = currentRelationship(selectedObjects[0].name, selectedObjects[1].name);
+							relationFolder.show();
+							if (selectedObjects[0].el_contextual == "ground" || selectedObjects[1].el_contextual == "ground"){
+								relationFolder.children[2].hide();  // hide 'free' relationships folder
+								relationFolder.children[3].show();  // show 'grounded' relationships folder
+								relationFolder.children[3].setValue(currentRelat);
+							} else {
+								relationFolder.children[2].show();  // show 'free'
+								relationFolder.children[2].setValue(currentRelat);
+								relationFolder.children[3].hide();  // hide 'grounded'
+							}
+						}
+					}
+				}
+			}
 		} else {
 			if (currentId != undefined){
+				// Add new object
 				if (currentId == "cube"){
 					currentGeometry = new THREE.BoxGeometry(boxParams.length, boxParams.height, boxParams.width);;
 				} else if (currentId == "sphere"){
@@ -306,6 +361,7 @@ function onPointerDown( event ) {
 				voxel.currentAngleZ = 0;
 				voxel.contextual_type = undefined;
 				voxel.material_type = undefined;
+				voxel.relationshipCount = 0;
 				scene.add( voxel );
 				objects.push( voxel );
 				currentObject = voxel;
@@ -392,9 +448,8 @@ function onPointerDown( event ) {
 
 function onDocumentKeyDown( event ) {
 	switch ( event.keyCode ) {
-		case 16: // shift
-			isShiftDown = true;
-			break;
+		case 16: isShiftDown = true; break;
+		case 17: isCtrlDown = true; break;
 		// case 37:  // left
 		// 	currentFolder.children[0].setValue(currentObject.position.x - 10);
 		// 	break;
@@ -421,6 +476,7 @@ function onDocumentKeyDown( event ) {
 function onDocumentKeyUp( event ) {
 	switch ( event.keyCode ) {
 		case 16: isShiftDown = false; break;
+		case 17: isCtrlDown = false; break;
 	}
 }
 
@@ -740,6 +796,72 @@ function initBeamGui(){
 	}
 }
 
+/* Functions dealing with relationships between elements */
+
+function updateRelationship(value){
+	// Check if a relationship is already defined
+	const name1 = selectedObjects[0].name;
+	const name2 = selectedObjects[1].name;
+	let pair;
+	if (relationships[[name1, name2]] != undefined){
+		pair = [name1, name2];
+	} else if (relationships[[name2, name1]] != undefined){
+		pair = [name2, name1];
+	}
+
+	if (pair != undefined) {
+		// If they're already paired then update the relationship (or remove it if 'none' has been selected)
+		if (value == 'none'){
+			delete relationships[pair];
+			selectedObjects[0].relationshipCount--;
+			selectedObjects[1].relationshipCount--;
+		} else {
+			relationships[pair] = value;
+		}
+	} else {
+		// Add the new relationship
+		relationships[[name1, name2]] = value;
+		selectedObjects[0].relationshipCount++;
+		selectedObjects[1].relationshipCount++;
+	}
+}
+
+
+function toggleHighlightUnrelated(value){
+	if (value == true){
+		// Deselect selected objects to avoid confusion
+		try {
+			resetColour(gui.children[0].children[0].getValue(), selectedObjects[0]);
+			selectedObjects[0] = undefined;
+		} catch (TypeError) {;}
+		try {
+			resetColour(gui.children[0].children[0].getValue(), selectedObjects[1]);
+			selectedObjects[1] = undefined;
+		} catch (TypeError) {;}
+		relationFolder.children[2].hide();
+		relationFolder.children[3].hide();
+		
+		// Highlight orphaned elements
+		for (let el of cElements){
+			if (el.relationshipCount == 0){
+				el.material.color.setHex(elRelationship['Orphan Colour']);
+			}
+		}
+	} else {
+		resetColours(gui.children[0].children[0].getValue());
+	}
+	render();
+}
+
+
+function currentRelationship(name1, name2){
+	if (relationships[[name1, name2]] != undefined){
+		return relationships[[name1, name2]];
+	} else if (relationships[[name2, name1]] != undefined){
+		return relationships[[name2, name1]];
+	}
+	return 'none';
+}
 
 
 function render() {

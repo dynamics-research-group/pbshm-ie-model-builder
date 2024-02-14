@@ -201,6 +201,30 @@ function makeGeometryColourVisible(geometry){
     }
 }
 
+/* Of a single element */
+function resetColour(scheme, element){
+    if (element.el_contextual == "ground") {
+        element.material.color.setHex(groundColour["ground"]);
+    } else {
+        if (scheme == 'builder'){
+            element.material.color.setHex(builderColours[element.geometry.type]);
+        } else if (scheme == 'material') {
+            element.material.color.setHex(materialColours[element.el_material]);
+        } else if (scheme == 'geometry') {
+            element.material.color.setHex(geometryColours[element.el_geometry]);
+        } else if (scheme == 'contextual') {
+            element.material.color.setHex(contextualColours[element.el_contextual]);
+        }
+    }
+}
+
+/* Of all elements */
+function resetColours(scheme){
+    for (let el of cElements){
+        resetColour(scheme, el);
+    }
+}
+
 
 export {groundColour, builderColours, contextualColours, materialColours, geometryColours, cElements, materialColourKeys, contextualColourKeys,
-        addColourFolders, makeContextColourVisible, makeMaterialColourVisible, makeGeometryColourVisible};
+        addColourFolders, makeContextColourVisible, makeMaterialColourVisible, makeGeometryColourVisible, resetColour, resetColours};
