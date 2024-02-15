@@ -3,8 +3,8 @@ const groundColour = {"ground": 0xaaaaaa};
 
 const builderColours = {"BoxGeometry": 0xe6194b,
 						"SphereGeometry": 0x3cb44b,
-						"CylinderGeometry": 0xffe119,
-						"ObliqueCylinderGeometry": 0xf8de7e,
+						"CylinderGeometry": 0xE0B0FF,
+						"ObliqueCylinderGeometry": 0x7FFFD4,
 						"TrapezoidGeometry": 0x4363d8,
 						"IBeamGeometry": 0xf58231,
 						"CBeamGeometry": 0xfbceb1}
