@@ -28,13 +28,14 @@ const elRelationship = {'Relationship': 'none',  // current relationship type se
                         'Orphan Colour': 0xFDEE00};  // colour of orphaned elements
 const relationshipTypes = {'free': ['none', 'perfect', 'connection', 'joint'],
 'grounded': ['none', 'perfect', 'connection', 'joint', 'boundary']};
-const showOrphans = {'Show orphans': false};
-relationFolder.add(showOrphans, 'Show orphans',).onChange(value => toggleHighlightUnrelated(value));
+const showElements = {'Show orphans': false, 'Hide connected': false};
+relationFolder.add(showElements, 'Show orphans',).onChange(value => toggleHighlightUnrelated(value));
 relationFolder.addColor(elRelationship,'Orphan Colour');
+relationFolder.add(showElements, 'Hide connected',).onChange(value => toggleHideConnected(value));
 relationFolder.add(elRelationship, 'Relationship', relationshipTypes['free']).onChange( value => updateRelationship(value));
 relationFolder.add(elRelationship, 'Relationship', relationshipTypes['grounded']).onChange( value => updateRelationship(value));
-relationFolder.children[2].hide();
 relationFolder.children[3].hide();
+relationFolder.children[4].hide();
 
 
 
@@ -282,12 +283,10 @@ function onPointerDown( event ) {
 					// Move object 1 to first place
 					selectedObjects[0] = selectedObjects[1];
 					selectedObjects[1] = undefined;
-					relationFolder.hide();
 				} else if (selectedObjects[1] == intersect.object) {	
 					// If it was already object 1, deselect it
 					resetColour(gui.children[0].children[0].getValue(), intersect.object);
 					selectedObjects[1] = undefined;
-					relationFolder.hide();
 				} else {
 					// Otherwise, select it
 					intersect.object.material.color.setHex(0xFEFEFA);
@@ -307,13 +306,13 @@ function onPointerDown( event ) {
 							const currentRelat = currentRelationship(selectedObjects[0].name, selectedObjects[1].name);
 							relationFolder.show();
 							if (selectedObjects[0].el_contextual == "ground" || selectedObjects[1].el_contextual == "ground"){
-								relationFolder.children[2].hide();  // hide 'free' relationships folder
-								relationFolder.children[3].show();  // show 'grounded' relationships folder
-								relationFolder.children[3].setValue(currentRelat);
+								relationFolder.children[3].hide();  // hide 'free' relationships folder
+								relationFolder.children[4].show();  // show 'grounded' relationships folder
+								relationFolder.children[4].setValue(currentRelat);
 							} else {
-								relationFolder.children[2].show();  // show 'free'
-								relationFolder.children[2].setValue(currentRelat);
-								relationFolder.children[3].hide();  // hide 'grounded'
+								relationFolder.children[3].show();  // show 'free'
+								relationFolder.children[3].setValue(currentRelat);
+								relationFolder.children[4].hide();  // hide 'grounded'
 							}
 						}
 					}
@@ -838,8 +837,8 @@ function toggleHighlightUnrelated(value){
 			resetColour(gui.children[0].children[0].getValue(), selectedObjects[1]);
 			selectedObjects[1] = undefined;
 		} catch (TypeError) {;}
-		relationFolder.children[2].hide();
 		relationFolder.children[3].hide();
+		relationFolder.children[4].hide();
 		
 		// Highlight orphaned elements
 		for (let el of cElements){
@@ -861,6 +860,22 @@ function currentRelationship(name1, name2){
 		return relationships[[name2, name1]];
 	}
 	return 'none';
+}
+
+
+function toggleHideConnected(value){
+	if (value == true){
+		for (let el of cElements){
+			if (el.relationshipCount > 0){
+				el.visible = false;
+			}
+		}
+	} else {
+		for (let el of cElements){
+			el.visible = true;
+		}
+	}
+	render();
 }
 
 
