@@ -1,4 +1,6 @@
-const groundColour = {"ground": 0xaaaaaa};
+const otherColours = {"ground": 0x5e5c64,
+                      "Orphans": 0xFDEE00,
+                      "Selected element": 0xFEFEFA};
 
 
 const builderColours = {"BoxGeometry": 0xe6194b,
@@ -96,7 +98,7 @@ function addColourFolders(gui, render, defaultScheme="contextual") {
                        'colour scheme',
                        schemes).onChange( value => {updateColourScheme(value)} );
 
-    coloursFolder.addColor(groundColour, "ground").onChange(value => {updateGroundColour(value);});
+    coloursFolder.addColor(otherColours, "ground").onChange(value => {updateGroundColour(value);});
     
     // Initially hide all colours in the gui, and then make them visible when an element requires it
     let i ;
@@ -130,6 +132,7 @@ function addColourFolders(gui, render, defaultScheme="contextual") {
                 cElements[i].material.color.setHex(value);
             }
         }
+        render();
     }
 
 
@@ -139,7 +142,9 @@ function addColourFolders(gui, render, defaultScheme="contextual") {
             materialColoursFolder.show();
             geometryColoursFolder.hide();
             for (let i=0; i<cElements.length; i++) {
-                if (cElements[i].el_contextual != "ground") {
+                if (cElements[i].el_contextual != "ground"
+                        && cElements[i].material.color.getHex() != otherColours['Orphans']
+                        && cElements[i].material.color.getHex() != otherColours['Selected element']) {
                     cElements[i].material.color.setHex(materialColours[cElements[i].el_material]);
                 }
             }
@@ -148,7 +153,9 @@ function addColourFolders(gui, render, defaultScheme="contextual") {
             materialColoursFolder.hide();
             geometryColoursFolder.hide();
             for (let i=0; i<cElements.length; i++) {
-                if (cElements[i].el_contextual != "ground") {
+                if (cElements[i].el_contextual != "ground"
+                        && cElements[i].material.color.getHex() != otherColours['Orphans']
+                        && cElements[i].material.color.getHex() != otherColours['Selected element']) {
                     cElements[i].material.color.setHex(contextualColours[cElements[i].el_contextual]);
                 }
             }
@@ -157,7 +164,9 @@ function addColourFolders(gui, render, defaultScheme="contextual") {
             materialColoursFolder.hide();
             geometryColoursFolder.show();
             for (let i=0; i<cElements.length; i++) {
-                if (cElements[i].el_contextual != "ground") {
+                if (cElements[i].el_contextual != "ground"
+                        && cElements[i].material.color.getHex() != otherColours['Orphans']
+                        && cElements[i].material.color.getHex() != otherColours['Selected element']) {
                     cElements[i].material.color.setHex(geometryColours[cElements[i].el_geometry]);
                 }
             }
@@ -166,7 +175,9 @@ function addColourFolders(gui, render, defaultScheme="contextual") {
             materialColoursFolder.hide();
             geometryColoursFolder.hide();
             for (let i=0; i<cElements.length; i++) {
-                if (cElements[i].el_contextual != "ground") {
+                if (cElements[i].el_contextual != "ground"
+                        && cElements[i].material.color.getHex() != otherColours['Orphans']
+                        && cElements[i].material.color.getHex() != otherColours['Selected element']) {
                     cElements[i].material.color.setHex(builderColours[cElements[i].geometry.type]);
                 }
             }
@@ -204,7 +215,7 @@ function makeGeometryColourVisible(geometry){
 /* Of a single element */
 function resetColour(scheme, element){
     if (element.el_contextual == "ground") {
-        element.material.color.setHex(groundColour["ground"]);
+        element.material.color.setHex(otherColours["ground"]);
     } else {
         if (scheme == 'builder'){
             element.material.color.setHex(builderColours[element.geometry.type]);
@@ -226,5 +237,5 @@ function resetColours(scheme){
 }
 
 
-export {groundColour, builderColours, contextualColours, materialColours, geometryColours, cElements, materialColourKeys, contextualColourKeys,
+export {otherColours, builderColours, contextualColours, materialColours, geometryColours, cElements, materialColourKeys, contextualColourKeys,
         addColourFolders, makeContextColourVisible, makeMaterialColourVisible, makeGeometryColourVisible, resetColour, resetColours};

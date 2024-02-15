@@ -7,7 +7,7 @@ import {generateBeam} from './geometryHelper.js';
 import {glToJson, jsonToGl} from './translationHelper.js';
 import { builderColours, addColourFolders, contextualColours, materialColours, geometryColours,
 	     cElements, materialColourKeys, contextualColourKeys, resetColour, resetColours,
-	     makeContextColourVisible, makeMaterialColourVisible, makeGeometryColourVisible} from './colourHelper.js';
+	     makeContextColourVisible, makeMaterialColourVisible, makeGeometryColourVisible, otherColours} from './colourHelper.js';
 
 
 let camera, scene, renderer, controls;
@@ -24,13 +24,12 @@ addColourFolders(gui, render, "builder");
 let selectedObjects = new Array(2); // Selecting objects for relationships
 let relationships = {};
 const relationFolder = gui.addFolder('Relationships');
-const elRelationship = {'Relationship': 'none',  // current relationship type selected
-                        'Orphan Colour': 0xFDEE00};  // colour of orphaned elements
+const elRelationship = {'Relationship': 'none'}  // current relationship type selected
 const relationshipTypes = {'free': ['none', 'perfect', 'connection', 'joint'],
 'grounded': ['none', 'perfect', 'connection', 'joint', 'boundary']};
 const showElements = {'Show orphans': false, 'Hide connected': false};
 relationFolder.add(showElements, 'Show orphans',).onChange(value => toggleHighlightUnrelated(value));
-relationFolder.addColor(elRelationship,'Orphan Colour');
+relationFolder.addColor(otherColours, 'Orphans');
 relationFolder.add(showElements, 'Hide connected',).onChange(value => toggleHideConnected(value));
 relationFolder.add(elRelationship, 'Relationship', relationshipTypes['free']).onChange( value => updateRelationship(value));
 relationFolder.add(elRelationship, 'Relationship', relationshipTypes['grounded']).onChange( value => updateRelationship(value));
@@ -40,8 +39,9 @@ relationFolder.children[4].hide();
 
 
 const elementFolder = gui.addFolder('Element');
-const elName = {'Name': ''}
-elementFolder.add(elName, 'Name').onChange(updateElementName);
+const elInfo = {'Name': '', 'Is ground': false}
+elementFolder.add(elInfo, 'Name').onChange(updateElementName);
+elementFolder.add(elInfo, 'Is ground',).onChange(value => toggleGround(value));
 elementFolder.hide();
 let floorFolder, boxFolder, sphereFolder, cylinderFolder, obliqueCylinderFolder, trapezoidFolder, beamFolder, folders, currentFolder;
 
@@ -72,8 +72,8 @@ materialFolder.add(material, 'Type', materialColourKeys).onChange(updateMaterial
 
 // Contextual information
 const context = {'Type': 'other'};
-const typeFolder = elementFolder.addFolder('Contextual');
-typeFolder.add(context, 'Type', contextualColourKeys).onChange(updateContext);
+const contextualFolder = elementFolder.addFolder('Contextual');
+contextualFolder.add(context, 'Type', contextualColourKeys).onChange(updateContext);
 
 
 // Geometry information
@@ -283,13 +283,17 @@ function onPointerDown( event ) {
 					// Move object 1 to first place
 					selectedObjects[0] = selectedObjects[1];
 					selectedObjects[1] = undefined;
+					relationFolder.children[3].hide();
+					relationFolder.children[4].hide();
 				} else if (selectedObjects[1] == intersect.object) {	
 					// If it was already object 1, deselect it
 					resetColour(gui.children[0].children[0].getValue(), intersect.object);
 					selectedObjects[1] = undefined;
+					relationFolder.children[3].hide();
+					relationFolder.children[4].hide();
 				} else {
 					// Otherwise, select it
-					intersect.object.material.color.setHex(0xFEFEFA);
+					intersect.object.material.color.setHex(otherColours['Selected element']);
 					if (selectedObjects[0] == undefined) { 
 						// Assign as object 0 if the space was free
 						selectedObjects[0] = intersect.object;
@@ -431,13 +435,18 @@ function onPointerDown( event ) {
 				rotFolder.children[0].setValue(currentObject.rotation.x * (180 / Math.PI));
 				rotFolder.children[1].setValue(currentObject.rotation.y * (180 / Math.PI));
 				rotFolder.children[2].setValue(currentObject.rotation.z * (180 / Math.PI));
-				typeFolder.children[0].setValue(currentObject.el_contextual);
 				materialFolder.children[0].setValue(currentObject.el_material);
-				elementFolder.show();
-				coordsFolder.show();
-				typeFolder.show();
-				materialFolder.show();
-				currentFolder.show();
+				if (currentObject.el_contextual == 'ground'){
+					elementFolder.children[1].setValue(true);
+				} else {
+					contextualFolder.children[0].setValue(currentObject.el_contextual);
+					elementFolder.show();
+					coordsFolder.show();
+					contextualFolder.show();
+					materialFolder.show();
+					currentFolder.show();
+					elementFolder.children[1].setValue(false);
+				}
 			}
 		}
 	}
@@ -537,7 +546,49 @@ function initGroundGui(){
 
 
 function updateElementName(){
-	currentObject.name = elName.Name;
+	currentObject.name = elInfo.Name;
+}
+
+
+function toggleGround(value){
+	if (value == true){
+		currentObject.el_contextual = 'ground';
+		coordsFolder.hide();
+		materialFolder.hide();
+		contextualFolder.hide();
+		geometryFolder.hide();
+		folders.forEach(folder => folder.hide());  // hide all geometry dimension folders
+		currentObject.material.color.setHex(otherColours.ground);
+	} else {
+		if (currentObject.el_contextual == 'ground') {
+			// If it was ground then update it's context
+			// This if-statement is needed because this function is also called for maintaining non-ground status.
+			currentObject.el_contextual = undefined;
+		}
+		coordsFolder.show();
+		materialFolder.show();
+		contextualFolder.show();
+		geometryFolder.show();
+		if (currentObject.geometry.type == "BoxGeometry"){
+			boxFolder.show();
+		} else if (currentObject.geometry.type == "SphereGeometry"){
+			sphereFolder.show();
+		} else if (currentObject.geometry.type == "CylinderGeometry"){
+			cylinderFolder.show();
+		} else if (currentObject.geometry.type == "ObliqueCylinderGeometry"){
+			obliqueCylinderFolder.show();
+		} else if  (currentObject.geometry.type == "TrapezoidGeometry"){
+			trapezoidFolder.show();
+		} else if (currentObject.geometry.type == "IBeamGeometry" || geometry.type == "CBeamGeometry"){
+			beamFolder.show();
+		}
+		if (currentObject.material.color.getHex() != otherColours['Orphans']
+				&& currentObject.material.color.getHex() != otherColours['Selected element']) {
+			// Don't change the colour if it's currently being highlighted as an orphan or selected element
+			resetColour(gui.children[0].children[0].getValue(), currentObject);
+		}
+	}
+	render();
 }
 
 
@@ -605,7 +656,9 @@ function rotateGeometryZ(){
 function updateContext(){
 	currentObject.el_contextual = context.Type;
 	makeContextColourVisible(context.Type);
-	if (gui.children[0].children[0].getValue() == "contextual") {
+	if (gui.children[0].children[0].getValue() == "contextual"
+			&& currentObject.material.color.getHex() != otherColours['Orphans']
+			&& currentObject.material.color.getHex() != otherColours['Selected element']) {
 		currentObject.material.color.setHex(contextualColours[currentObject.el_contextual]);
 	}
 	render();
@@ -615,7 +668,9 @@ function updateContext(){
 function updateMaterial(){
 	currentObject.el_material = material.Type;
 	makeMaterialColourVisible(material.Type);
-	if (gui.children[0].children[0].getValue() == "material") {
+	if (gui.children[0].children[0].getValue() == "material"
+			&& currentObject.material.color.getHex() != otherColours['Orphans']
+			&& currentObject.material.color.getHex() != otherColours['Selected element']) {
 		currentObject.material.color.setHex(materialColours[currentObject.el_material]);
 	}
 	render();
@@ -625,7 +680,9 @@ function updateMaterial(){
 function updateJsonGeometry(){
 	currentObject.el_geometry = geometry.Type;
 	makeGeometryColourVisible(geometry.Type);
-	if (gui.children[0].children[0].getValue() == "geometry") {
+	if (gui.children[0].children[0].getValue() == "geometry"
+			&& currentObject.material.color.getHex() != otherColours['Orphans']
+			&& currentObject.material.color.getHex() != otherColours['Selected element']) {
 		currentObject.material.color.setHex(geometryColours[currentObject.el_geometry]);
 	}
 	render();
@@ -843,7 +900,7 @@ function toggleHighlightUnrelated(value){
 		// Highlight orphaned elements
 		for (let el of cElements){
 			if (el.relationshipCount == 0){
-				el.material.color.setHex(elRelationship['Orphan Colour']);
+				el.material.color.setHex(otherColours['Orphans']);
 			}
 		}
 	} else {

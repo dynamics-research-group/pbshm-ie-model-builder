@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 
-import { groundColour, contextualColours } from './colourHelper.js';
+import { otherColours, contextualColours } from './colourHelper.js';
 import { TrapezoidGeometry } from './trapezoid.js';
 import {ObliqueCylinderGeometry} from './obliqueCylinder.js'
 
@@ -103,7 +103,7 @@ function geometryDetails(element, scaleFactor=100){
     }
     let colour;
     if (element["element_type"] == "ground"){
-        colour = groundColour;
+        colour = otherColours;
     } else {
         colour = contextualColours[element["element_type"]];
     }
