@@ -6,7 +6,7 @@ import { Line2 } from 'three/addons/lines/Line2.js';
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 
 import * as picker from './pickerHelper.js';
-import { groundColour, contextualColours, addColourFolders, cElements,
+import { otherColours, contextualColours, addColourFolders, cElements,
          makeContextColourVisible, makeMaterialColourVisible, makeGeometryColourVisible } from './colourHelper.js';
 
 
@@ -246,7 +246,7 @@ function drawNetwork(coords, edges, elInfo, threeD=true){
         }
         let colour;
         if (element_type == "ground"){
-            colour = groundColour["ground"];
+            colour = otherColours["ground"];
         } else {
             colour = contextualColours[element_type];
         }
