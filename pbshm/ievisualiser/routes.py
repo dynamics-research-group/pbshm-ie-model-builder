@@ -30,7 +30,7 @@ def list_models():
             "relationships": len(document["models"]["irreducibleElement"]["relationships"]) if "models" in document and "irreducibleElement" in document["models"] and "relationships" in document["models"]["irreducibleElement"] else 0
         })
     # Render
-    return render_template("list-models.html", models=models)
+    return render_template("available-models.html", models=models)
 
 # View Route
 @bp.route("/model/<id>/view")
