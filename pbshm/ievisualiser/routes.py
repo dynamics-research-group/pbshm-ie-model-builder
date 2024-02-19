@@ -1,8 +1,9 @@
-from flask import Blueprint, render_template, jsonify
-from pbshm.authentication.authentication import authenticate_request
-from pbshm.pathfinder.pathfinder import nanoseconds_since_epoch_to_datetime
-from pbshm.db import structure_collection
 from bson.objectid import ObjectId
+from flask import Blueprint, render_template, jsonify
+
+from pbshm.authentication import authenticate_request
+from pbshm.db import default_collection
+from pbshm.timekeeper import nanoseconds_since_epoch_to_datetime
 
 # Create the tools blueprint
 bp = Blueprint(
@@ -18,7 +19,7 @@ bp = Blueprint(
 def list_models():
     # Load Models
     models = []
-    for document in structure_collection().find({"models":{"$exists":True}}):
+    for document in default_collection().find({"models":{"$exists":True}}):
         models.append({
             "id": document["_id"],
             "name": document["name"],
@@ -29,7 +30,7 @@ def list_models():
             "relationships": len(document["models"]["irreducibleElement"]["relationships"]) if "models" in document and "irreducibleElement" in document["models"] and "relationships" in document["models"]["irreducibleElement"] else 0
         })
     # Render
-    return render_template("list-models.html", models=models)
+    return render_template("available-models.html", models=models)
 
 # View Route
 @bp.route("/model/<id>/view")
@@ -37,7 +38,7 @@ def list_models():
 def view_model(id):
     # Load Model
     models = []
-    for document in structure_collection().aggregate([
+    for document in default_collection().aggregate([
         {"$match":{"_id":ObjectId(id)}},
         {"$limit":1},
         {"$project":{

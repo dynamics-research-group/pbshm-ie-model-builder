@@ -1,0 +1,5 @@
+recursive-include pbshm *.html
+recursive-include pbshm *.css
+recursive-include pbshm *.js
+recursive-include pbshm *.png
+exclude pbshm/__init__.py
