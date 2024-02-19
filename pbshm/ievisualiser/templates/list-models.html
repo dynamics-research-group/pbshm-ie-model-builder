@@ -29,6 +29,9 @@
                     <a href="{{ url_for('ie-visualiser.explore_model', id=model['id']) }}" class="btn btn-outline-info">
                         View
                     </a>
+                    <a href="{{ url_for('ie-visualiser.build_model', id=model['id']) }}" class="btn btn-outline-info">
+                        Edit
+                    </a>
                 </td>
             </tr>
         {% endfor %}

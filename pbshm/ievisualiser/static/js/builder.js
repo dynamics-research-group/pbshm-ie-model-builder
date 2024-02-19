@@ -1,6 +1,9 @@
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+
+
+import { plotElements } from './ieHelper.js';
 import {ObliqueCylinderGeometry} from './obliqueCylinder.js';
 import {TrapezoidGeometry} from './trapezoid.js'
 import {generateBeam} from './geometryHelper.js';
@@ -10,8 +13,9 @@ import { builderColours, addColourFolders, contextualColours, materialColours, g
 	     makeContextColourVisible, makeMaterialColourVisible, makeGeometryColourVisible, otherColours} from './colourHelper.js';
 
 
+const canvas = document.querySelector('#c');
 let camera, scene, renderer, controls;
-let plane;
+let floor;
 let pointer, raycaster, isShiftDown = false, isCtrlDown = false;
 
 
@@ -100,35 +104,35 @@ geometryFolder.hide();
 
 
 // Geometry folders
-const floorParams = {'width': 1000,
-					 'depth': 1000};
-const boxParams = {'length': 50,
-                   'height': 50,
-				   'width': 50};
-const sphereParams = {'radius': 25}
-const cylinderParams = {'radius': 25,
-   			   		    'length': 50}
-const obliqueCylinderParams = {'Faces left radius': 25,
-   			   		    	   'Faces right radius': 25,
+const floorParams = {'width': 300,
+					 'depth': 300};
+const boxParams = {'length': 5,
+                   'height': 5,
+				   'width': 5};
+const sphereParams = {'radius': 3}
+const cylinderParams = {'radius': 3,
+   			   		    'length': 5}
+const obliqueCylinderParams = {'Faces left radius': 3,
+   			   		    	   'Faces right radius': 3,
 							   'Faces Left Trans. y': 0,
 							   'Faces Left Trans. z': 0,
 							   'Faces Right Trans. y': 0,
 							   'Faces Right Trans. z': 0,
- 							   'length': 50}
-const trapezoidParams = {"Faces Left Trans. y": 10,
-						 "Faces Left Trans. z": 10,
-						 "Faces Left Height": 20,
-						 "Faces Left Width": 20,
+ 							   'length': 5}
+const trapezoidParams = {"Faces Left Trans. y": 3,
+						 "Faces Left Trans. z": 3,
+						 "Faces Left Height": 2,
+						 "Faces Left Width": 2,
 						 "Faces Right Trans. y": 0,
 						 "Faces Right Trans. z": 0,
-						 "Faces Right Height": 40,
-						 "Faces Right Width": 40,
-						 "length": 50}
-const beamParams = {"length": 80,
-				    "h": 40,
-				    "s": 10,
-				    "t": 10,
-				    "b": 30}
+						 "Faces Right Height": 4,
+						 "Faces Right Width": 4,
+						 "length": 5}
+const beamParams = {"length": 8,
+				    "h": 4,
+				    "s": 1,
+				    "t": 1,
+				    "b": 3}
 
 
 
@@ -159,23 +163,10 @@ let currentObject;  // specific existing object to be edited
 const objects = [];  // list of all objects in the scene
 
 
-init();
-render();
-
-
-function init() {
-
+function loadBlankBuilder(){
 	camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 10000 );
-	camera.position.set( 0, 500, 1300 );
+	camera.position.set( 0, 100, 300 );
 	camera.lookAt( 0, 0, 0 );
-
-	scene = new THREE.Scene();
-	scene.background = new THREE.Color( 0xf0f0f0 );
-
-	renderer = new THREE.WebGLRenderer( { antialias: true } );
-	renderer.setPixelRatio( window.devicePixelRatio );
-	renderer.setSize( window.innerWidth, window.innerHeight );
-	document.body.appendChild( renderer.domElement );
 
 	// Give the user the ability to control the camera
 	controls = new OrbitControls(camera, renderer.domElement);
@@ -183,6 +174,64 @@ function init() {
 	// Only render when the user moves the camera
 	controls.addEventListener("change", () => renderer.render(scene, camera));
 	controls.update();
+
+	// Draw the floor
+	planeGeometry = new THREE.PlaneGeometry(floorParams.width, floorParams.depth );
+	planeGeometry.rotateX( - Math.PI / 2 );
+	floor = new THREE.Mesh( planeGeometry, new THREE.MeshBasicMaterial( { visible: true } ) );
+	floor.name = "plane";
+	scene.add( floor );
+	objects.push( floor );
+
+	// Lights
+	const ambientLight = new THREE.AmbientLight( 0x606060, 3 );
+	scene.add( ambientLight );
+
+	const directionalLight = new THREE.DirectionalLight( 0xffffff, 3 );
+	directionalLight.position.set( 1, 0.75, 0.5 ).normalize();
+	scene.add( directionalLight );
+
+}
+
+
+function buildModel(shapes=undefined) {
+	scene = new THREE.Scene();
+	scene.background = new THREE.Color( 0xf0f0f0 );
+	
+	renderer = new THREE.WebGLRenderer( { antialias: true }, canvas );
+	renderer.setPixelRatio( window.devicePixelRatio );
+	renderer.setSize( window.innerWidth, window.innerHeight );
+	document.body.appendChild( renderer.domElement );
+		
+	let info;
+	if (shapes == undefined) {
+		loadBlankBuilder();
+	} else {
+		info = plotElements(renderer.domElement, scene, shapes);
+		camera = info.camera
+		for (let e of info.elements) {
+			cElements.push(e);
+			objects.push(e)
+			e.currentAngleX = 0;
+			e.currentAngleY = 0;
+			e.currentAngleZ = 0;
+			if (e.el_contextual != "ground") {
+				makeContextColourVisible(e.el_contextual);
+				makeMaterialColourVisible(e.el_material);
+				makeGeometryColourVisible(e.el_geometry);
+			}
+		}
+		resetColours(gui.children[0].children[0].getValue());
+		controls = info.controls;
+		floor = info.floor;
+		objects.push(floor);
+	}
+
+
+		// Only render when the user moves the camera
+		controls.addEventListener("change", () => renderer.render(scene, camera));
+		controls.update();
+	
 	
 	// Roll-over helpers
 	rollOverMesh = new THREE.Mesh(rollOverIBeamGeo, rollOverMaterial);
@@ -192,22 +241,6 @@ function init() {
 	// To detect where the user has clicked
 	raycaster = new THREE.Raycaster();
 	pointer = new THREE.Vector2();
-
-	// Draw the floor
-	planeGeometry = new THREE.PlaneGeometry(floorParams.width, floorParams.depth );
-	planeGeometry.rotateX( - Math.PI / 2 );
-	plane = new THREE.Mesh( planeGeometry, new THREE.MeshBasicMaterial( { visible: true } ) );
-	plane.name = "plane";
-	scene.add( plane );
-	objects.push( plane );
-
-	// Lights
-	const ambientLight = new THREE.AmbientLight( 0x606060, 3 );
-	scene.add( ambientLight );
-
-	const directionalLight = new THREE.DirectionalLight( 0xffffff, 3 );
-	directionalLight.position.set( 1, 0.75, 0.5 ).normalize();
-	scene.add( directionalLight );
 
 
 	document.addEventListener( 'pointermove', onPointerMove );
@@ -234,7 +267,7 @@ function init() {
 	initGroundGui();  // Not added to list of folders so it is always visible
 	folders = [boxFolder, sphereFolder, cylinderFolder, obliqueCylinderFolder, trapezoidFolder, beamFolder];
 	folders.forEach(folder => folder.hide()); // Initially hide all folders, then show only the ones we want when required
-
+	render();
 }
 
 function onWindowResize() {
@@ -250,10 +283,12 @@ function onPointerMove( event ) {
 		pointer.set( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1 );
 		raycaster.setFromCamera( pointer, camera );
 		const intersects = raycaster.intersectObjects( objects, false );
+		rollOverMesh.geometry.computeBoundingBox();
+		const rollOverHeight = (rollOverMesh.geometry.boundingBox.max.z - rollOverMesh.geometry.boundingBox.min.z) / 2
 		if ( intersects.length > 0 ) {
 			const intersect = intersects[ 0 ];
 			rollOverMesh.position.copy( intersect.point ).add( intersect.face.normal );
-			rollOverMesh.position.addScalar(25);
+			rollOverMesh.position.addScalar(rollOverHeight);
 			render();
 		}
 	}
@@ -268,7 +303,7 @@ function onPointerDown( event ) {
 		const intersect = intersects[ 0 ];
 		if ( isShiftDown ) {
 			// delete object
-			if ( intersect.object !== plane ) {
+			if ( intersect.object !== floor ) {
 				scene.remove( intersect.object );
 				objects.splice( objects.indexOf( intersect.object ), 1 );
 				cElements.splice( cElements.indexOf( intersect.object ), 1 );
@@ -276,7 +311,7 @@ function onPointerDown( event ) {
 		} else if ( isCtrlDown ) {
 			// select object
 			elementFolder.hide();
-			if ( intersect.object !== plane ) {
+			if ( intersect.object !== floor ) {
 				if (selectedObjects[0] == intersect.object) {
 					// If it was already object 0, deselect it
 					resetColour(gui.children[0].children[0].getValue(), intersect.object);
@@ -356,7 +391,9 @@ function onPointerDown( event ) {
 				// create new object
 				const voxel = new THREE.Mesh(currentGeometry, new THREE.MeshLambertMaterial({color: builderColours[currentGeometry.type]}));
 				voxel.position.copy( intersect.point ).add( intersect.face.normal );
-				voxel.position.divideScalar( 50 ).floor().multiplyScalar( 50 ).addScalar( 25 );
+				// Find the size of the geometry in the y-axis and raise it so it's not half-way through the floor
+				voxel.geometry.computeBoundingBox()
+				voxel.position.addScalar((voxel.geometry.boundingBox.max.z - voxel.geometry.boundingBox.min.z)/2);
 				// We need to know the current angle so that when we change the object's angle we don't
 				// have a cumulative effect of rotations for each rotation we make.
 				voxel.currentAngleX = 0;
@@ -540,7 +577,7 @@ function initGroundGui(){
 	function generateGeometry(){
 		planeGeometry = new THREE.PlaneGeometry( floorParams.width, floorParams.depth );
 		planeGeometry.rotateX( - Math.PI / 2 );
-		updateGeometry(plane, planeGeometry);
+		updateGeometry(floor, planeGeometry);
 	}
 }
 
@@ -941,3 +978,4 @@ function render() {
 }
 
 
+export {buildModel};

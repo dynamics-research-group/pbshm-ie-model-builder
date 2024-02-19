@@ -54,7 +54,8 @@ def explore_model(id):
     return render_template("explore-model.html", id=id)
 
 # Build Route
-@bp.route("/build")
+@bp.route("/build", defaults={'id': ''})
+@bp.route("/build/<id>/explore")
 @authenticate_request("ie-visualiser-model")
-def build_model():
-    return render_template("build-model.html")
+def build_model(id):
+    return render_template("build-model.html", id=id)

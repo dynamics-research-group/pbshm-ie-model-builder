@@ -1,9 +1,13 @@
 import * as THREE from 'three';
 import {plotNetworkFromFile} from './networkHelper.js';
-import { extractShapes, plotIE } from './ieHelper.js';
+import { plotModel } from './ieHelper.js';
+import { extractShapes } from './jsonHelper.js';
+import { buildModel } from './builder.js';
 
-export function loadFile(filepath){
+export function loadFile(filepath, purpose='viewer'){
 	const loader = new THREE.FileLoader();
+  console.log(filepath)
+  console.log(purpose)
   loader.load(
       filepath,
 
@@ -12,7 +16,11 @@ export function loadFile(filepath){
         // output the text to the console
         const shapes = extractShapes(data);
         if (shapes.length > 0){
-          plotIE(shapes);
+          if (purpose == 'viewer') {
+            plotModel(shapes);
+          } else {
+            buildModel(shapes);
+          }
         }
         else {
           plotNetworkFromFile(data);
