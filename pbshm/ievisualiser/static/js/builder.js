@@ -194,7 +194,7 @@ function loadBlankBuilder(){
 }
 
 
-function buildModel(shapes=undefined) {
+function buildModel(shapes=undefined, preRelationships=undefined) {
 	scene = new THREE.Scene();
 	scene.background = new THREE.Color( 0xf0f0f0 );
 	
@@ -209,6 +209,7 @@ function buildModel(shapes=undefined) {
 	} else {
 		info = plotElements(renderer.domElement, scene, shapes);
 		camera = info.camera
+		const elementDict = {}  // to help track relationships
 		for (let e of info.elements) {
 			cElements.push(e);
 			objects.push(e)
@@ -220,18 +221,27 @@ function buildModel(shapes=undefined) {
 				makeMaterialColourVisible(e.el_material);
 				makeGeometryColourVisible(e.el_geometry);
 			}
+			e.relationshipCount = 0;
+			elementDict[e.name] = e;
 		}
 		resetColours(gui.children[0].children[0].getValue());
 		controls = info.controls;
 		floor = info.floor;
 		objects.push(floor);
+
+		relationships = preRelationships;
+		for (const key of Object.keys(relationships)){
+			const pair = key.split(',');
+			elementDict[pair[0]].relationshipCount++;
+			elementDict[pair[1]].relationshipCount++;
+		}
 	}
 
 
-		// Only render when the user moves the camera
-		controls.addEventListener("change", () => renderer.render(scene, camera));
-		controls.update();
-	
+	// Only render when the user moves the camera
+	controls.addEventListener("change", () => renderer.render(scene, camera));
+	controls.update();
+
 	
 	// Roll-over helpers
 	rollOverMesh = new THREE.Mesh(rollOverIBeamGeo, rollOverMaterial);

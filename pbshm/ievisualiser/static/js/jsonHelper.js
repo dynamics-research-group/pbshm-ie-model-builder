@@ -135,4 +135,17 @@ function getGroundLocations(data, elCoords){
 	return locations;
 }
 
-export {extractShapes}
+function extractRelationships(rawtext){
+	const relatDict = {};
+	const data = JSON.parse(rawtext);
+	const relationships = data.models.irreducibleElement.relationships;
+	for (let i=0; i<relationships.length; i++){
+		const el1 = relationships[i].elements[0].name;
+		const el2 = relationships[i].elements[1].name;
+		const r = relationships[i].type;
+		relatDict[[el1, el2]] = r;
+	}
+	return relatDict
+}
+
+export {extractShapes, extractRelationships}
