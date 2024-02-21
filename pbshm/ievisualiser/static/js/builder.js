@@ -119,14 +119,14 @@ const obliqueCylinderParams = {'Faces left radius': 3,
 							   'Faces Right Trans. y': 0,
 							   'Faces Right Trans. z': 0,
  							   'length': 5}
-const trapezoidParams = {"Faces Left Trans. y": 3,
-						 "Faces Left Trans. z": 3,
+const trapezoidParams = {"Faces Left Trans. y": 1.5,
+						 "Faces Left Trans. z": 1.5,
 						 "Faces Left Height": 2,
 						 "Faces Left Width": 2,
 						 "Faces Right Trans. y": 0,
 						 "Faces Right Trans. z": 0,
-						 "Faces Right Height": 4,
-						 "Faces Right Width": 4,
+						 "Faces Right Height": 5,
+						 "Faces Right Width": 5,
 						 "length": 5}
 const beamParams = {"length": 8,
 				    "h": 4,
@@ -381,7 +381,11 @@ function onPointerDown( event ) {
 					// Rotate because cylinder is assumed horizontal in json but vertical in webGL
 					currentGeometry.rotateZ(Math.PI/2);
 				} else if (currentId == "trapezoid"){
-					currentGeometry = new TrapezoidGeometry(10, 10, 20, 20, 0, 0, 40, 40, 50);
+					currentGeometry = new TrapezoidGeometry(trapezoidParams['Faces Left Trans. y'], trapezoidParams['Faces Left Trans. z'],
+															trapezoidParams['Faces Left Height'], trapezoidParams['Faces Left Width'],
+															trapezoidParams['Faces Right Trans. y'], trapezoidParams['Faces Right Trans. z'],
+															trapezoidParams['Faces Right Height'], trapezoidParams['Faces Right Width'],
+															trapezoidParams.length);
 				} else if (currentId == "ibeam"){
 					currentGeometry = generateBeam("i-beam", beamParams.length, beamParams.h, beamParams.s, beamParams.t, beamParams.b);;
 				} else if (currentId == "cbeam"){
