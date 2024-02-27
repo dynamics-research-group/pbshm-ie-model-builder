@@ -8,6 +8,7 @@ import {ObliqueCylinderGeometry} from './obliqueCylinder.js';
 import {TrapezoidGeometry} from './trapezoid.js'
 import {generateBeam} from './geometryHelper.js';
 import {glToJson, jsonToGl} from './translationHelper.js';
+import { save } from './jsonHelper.js';
 import { builderColours, addColourFolders, contextualColours, materialColours, geometryColours,
 	     cElements, materialColourKeys, contextualColourKeys, resetColour, resetColours,
 	     makeContextColourVisible, makeMaterialColourVisible, makeGeometryColourVisible, otherColours} from './colourHelper.js';
@@ -17,16 +18,26 @@ const canvas = document.querySelector('#c');
 let camera, scene, renderer, controls;
 let floor;
 let pointer, raycaster, isShiftDown = false, isCtrlDown = false;
+let relationships = {};
 
 
 // Gui handlers
 const gui = new GUI();
+
+
+const modelDetails = {'Name': '', 'Description': '', 'Population': '', 'Save': function() {save(modelDetails, relationships, cElements);}};
+gui.add(modelDetails, 'Save');
+const modelDetailsFolder = gui.addFolder('Model details');
+modelDetailsFolder.add(modelDetails, 'Name').onChange( value => { modelDetails['Name'] = value; });
+modelDetailsFolder.add(modelDetails, 'Description').onChange( value => { modelDetails['Description'] = value; });
+modelDetailsFolder.add(modelDetails, 'Population').onChange( value => { modelDetails['Population'] = value; });
+
+
 addColourFolders(gui, render, "builder");
 
 
 // Folder for defining objects between elements
 let selectedObjects = new Array(2); // Selecting objects for relationships
-let relationships = {};
 const relationFolder = gui.addFolder('Relationships');
 const elRelationship = {'Relationship': 'none'}  // current relationship type selected
 const relationshipTypes = {'free': ['none', 'perfect', 'connection', 'joint'],
@@ -82,17 +93,17 @@ contextualFolder.add(context, 'Type', contextualColourKeys).onChange(updateConte
 
 // Geometry information
 const geometry = {"Type": undefined}
-const jsonGeometryMappings = {"box": ["solid-translate-cuboid", "shell-translate-cuboid",
-                                       "solid-translate-other", "shell-translate-other", "other"], 
-                              "sphere": ["solid-translate-sphere", "shell-translate-sphere",
-                                         "solid-translate-other", "shell-translate-other", "other"], 
-                              "cylinder": ["solid-translate-cylinder", "shell-translate-cylinder",
-                                           "solid-translate-other", "shell-translate-other", "other"], 
-                              "beam": ["beam-rectangular", "beam-i-beam", "beam-other", "other"], 
-                              "trapezoid": ["solid-translateAndScale-cuboid", "shell-translateAndScale-cuboid",
-                                            "solid-translateAndScale-other", "shell-translateAndScale-other", "other"], 
-                              "obliqueCylinder": ["solid-translateAndScale-cylinder", "shell-translateAndScale-cylinder",
-                                                  "solid-translateAndScale-other", "shell-translateAndScale-other", "other"]};
+const jsonGeometryMappings = {"box": ["solid translate cuboid", "shell translate cuboid",
+                                       "solid translate other", "shell translate other", "other"], 
+                              "sphere": ["solid translate sphere", "shell translate sphere",
+                                         "solid translate other", "shell translate other", "other"], 
+                              "cylinder": ["solid translate cylinder", "shell translate cylinder",
+                                           "solid translate other", "shell translate other", "other"], 
+                              "beam": ["beam rectangular", "beam i-beam", "beam other", "other"], 
+                              "trapezoid": ["solid translateAndScale cuboid", "shell translateAndScale cuboid",
+                                            "solid translateAndScale other", "shell translateAndScale other", "other"], 
+                              "obliqueCylinder": ["solid translateAndScale cylinder", "shell translateAndScale cylinder",
+                                                  "solid translateAndScale other", "shell translateAndScale other", "other"]};
 const geometryKeys = Object.keys(jsonGeometryMappings);
 geometryKeys.sort();
 const geometryFolder = elementFolder.addFolder('Geometry');
@@ -224,7 +235,7 @@ function buildModel(shapes=undefined, preRelationships=undefined) {
 			e.relationshipCount = 0;
 			elementDict[e.name] = e;
 		}
-		resetColours(gui.children[0].children[0].getValue());
+		resetColours(gui.children[2].children[0].getValue());
 		controls = info.controls;
 		floor = info.floor;
 		objects.push(floor);
@@ -324,7 +335,7 @@ function onPointerDown( event ) {
 			if ( intersect.object !== floor ) {
 				if (selectedObjects[0] == intersect.object) {
 					// If it was already object 0, deselect it
-					resetColour(gui.children[0].children[0].getValue(), intersect.object);
+					resetColour(gui.children[2].children[0].getValue(), intersect.object);
 					// Move object 1 to first place
 					selectedObjects[0] = selectedObjects[1];
 					selectedObjects[1] = undefined;
@@ -332,7 +343,7 @@ function onPointerDown( event ) {
 					relationFolder.children[4].hide();
 				} else if (selectedObjects[1] == intersect.object) {	
 					// If it was already object 1, deselect it
-					resetColour(gui.children[0].children[0].getValue(), intersect.object);
+					resetColour(gui.children[2].children[0].getValue(), intersect.object);
 					selectedObjects[1] = undefined;
 					relationFolder.children[3].hide();
 					relationFolder.children[4].hide();
@@ -345,7 +356,7 @@ function onPointerDown( event ) {
 					} else {
 						if (selectedObjects[1] != undefined) {	
 							// If two objects are already selected, deselect object 1 (i.e. reset its colour)
-							resetColour(gui.children[0].children[0].getValue(), selectedObjects[1]);
+							resetColour(gui.children[2].children[0].getValue(), selectedObjects[1]);
 						}
 						// Assign as object 1
 						selectedObjects[1] = intersect.object;
@@ -413,8 +424,8 @@ function onPointerDown( event ) {
 				voxel.currentAngleX = 0;
 				voxel.currentAngleY = 0;
 				voxel.currentAngleZ = 0;
-				voxel.contextual_type = undefined;
-				voxel.material_type = undefined;
+				voxel.el_contextual = undefined;
+				voxel.el_material = undefined;
 				voxel.relationshipCount = 0;
 				scene.add( voxel );
 				objects.push( voxel );
@@ -636,7 +647,7 @@ function toggleGround(value){
 		if (currentObject.material.color.getHex() != otherColours['Orphans']
 				&& currentObject.material.color.getHex() != otherColours['Selected element']) {
 			// Don't change the colour if it's currently being highlighted as an orphan or selected element
-			resetColour(gui.children[0].children[0].getValue(), currentObject);
+			resetColour(gui.children[2].children[0].getValue(), currentObject);
 		}
 	}
 	render();
@@ -707,7 +718,7 @@ function rotateGeometryZ(){
 function updateContext(){
 	currentObject.el_contextual = context.Type;
 	makeContextColourVisible(context.Type);
-	if (gui.children[0].children[0].getValue() == "contextual"
+	if (gui.children[2].children[0].getValue() == "contextual"
 			&& currentObject.material.color.getHex() != otherColours['Orphans']
 			&& currentObject.material.color.getHex() != otherColours['Selected element']) {
 		currentObject.material.color.setHex(contextualColours[currentObject.el_contextual]);
@@ -719,7 +730,7 @@ function updateContext(){
 function updateMaterial(){
 	currentObject.el_material = material.Type;
 	makeMaterialColourVisible(material.Type);
-	if (gui.children[0].children[0].getValue() == "material"
+	if (gui.children[2].children[0].getValue() == "material"
 			&& currentObject.material.color.getHex() != otherColours['Orphans']
 			&& currentObject.material.color.getHex() != otherColours['Selected element']) {
 		currentObject.material.color.setHex(materialColours[currentObject.el_material]);
@@ -731,7 +742,7 @@ function updateMaterial(){
 function updateJsonGeometry(){
 	currentObject.el_geometry = geometry.Type;
 	makeGeometryColourVisible(geometry.Type);
-	if (gui.children[0].children[0].getValue() == "geometry"
+	if (gui.children[2].children[0].getValue() == "geometry"
 			&& currentObject.material.color.getHex() != otherColours['Orphans']
 			&& currentObject.material.color.getHex() != otherColours['Selected element']) {
 		currentObject.material.color.setHex(geometryColours[currentObject.el_geometry]);
@@ -938,11 +949,11 @@ function toggleHighlightUnrelated(value){
 	if (value == true){
 		// Deselect selected objects to avoid confusion
 		try {
-			resetColour(gui.children[0].children[0].getValue(), selectedObjects[0]);
+			resetColour(gui.children[2].children[0].getValue(), selectedObjects[0]);
 			selectedObjects[0] = undefined;
 		} catch (TypeError) {;}
 		try {
-			resetColour(gui.children[0].children[0].getValue(), selectedObjects[1]);
+			resetColour(gui.children[2].children[0].getValue(), selectedObjects[1]);
 			selectedObjects[1] = undefined;
 		} catch (TypeError) {;}
 		relationFolder.children[3].hide();
@@ -955,7 +966,7 @@ function toggleHighlightUnrelated(value){
 			}
 		}
 	} else {
-		resetColours(gui.children[0].children[0].getValue());
+		resetColours(gui.children[2].children[0].getValue());
 	}
 	render();
 }
@@ -985,6 +996,8 @@ function toggleHideConnected(value){
 	}
 	render();
 }
+
+
 
 
 function render() {
