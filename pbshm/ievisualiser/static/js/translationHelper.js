@@ -21,10 +21,11 @@ function conversionAmount(currentObject, dimension){
         const radius = Math.max(currentObject.geometry.parameters.radiusBottom,
                                 currentObject.geometry.parameters.radiusTop);
         switch (dimension) {
+            // Because cylinders are rotated, the height now refers to it's length along the x-axis
             case "x":
-                return radius;
+                return currentObject.geometry.parameters.height / 2;;
             case "y":
-                return currentObject.geometry.parameters.height / 2;
+                return radius
             case "z":
                 return radius;
         }

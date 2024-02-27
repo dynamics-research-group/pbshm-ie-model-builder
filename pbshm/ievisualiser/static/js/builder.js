@@ -41,7 +41,7 @@ let selectedObjects = new Array(2); // Selecting objects for relationships
 const relationFolder = gui.addFolder('Relationships');
 const elRelationship = {'Relationship': 'none'}  // current relationship type selected
 const relationshipTypes = {'free': ['none', 'perfect', 'connection', 'joint'],
-'grounded': ['none', 'perfect', 'connection', 'joint', 'boundary']};
+						   'grounded': ['none', 'perfect', 'connection', 'joint', 'boundary']};
 const showElements = {'Show orphans': false, 'Hide connected': false};
 relationFolder.add(showElements, 'Show orphans',).onChange(value => toggleHighlightUnrelated(value));
 relationFolder.addColor(otherColours, 'Orphans');
@@ -415,10 +415,11 @@ function onPointerDown( event ) {
 
 				// create new object
 				const voxel = new THREE.Mesh(currentGeometry, new THREE.MeshLambertMaterial({color: builderColours[currentGeometry.type]}));
-				voxel.position.copy( intersect.point ).add( intersect.face.normal );
+				voxel.position.copy(intersect.point);
 				// Find the size of the geometry in the y-axis and raise it so it's not half-way through the floor
 				voxel.geometry.computeBoundingBox()
-				voxel.position.addScalar((voxel.geometry.boundingBox.max.z - voxel.geometry.boundingBox.min.z)/2);
+				voxel.position.addScalar((voxel.geometry.boundingBox.max.y - voxel.geometry.boundingBox.min.y)/2);
+				voxel.position.multiplyScalar(100).round().multiplyScalar(0.01);  // round to 2d.p.
 				// We need to know the current angle so that when we change the object's angle we don't
 				// have a cumulative effect of rotations for each rotation we make.
 				voxel.currentAngleX = 0;
