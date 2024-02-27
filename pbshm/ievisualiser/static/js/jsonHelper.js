@@ -302,9 +302,9 @@ function save(modelDetails, relationships, elements){
 			}
 			// Save coordinates
 			el_dict["coordinates"] = {"global": {"translational": {
-				"x": { "unit": "other", "value":e.position.x = glToJson(e, "x", e.position.x)},
-				"y": { "unit": "other", "value":e.position.y = glToJson(e, "x", e.position.y)},
-				"z": { "unit": "other", "value":e.position.z = glToJson(e, "x", e.position.z)}
+				"x": { "unit": "other", "value": glToJson(e, "x", e.position.x)},
+				"y": { "unit": "other", "value": glToJson(e, "x", e.position.y)},
+				"z": { "unit": "other", "value": glToJson(e, "x", e.position.z)}
 			}}};
 			// Save geometry info
 			const split1 = e.el_geometry.indexOf(' ');
