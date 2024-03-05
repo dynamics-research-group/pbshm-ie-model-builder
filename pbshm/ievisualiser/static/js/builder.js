@@ -233,18 +233,18 @@ function buildModel(shapes=undefined, preRelationships=undefined) {
 				makeGeometryColourVisible(e.el_geometry);
 			}
 			e.relationshipCount = 0;
-			elementDict[e.name] = e;
+			elementDict[e.name] = e;  // relationships are referred to by name in json
 		}
 		resetColours(gui.children[2].children[0].getValue());
 		controls = info.controls;
 		floor = info.floor;
 		objects.push(floor);
 
-		relationships = preRelationships;
-		for (const key of Object.keys(relationships)){
+		for (const [key, value] of Object.entries(preRelationships)){
 			const pair = key.split(',');
 			elementDict[pair[0]].relationshipCount++;
 			elementDict[pair[1]].relationshipCount++;
+			relationships[[elementDict[pair[0]].id, elementDict[pair[1]].id]] = value;
 		}
 	}
 
@@ -360,20 +360,18 @@ function onPointerDown( event ) {
 						}
 						// Assign as object 1
 						selectedObjects[1] = intersect.object;
-						// Two elements are selected so (if they are both named) show the dropdown menu to select their relationship
-						if (selectedObjects[0].name.length > 0 && selectedObjects[1].name.length > 0) {
-							// Show the current relationship they have
-							const currentRelat = currentRelationship(selectedObjects[0].name, selectedObjects[1].name);
-							relationFolder.show();
-							if (selectedObjects[0].el_contextual == "ground" || selectedObjects[1].el_contextual == "ground"){
-								relationFolder.children[3].hide();  // hide 'free' relationships folder
-								relationFolder.children[4].show();  // show 'grounded' relationships folder
-								relationFolder.children[4].setValue(currentRelat);
-							} else {
-								relationFolder.children[3].show();  // show 'free'
-								relationFolder.children[3].setValue(currentRelat);
-								relationFolder.children[4].hide();  // hide 'grounded'
-							}
+						// Two elements are selected so show the dropdown menu to select their relationship
+						// Show the current relationship they have
+						const currentRelat = currentRelationship(selectedObjects[0].id, selectedObjects[1].id);
+						relationFolder.show();
+						if (selectedObjects[0].el_contextual == "ground" || selectedObjects[1].el_contextual == "ground"){
+							relationFolder.children[3].hide();  // hide 'free' relationships folder
+							relationFolder.children[4].show();  // show 'grounded' relationships folder
+							relationFolder.children[4].setValue(currentRelat);
+						} else {
+							relationFolder.children[3].show();  // show 'free'
+							relationFolder.children[3].setValue(currentRelat);
+							relationFolder.children[4].hide();  // hide 'grounded'
 						}
 					}
 				}
@@ -919,13 +917,13 @@ function initBeamGui(){
 
 function updateRelationship(value){
 	// Check if a relationship is already defined
-	const name1 = selectedObjects[0].name;
-	const name2 = selectedObjects[1].name;
+	const id1 = selectedObjects[0].id;
+	const id2 = selectedObjects[1].id;
 	let pair;
-	if (relationships[[name1, name2]] != undefined){
-		pair = [name1, name2];
-	} else if (relationships[[name2, name1]] != undefined){
-		pair = [name2, name1];
+	if (relationships[[id1, id2]] != undefined){
+		pair = [id1, id2];
+	} else if (relationships[[id2, id1]] != undefined){
+		pair = [id2, id1];
 	}
 
 	if (pair != undefined) {
@@ -939,7 +937,7 @@ function updateRelationship(value){
 		}
 	} else {
 		// Add the new relationship
-		relationships[[name1, name2]] = value;
+		relationships[[id1, id2]] = value;
 		selectedObjects[0].relationshipCount++;
 		selectedObjects[1].relationshipCount++;
 	}
@@ -973,11 +971,11 @@ function toggleHighlightUnrelated(value){
 }
 
 
-function currentRelationship(name1, name2){
-	if (relationships[[name1, name2]] != undefined){
-		return relationships[[name1, name2]];
-	} else if (relationships[[name2, name1]] != undefined){
-		return relationships[[name2, name1]];
+function currentRelationship(id1, id2){
+	if (relationships[[id1, id2]] != undefined){
+		return relationships[[id1, id2]];
+	} else if (relationships[[id2, id1]] != undefined){
+		return relationships[[id2, id1]];
 	}
 	return 'none';
 }

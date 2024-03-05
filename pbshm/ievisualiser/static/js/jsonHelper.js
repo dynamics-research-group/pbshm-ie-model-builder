@@ -21,9 +21,9 @@ function extractShapes(rawtext){
 				}
 				let element_geom;
 				try {
-					element_geom = [elements[i].geometry.type.name, elements[i].geometry.type.type.name, elements[i].geometry.type.type.type.name].join("-");
+					element_geom = [elements[i].geometry.type.name, elements[i].geometry.type.type.name, elements[i].geometry.type.type.type.name].join(" ");
 				} catch(TypeError) {
-					element_geom = [elements[i].geometry.type.name, elements[i].geometry.type.type.name].join("-");
+					element_geom = [elements[i].geometry.type.name, elements[i].geometry.type.type.name].join(" ");
 				}
 				let shape_name;
 				let method = elements[i].geometry.type.type.name;
