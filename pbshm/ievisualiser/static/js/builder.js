@@ -76,8 +76,9 @@ const rotateParams = {'x': 0,
 					  'y': 0,
 					  'z': 0}
 const coordsFolder = elementFolder.addFolder('Coordinates');
-const transFolder = coordsFolder.addFolder('Translational');
-const rotFolder = coordsFolder.addFolder('Rotational');
+const gCoordsFolder = coordsFolder.addFolder('Global');
+const transFolder = gCoordsFolder.addFolder('Translational');
+const rotFolder = gCoordsFolder.addFolder('Rotational');
 transFolder.add(posParams, 'x').onChange(moveGeometryX);
 transFolder.add(posParams, 'y').onChange(moveGeometryY);
 transFolder.add(posParams, 'z').onChange(moveGeometryZ);
@@ -522,7 +523,7 @@ function onPointerDown( event ) {
 				} else {
 					contextualFolder.children[0].setValue(currentObject.el_contextual);
 					elementFolder.show();
-					coordsFolder.show();
+					gCoordsFolder.show();
 					contextualFolder.show();
 					materialFolder.show();
 					currentFolder.show();
@@ -634,7 +635,7 @@ function updateElementName(){
 function toggleGround(value){
 	if (value == true){
 		currentObject.el_contextual = 'ground';
-		coordsFolder.hide();
+		gCoordsFolder.hide();
 		materialFolder.hide();
 		contextualFolder.hide();
 		geometryFolder.hide();
@@ -646,7 +647,7 @@ function toggleGround(value){
 			// This if-statement is needed because this function is also called for maintaining non-ground status.
 			currentObject.el_contextual = undefined;
 		}
-		coordsFolder.show();
+		gCoordsFolder.show();
 		materialFolder.show();
 		contextualFolder.show();
 		geometryFolder.show();
