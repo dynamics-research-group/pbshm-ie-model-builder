@@ -19,13 +19,14 @@ let camera, scene, renderer, controls;
 let floor;
 let pointer, raycaster, isShiftDown = false, isCtrlDown = false;
 let relationships = {};
+let relationshipNatures = {};
 
 
 // Gui handlers
 const gui = new GUI();
 
 
-const modelDetails = {'Name': '', 'Description': '', 'Population': '', 'Save': function() {save(modelDetails, relationships, cElements);}};
+const modelDetails = {'Name': '', 'Description': '', 'Population': '', 'Save': function() {save(modelDetails, relationships, relationshipNatures, cElements);}};
 gui.add(modelDetails, 'Save');
 const modelDetailsFolder = gui.addFolder('Model details');
 modelDetailsFolder.add(modelDetails, 'Name').onChange( value => { modelDetails['Name'] = value; });
@@ -39,17 +40,22 @@ addColourFolders(gui, render, "builder");
 // Folder for defining objects between elements
 let selectedObjects = new Array(2); // Selecting objects for relationships
 const relationFolder = gui.addFolder('Relationships');
-const elRelationship = {'Relationship': 'none'}  // current relationship type selected
+const elRelationship = {'Relationship': 'none', 'Nature': undefined}  // current relationship type selected
 const relationshipTypes = {'free': ['none', 'perfect', 'connection', 'joint'],
-						   'grounded': ['none', 'perfect', 'connection', 'joint', 'boundary']};
+						   'grounded': ['none', 'perfect', 'connection', 'joint', 'boundary'],
+						   'nature': ['static bolted', 'static welded', 'static adhesive', 'static other',
+						              'dynamic hinge', 'dynamic ballAndSocket', 'dynamic pinned',
+									  'dynamic expansion', 'dynamic ballBearing', 'dynamic other']};
 const showElements = {'Show orphans': false, 'Hide connected': false};
 relationFolder.add(showElements, 'Show orphans',).onChange(value => toggleHighlightUnrelated(value));
 relationFolder.addColor(otherColours, 'Orphans');
 relationFolder.add(showElements, 'Hide connected',).onChange(value => toggleHideConnected(value));
 relationFolder.add(elRelationship, 'Relationship', relationshipTypes['free']).onChange( value => updateRelationship(value));
 relationFolder.add(elRelationship, 'Relationship', relationshipTypes['grounded']).onChange( value => updateRelationship(value));
+relationFolder.add(elRelationship, 'Nature', relationshipTypes['nature']).onChange( value => updateRelationshipNature(value));
 relationFolder.children[3].hide();
 relationFolder.children[4].hide();
+relationFolder.children[5].hide();
 
 
 
@@ -341,12 +347,14 @@ function onPointerDown( event ) {
 					selectedObjects[1] = undefined;
 					relationFolder.children[3].hide();
 					relationFolder.children[4].hide();
+					relationFolder.children[5].hide();
 				} else if (selectedObjects[1] == intersect.object) {	
 					// If it was already object 1, deselect it
 					resetColour(gui.children[2].children[0].getValue(), intersect.object);
 					selectedObjects[1] = undefined;
 					relationFolder.children[3].hide();
 					relationFolder.children[4].hide();
+					relationFolder.children[5].hide();
 				} else {
 					// Otherwise, select it
 					intersect.object.material.color.setHex(otherColours['Selected element']);
@@ -368,10 +376,22 @@ function onPointerDown( event ) {
 							relationFolder.children[3].hide();  // hide 'free' relationships folder
 							relationFolder.children[4].show();  // show 'grounded' relationships folder
 							relationFolder.children[4].setValue(currentRelat);
+							if (currentRelat == 'joint' || currentRelat == 'connection') {
+								relationFolder.children[5].show();
+								relationFolder.children[5].setValue(currentRelationshipNature(selectedObjects[0].id, selectedObjects[1].id));
+							} else {
+								relationFolder.children[5].hide();
+							}
 						} else {
 							relationFolder.children[3].show();  // show 'free'
 							relationFolder.children[3].setValue(currentRelat);
 							relationFolder.children[4].hide();  // hide 'grounded'
+							if (currentRelat == 'joint' || currentRelat == 'connection') {
+								relationFolder.children[5].show();
+								relationFolder.children[5].setValue(currentRelationshipNature(selectedObjects[0].id, selectedObjects[1].id));
+							} else {
+								relationFolder.children[5].hide();
+							}
 						}
 					}
 				}
@@ -941,6 +961,27 @@ function updateRelationship(value){
 		selectedObjects[0].relationshipCount++;
 		selectedObjects[1].relationshipCount++;
 	}
+	// Show dropdown to select nature of relationship
+	if (value == 'joint' || value == 'connection'){
+		relationFolder.children[5].show();
+		relationFolder.children[5].setValue(currentRelationshipNature(id1, id2));
+	} else {
+		relationFolder.children[5].hide();
+	}
+}
+
+
+function updateRelationshipNature(value){
+	const id1 = selectedObjects[0].id;
+	const id2 = selectedObjects[1].id;
+	// Find out which way round the pair is stored
+	let pair;
+	if (relationships[[id1, id2]] != undefined){
+		pair = [id1, id2];
+	} else if (relationships[[id2, id1]] != undefined){
+		pair = [id2, id1];
+	}
+	relationshipNatures[[id1, id2]] = value;
 }
 
 
@@ -976,6 +1017,16 @@ function currentRelationship(id1, id2){
 		return relationships[[id1, id2]];
 	} else if (relationships[[id2, id1]] != undefined){
 		return relationships[[id2, id1]];
+	}
+	return 'none';
+}
+
+
+function currentRelationshipNature(id1, id2){
+	if (relationshipNatures[[id1, id2]] != undefined){
+		return relationshipNatures[[id1, id2]];
+	} else if (relationshipNatures[[id2, id1]] != undefined){
+		return relationshipNatures[[id2, id1]];
 	}
 	return 'none';
 }

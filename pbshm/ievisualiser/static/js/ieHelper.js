@@ -17,7 +17,7 @@ function plotElements(canvas, scene, shapes){
 	let maxX = 0;
 	let maxY = 0;
 	let maxZ = 0;
-	const scaleFactor = 100;
+	const scaleFactor = 1;
 	for (let i=0; i<shapes.length; i++){
 		const shape = geometryDetails(shapes[i], scaleFactor);
 		maxX = Math.max(maxX, shape.position.x);
@@ -31,12 +31,12 @@ function plotElements(canvas, scene, shapes){
 	}
 
 	// Set up the display
-	const fov = maxY*2;	// field of view - determines width of near and far planes
+	const fov = 45;	// field of view - determines width of near and far planes
 	const aspect = 2;	// the canvas default	(300 x 150)
 	const near = 0.1;	// height of near plane
-	const far = (maxX + maxY + maxZ) * 3;	// height of far plane
+	const far = (maxX + maxY + maxZ) * 6;	// height of far plane
 	const camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-	camera.position.set(maxX/2, maxY*0.75, maxX*2);	// where the camera is located
+	camera.position.set(maxX/2, maxX*0.5, maxX*3);	// where the camera is located
 	camera.up.set(0, 1, 0);
 	
 	// Give the user the ability to control the camera
