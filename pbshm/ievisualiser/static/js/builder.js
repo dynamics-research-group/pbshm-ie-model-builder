@@ -245,6 +245,8 @@ function buildModel(shapes=undefined, preRelationships=undefined) {
 		resetColours(gui.children[2].children[0].getValue());
 		controls = info.controls;
 		floor = info.floor;
+		floorParams.width = floor.geometry.parameters.width;
+		floorParams.depth = floor.geometry.parameters.height;
 		objects.push(floor);
 
 		for (const [key, value] of Object.entries(preRelationships)){
