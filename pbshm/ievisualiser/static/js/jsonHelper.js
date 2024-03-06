@@ -7,6 +7,14 @@ import { glToJson } from "./translationHelper.js";
  * Loading
  **********/
 
+function modelInfo(rawtext){
+	const data = JSON.parse(rawtext);
+	return {"name": data.name,
+			"description": data.description,
+			"population": data.population};
+}
+
+
 function extractShapes(rawtext){
 	const data = JSON.parse(rawtext);
 	const elements = data.models.irreducibleElement.elements;
@@ -402,4 +410,4 @@ function save(modelDetails, relationships, relationshipNatures, elements){
 	document.body.removeChild(element);
 }
 
-export {extractShapes, extractRelationships, save}
+export {modelInfo, extractShapes, extractRelationships, save}

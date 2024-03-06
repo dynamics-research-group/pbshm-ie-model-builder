@@ -1,7 +1,7 @@
 import * as THREE from 'three';
 import {plotNetworkFromFile} from './networkHelper.js';
 import { plotModel } from './ieHelper.js';
-import { extractShapes, extractRelationships } from './jsonHelper.js';
+import { modelInfo, extractShapes, extractRelationships } from './jsonHelper.js';
 import { buildModel } from './builder.js';
 
 
@@ -18,8 +18,9 @@ export function loadFile(filepath, purpose='viewer'){
           if (purpose == 'viewer') {
             plotModel(shapes);
           } else {
-            const relationships = extractRelationships(data)
-            buildModel(shapes, relationships);
+            const info = modelInfo(data);
+            const relationships = extractRelationships(data);
+            buildModel(info, shapes, relationships);
           }
         }
         else {

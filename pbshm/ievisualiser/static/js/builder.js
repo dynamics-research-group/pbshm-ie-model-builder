@@ -212,7 +212,7 @@ function loadBlankBuilder(){
 }
 
 
-function buildModel(shapes=undefined, preRelationships=undefined) {
+function buildModel(preInfo=undefined, shapes=undefined, preRelationships=undefined) {
 	scene = new THREE.Scene();
 	scene.background = new THREE.Color( 0xf0f0f0 );
 	
@@ -225,6 +225,9 @@ function buildModel(shapes=undefined, preRelationships=undefined) {
 	if (shapes == undefined) {
 		loadBlankBuilder();
 	} else {
+		modelDetailsFolder.children[0].setValue(preInfo.name);
+		modelDetailsFolder.children[1].setValue(preInfo.description);
+		modelDetailsFolder.children[2].setValue(preInfo.population);
 		info = plotElements(renderer.domElement, scene, shapes);
 		camera = info.camera
 		const elementDict = {}  // to help track relationships
