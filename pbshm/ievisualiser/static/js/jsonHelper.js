@@ -296,7 +296,7 @@ function save(modelDetails, relationships, relationshipNatures, elements){
 				  "population": modelDetails.Population,
 				  "timestamp": new Date().getTime(),
 				  "models": { "irreducibleElement": {
-					          "type": "grounded",  // assumed
+					          "type": modelDetails.Type,  // assumed
             				  "elements": undefined,
 							  "relationships": []
 				  			  }

@@ -9,7 +9,8 @@ const builderColours = {"BoxGeometry": 0xe6194b,
 						"ObliqueCylinderGeometry": 0x7FFFD4,
 						"TrapezoidGeometry": 0x4363d8,
 						"IBeamGeometry": 0xf58231,
-						"CBeamGeometry": 0xfbceb1}
+						"CBeamGeometry": 0xfbceb1,
+                        "ground": 0x5e5c64}
 
 
 const contextualColours = {"slab":0xa96645, "column":0x58C2EB, "beam":0x7b6bb0,

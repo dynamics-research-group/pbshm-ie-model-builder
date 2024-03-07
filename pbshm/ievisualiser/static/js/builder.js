@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js'; 
 import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 
 
@@ -26,12 +26,21 @@ let relationshipNatures = {};
 const gui = new GUI();
 
 
-const modelDetails = {'Name': '', 'Description': '', 'Population': '', 'Save': function() {save(modelDetails, relationships, relationshipNatures, cElements);}};
+const modelDetails = {'Name': '', 'Description': '', 'Population': '', 'Type': 'grounded', 'Save': function() {save(modelDetails, relationships, relationshipNatures, cElements);}};
 gui.add(modelDetails, 'Save');
 const modelDetailsFolder = gui.addFolder('Model details');
 modelDetailsFolder.add(modelDetails, 'Name').onChange( value => { modelDetails['Name'] = value; });
 modelDetailsFolder.add(modelDetails, 'Description').onChange( value => { modelDetails['Description'] = value; });
 modelDetailsFolder.add(modelDetails, 'Population').onChange( value => { modelDetails['Population'] = value; });
+modelDetailsFolder.add(modelDetails, 'Type', ['grounded', 'free']).onChange( value => {
+																 modelDetails['Type'] = value;
+																 if (value == 'grounded') {
+																	document.getElementById("uigroundinfo").style.visibility = 'visible';
+																	document.getElementById("uiground").style.visibility = 'visible';
+																 } else {
+																	document.getElementById("uigroundinfo").style.visibility = 'hidden';
+																	document.getElementById("uiground").style.visibility = 'hidden';
+																 } });
 
 
 addColourFolders(gui, render, "builder");
@@ -60,9 +69,8 @@ relationFolder.children[5].hide();
 
 
 const elementFolder = gui.addFolder('Element');
-const elInfo = {'Name': '', 'Is ground': false}
+const elInfo = {'Name': ''}
 elementFolder.add(elInfo, 'Name').onChange(updateElementName);
-elementFolder.add(elInfo, 'Is ground',).onChange(value => toggleGround(value));
 elementFolder.hide();
 let floorFolder, boxFolder, sphereFolder, cylinderFolder, obliqueCylinderFolder, trapezoidFolder, beamFolder, folders, currentFolder;
 
@@ -151,6 +159,7 @@ const beamParams = {"length": 8,
 				    "s": 1,
 				    "t": 1,
 				    "b": 3}
+const groundRadius = 3;
 
 
 
@@ -171,6 +180,7 @@ const rollOverTrapezoidGeo = new TrapezoidGeometry(trapezoidParams['Faces Left T
 												   trapezoidParams.length);
 const rollOverIBeamGeo = generateBeam("i-beam", beamParams.length, beamParams.h, beamParams.s, beamParams.t, beamParams.b);
 const rollOverCBeamGeo = generateBeam("c-beam", beamParams.length, beamParams.h, beamParams.s, beamParams.t, beamParams.b);
+const rollOverGroundGeo = new THREE.SphereGeometry(groundRadius);
 rollOverCylinderGeo.rotateZ(Math.PI/2);
 rollOverObliqueCylinderGeo.rotateZ(Math.PI/2);
 let planeGeometry;
@@ -285,6 +295,9 @@ function buildModel(preInfo=undefined, shapes=undefined, preRelationships=undefi
 		elem.addEventListener( 'click', allowUncheck );
 	} );
 	document.querySelectorAll( '#uitwo .tiles input[type=radio][name=voxel]' ).forEach( ( elem ) => {
+		elem.addEventListener( 'click', allowUncheck );
+	} );
+	document.querySelectorAll( '#uiground .tiles input[type=radio][name=voxel]' ).forEach( ( elem ) => {
 		elem.addEventListener( 'click', allowUncheck );
 	} );
 
@@ -403,6 +416,7 @@ function onPointerDown( event ) {
 				}
 			}
 		} else {
+			console.log(currentId);
 			if (currentId != undefined){
 				// Add new object
 				if (currentId == "cube"){
@@ -435,6 +449,9 @@ function onPointerDown( event ) {
 					currentGeometry = generateBeam("i-beam", beamParams.length, beamParams.h, beamParams.s, beamParams.t, beamParams.b);;
 				} else if (currentId == "cbeam"){
 					currentGeometry = generateBeam("c-beam", beamParams.length, beamParams.h, beamParams.s, beamParams.t, beamParams.b);;
+				} else if (currentId == "ground") {
+					currentGeometry = new THREE.SphereGeometry(groundRadius);
+					currentGeometry.type = "ground";
 				}
 
 				// create new object
@@ -449,7 +466,11 @@ function onPointerDown( event ) {
 				voxel.currentAngleX = 0;
 				voxel.currentAngleY = 0;
 				voxel.currentAngleZ = 0;
-				voxel.el_contextual = undefined;
+				if (currentId == "ground") {
+					voxel.el_contextual = "ground";
+				} else {
+					voxel.el_contextual = undefined;
+				}
 				voxel.el_material = undefined;
 				voxel.relationshipCount = 0;
 				scene.add( voxel );
@@ -514,8 +535,15 @@ function onPointerDown( event ) {
 				currentFolder = undefined;
 			}
 			// If the ground plane has been selected, or anywhere outside of this then there'll be no current folder.
+			elementFolder.children[0].setValue(currentObject.name);
+			elementFolder.show();
+			if (currentId == "ground") {
+				gCoordsFolder.hide();
+				contextualFolder.hide();
+				materialFolder.hide();
+				geometryFolder.hide();
+			}
 			if (currentFolder != undefined){
-				elementFolder.children[0].setValue(currentObject.name);
 				transFolder.children[0].setValue(glToJson(currentObject, "x", currentObject.position.x));
 				transFolder.children[1].setValue(glToJson(currentObject, "y", currentObject.position.y));
 				transFolder.children[2].setValue(glToJson(currentObject, "z", currentObject.position.z));
@@ -523,17 +551,11 @@ function onPointerDown( event ) {
 				rotFolder.children[1].setValue(currentObject.rotation.y * (180 / Math.PI));
 				rotFolder.children[2].setValue(currentObject.rotation.z * (180 / Math.PI));
 				materialFolder.children[0].setValue(currentObject.el_material);
-				if (currentObject.el_contextual == 'ground'){
-					elementFolder.children[1].setValue(true);
-				} else {
-					contextualFolder.children[0].setValue(currentObject.el_contextual);
-					elementFolder.show();
-					gCoordsFolder.show();
-					contextualFolder.show();
-					materialFolder.show();
-					currentFolder.show();
-					elementFolder.children[1].setValue(false);
-				}
+				contextualFolder.children[0].setValue(currentObject.el_contextual);
+				gCoordsFolder.show();
+				contextualFolder.show();
+				materialFolder.show();
+				currentFolder.show();
 			}
 		}
 	}
@@ -605,6 +627,9 @@ function allowUncheck() {
 		} else if (currentId == "cbeam"){
 			rollOverMesh.geometry = rollOverCBeamGeo;
 			currentFolder = beamFolder;
+		} else if (currentId == "ground"){
+			rollOverMesh.geometry = rollOverGroundGeo;
+			currentFolder = undefined;
 		}
 		rollOverMesh.visible = true;
 	}
@@ -636,47 +661,6 @@ function updateElementName(){
 	currentObject.name = elInfo.Name;
 }
 
-
-function toggleGround(value){
-	if (value == true){
-		currentObject.el_contextual = 'ground';
-		gCoordsFolder.hide();
-		materialFolder.hide();
-		contextualFolder.hide();
-		geometryFolder.hide();
-		folders.forEach(folder => folder.hide());  // hide all geometry dimension folders
-		currentObject.material.color.setHex(otherColours.ground);
-	} else {
-		if (currentObject.el_contextual == 'ground') {
-			// If it was ground then update it's context
-			// This if-statement is needed because this function is also called for maintaining non-ground status.
-			currentObject.el_contextual = undefined;
-		}
-		gCoordsFolder.show();
-		materialFolder.show();
-		contextualFolder.show();
-		geometryFolder.show();
-		if (currentObject.geometry.type == "BoxGeometry"){
-			boxFolder.show();
-		} else if (currentObject.geometry.type == "SphereGeometry"){
-			sphereFolder.show();
-		} else if (currentObject.geometry.type == "CylinderGeometry"){
-			cylinderFolder.show();
-		} else if (currentObject.geometry.type == "ObliqueCylinderGeometry"){
-			obliqueCylinderFolder.show();
-		} else if  (currentObject.geometry.type == "TrapezoidGeometry"){
-			trapezoidFolder.show();
-		} else if (currentObject.geometry.type == "IBeamGeometry" || geometry.type == "CBeamGeometry"){
-			beamFolder.show();
-		}
-		if (currentObject.material.color.getHex() != otherColours['Orphans']
-				&& currentObject.material.color.getHex() != otherColours['Selected element']) {
-			// Don't change the colour if it's currently being highlighted as an orphan or selected element
-			resetColour(gui.children[2].children[0].getValue(), currentObject);
-		}
-	}
-	render();
-}
 
 
 // It's necessary to handle each dimension separately,
