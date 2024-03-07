@@ -294,7 +294,7 @@ function save(modelDetails, relationships, relationshipNatures, elements){
                   "name": modelDetails.Name,
 				  "description": modelDetails.Description,
 				  "population": modelDetails.Population,
-				  "timestamp": new Date().getTime(),
+				  "timestamp": Date.now() * 1000000,
 				  "models": { "irreducibleElement": {
 					          "type": modelDetails.Type,  // assumed
             				  "elements": undefined,
