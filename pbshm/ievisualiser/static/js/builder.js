@@ -222,7 +222,7 @@ function loadBlankBuilder(){
 }
 
 
-function buildModel(preInfo=undefined, shapes=undefined, preRelationships=undefined) {
+function buildModel(preInfo=undefined, shapes=undefined, preRelationships=undefined, preNatures=undefined) {
 	scene = new THREE.Scene();
 	scene.background = new THREE.Color( 0xf0f0f0 );
 	
@@ -268,9 +268,12 @@ function buildModel(preInfo=undefined, shapes=undefined, preRelationships=undefi
 			elementDict[pair[0]].relationshipCount++;
 			elementDict[pair[1]].relationshipCount++;
 			relationships[[elementDict[pair[0]].id, elementDict[pair[1]].id]] = value;
+			if (value == 'joint' || value == 'connection') {
+				relationshipNatures[[elementDict[pair[0]].id, elementDict[pair[1]].id]] = preNatures[key];
+			}
 		}
 	}
-
+	
 
 	// Only render when the user moves the camera
 	controls.addEventListener("change", () => renderer.render(scene, camera));

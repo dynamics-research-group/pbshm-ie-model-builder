@@ -155,6 +155,7 @@ function getGroundLocations(data, elCoords){
 
 function extractRelationships(rawtext){
 	const relatDict = {};
+	const natureDict = {};
 	const data = JSON.parse(rawtext);
 	const relationships = data.models.irreducibleElement.relationships;
 	for (let i=0; i<relationships.length; i++){
@@ -162,8 +163,13 @@ function extractRelationships(rawtext){
 		const el2 = relationships[i].elements[1].name;
 		const r = relationships[i].type;
 		relatDict[[el1, el2]] = r;
+		if (r == 'joint' ){
+			natureDict[[el1, el2]] = relationships[i].nature.name + ' ' + relationships[i].nature.nature.name;
+		} else if (r == 'connection') {
+			natureDict[[el1, el2]] = relationships[i].elements[0].nature.name + ' ' + relationships[i].elements[0].nature.nature.name;
+		}
 	}
-	return relatDict
+	return [relatDict, natureDict];
 }
 
 

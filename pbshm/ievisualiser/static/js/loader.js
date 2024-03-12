@@ -19,8 +19,8 @@ export function loadFile(filepath, purpose='viewer'){
             plotModel(shapes);
           } else {
             const info = modelInfo(data);
-            const relationships = extractRelationships(data);
-            buildModel(info, shapes, relationships);
+            const [relationships, natures] = extractRelationships(data);
+            buildModel(info, shapes, relationships, natures);
           }
         }
         else {
