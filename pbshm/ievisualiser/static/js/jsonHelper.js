@@ -355,7 +355,7 @@ function save(modelDetails, relationships, relationshipNatures, elements){
 				el_dict.geometry["dimensions"] = relevantDimensions(e);
 				
 				// Thickness is only relevant for shell geometries
-				if (e.el_geometry.substring(0, e.el_geometry.indexOf(' ')) == 'shell'){
+				if (e.el_geometry != undefined && e.el_geometry.substring(0, e.el_geometry.indexOf(' ')) == 'shell'){
 					el_dict.geometry.dimensions["thickness"] = {"axis": "z",
 																"source": "nominal",
 																"unit": "other",
