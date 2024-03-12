@@ -6,7 +6,7 @@ function conversionAmount(currentObject, dimension){
             case "y":
                 return currentObject.geometry.parameters.height / 2;
             case "z":
-                return currentObject.geometry.parameters.depth / 2;
+                return -currentObject.geometry.parameters.depth / 2;
         }
     } else if (currentObject.geometry.type == "SphereGeometry"){
         switch (dimension) {
@@ -15,7 +15,7 @@ function conversionAmount(currentObject, dimension){
             case "y":
                 return currentObject.geometry.parameters.radius;
             case "z":
-                return currentObject.geometry.parameters.radius;
+                return -currentObject.geometry.parameters.radius;
         }
     } else if (currentObject.geometry.type == "CylinderGeometry" || currentObject.geometry.type == "ObliqueCylinderGeometry"){
         const radius = Math.max(currentObject.geometry.parameters.radiusBottom,
@@ -27,7 +27,7 @@ function conversionAmount(currentObject, dimension){
             case "y":
                 return radius
             case "z":
-                return radius;
+                return -radius;
         }
     } else if (currentObject.geometry.type == "IBeamGeometry" || currentObject.geometry.type == "CBeamGeometry"){
         switch (dimension) {
@@ -36,7 +36,7 @@ function conversionAmount(currentObject, dimension){
             case "y":
                 return currentObject.geometry.parameters.h / 2;
             case "z":
-                return currentObject.geometry.parameters.b / 2;
+                return -currentObject.geometry.parameters.b / 2;
         }
     } else if (currentObject.geometry.type == "TrapezoidGeometry"){
         switch (dimension) {
@@ -45,7 +45,7 @@ function conversionAmount(currentObject, dimension){
             case "y":
                 return currentObject.geometry.origLocation.y;
             case "z":
-                return currentObject.geometry.origLocation.z;
+                return -currentObject.geometry.origLocation.z;
         }
     }
 }

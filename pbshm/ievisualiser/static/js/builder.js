@@ -696,6 +696,15 @@ function moveGeometryZ(){
 }
 
 
+function moveGeometryXYZ(pos){
+	currentObject.position.x = jsonToGl(currentObject, "x", posParams.x);
+	currentObject.position.y = jsonToGl(currentObject, "y", posParams.y);
+	currentObject.position.z = jsonToGl(currentObject, "z", posParams.z);
+	currentObject.geometry.attributes.position.needsUpdate = true;
+	render();
+}
+
+
 function rotateGeometryX(){
 	const newAngle = rotateParams.x * (Math.PI/180)
 	const rotation = newAngle - currentObject.currentAngleX;
@@ -768,7 +777,10 @@ function updateJsonGeometry(){
 		// Show the thickness parameter within the (last child of the) geometry folder
 		currentFolder.children[currentFolder.children.length-1].show();
 	} else {
-		currentFolder.children[currentFolder.children.length-1].hide();
+		const lastFolderItem =  currentFolder.children[currentFolder.children.length-1]
+		if (lastFolderItem.property == "thickness"){
+			currentFolder.children[currentFolder.children.length-1].hide();
+		}
 	}
 	render();
 }
@@ -800,14 +812,12 @@ function initBoxGui(){
 	boxFolder.children[3].hide();  // Thickness is only necesssary for shells so hide until shell geometry is chosen
 	function updateParameters(changedParam, value){
 		if (currentObject.geometry.parameters[changedParam] != value){  // don't regenerate to the object if we're just updating the gui
+			const pos = {...posParams};  // threejs makes the centre of the object stay in the same place but we want the corner to stay the same instead
 			const newParams = {...currentObject.geometry.parameters};
 			newParams[changedParam] = value;
 			updateGeometry(currentObject,
 						new THREE.BoxGeometry(newParams.width, newParams.height, newParams.depth));
-			if (changedParam == "height"){
-				posParams.y = 0;
-				moveGeometryY();
-			}
+			moveGeometryXYZ(pos);  // move the object back into its correct corner location
 		}
 	}
 }
@@ -820,11 +830,9 @@ function initSphereGui(){
 	sphereFolder.children[1].hide();  // Thickness is only necesssary for shells so hide until shell geometry is chosen
 	function updateParameters(){
 		if (currentObject.geometry.parameters.radius != sphereParams.radius) {
+			const pos = {...posParams};
 			updateGeometry(currentObject, new THREE.SphereGeometry(sphereParams.radius));
-			if (currentObject.position.y < sphereParams.radius){
-				posParams.y = 0;
-				moveGeometryY();
-			}
+			moveGeometryXYZ(pos);
 		}
 	}
 }
@@ -838,6 +846,7 @@ function initCylinderGui(){
 	cylinderFolder.children[2].hide();  // Thickness is only necesssary for shells so hide until shell geometry is chosen
 	function updateParameters(changedParam, value){
 		if (currentObject.geometry.parameters[changedParam] != value){  // don't regenerate to the object if we're just updating the gui
+			const pos = {...posParams};
 			const newParams = {...currentObject.geometry.parameters};
 			newParams[changedParam] = value;
 			if (changedParam == "radiusTop"){
@@ -847,10 +856,7 @@ function initCylinderGui(){
 						new THREE.CylinderGeometry(newParams.radiusTop, newParams.radiusBottom, newParams.length));
 			currentObject.geometry.rotateZ(Math.PI/2);
 			render();
-			// if (changedParam == "height"){
-			// 	posParams.y = 0;
-			// 	moveGeometryY();
-			// }
+			moveGeometryXYZ(pos);
 		}
 	}
 }
@@ -876,6 +882,7 @@ function initObliqueCylinderGui(){
 			value = -(obliqueCylinderParams['Faces Right Trans. z']  - obliqueCylinderParams['Faces Left Trans. z']);
 		}
 		if (currentObject.geometry.parameters[changedParam] != value){  // don't regenerate to the object if we're just updating the gui
+			const pos = {...posParams};
 			const newParams = {...currentObject.geometry.parameters};
 			newParams[changedParam] = value;
 			updateGeometry(currentObject,
@@ -887,10 +894,7 @@ function initObliqueCylinderGui(){
 			currentObject.geometry.parameters['Faces Right Trans. y'] = obliqueCylinderParams['Faces Right Trans. y']
 			currentObject.geometry.parameters['Faces Right Trans. z'] = obliqueCylinderParams['Faces Right Trans. z']
 			render();
-			// if (changedParam == "height"){
-			// 	posParams.y = 0;
-			// 	moveGeometryY();
-			// }
+			moveGeometryXYZ(pos);
 		}
 	}
 }
@@ -913,12 +917,14 @@ function initTrapezoidGui(){
 	trapezoidFolder.children[9].hide();  // Thickness is only necesssary for shells so hide until shell geometry is chosen
 	function updateParameters(changedParam, value){
 		if (currentObject.geometry.parameters[changedParam] != value){  // don't regenerate to the object if we're just updating the gui
+			const pos = {...posParams};
 			const newParams = {...currentObject.geometry.parameters};
 			newParams[changedParam] = value;
 			updateGeometry(currentObject,
 				new TrapezoidGeometry(newParams.leftTransY, newParams.leftTransZ, newParams.leftDimensY, newParams.leftDimensZ,
 									newParams.rightTransY, newParams.rightTransZ, newParams.rightDimensY, newParams.rightDimensZ,
 									newParams.width));
+			moveGeometryXYZ(pos);
 		}
 	}
 }
@@ -933,6 +939,7 @@ function initBeamGui(){
 	beamFolder.add(beamParams, "b").onChange(value => updateParameters("b", value));
 	function updateParameters(changedParam, value){
 		if (currentObject.geometry.parameters[changedParam] != value){  // don't regenerate to the object if we're just updating the gui
+			const pos = {...posParams};
 			const newParams = {...currentObject.geometry.parameters};
 			newParams[changedParam] = value;
 			let newGeom;
@@ -943,10 +950,7 @@ function initBeamGui(){
 			}
 			currentObject.geometry.dispose();
 			currentObject.geometry = newGeom;
-			if (changedParam == "h"){
-				posParams.y = 0;
-				moveGeometryY();
-			}
+			moveGeometryXYZ(pos);
 			render();
 		}
 	}
