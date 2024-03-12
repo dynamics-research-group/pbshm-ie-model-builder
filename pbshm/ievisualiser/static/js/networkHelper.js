@@ -237,9 +237,9 @@ function drawNetwork(coords, edges, elInfo, threeD=true){
                 }
             }
             try {
-                element_geom = [info.geometry.type.name, info.geometry.type.type.name, info.geometry.type.type.type.name].join("-");
+                element_geom = [info.geometry.type.name, info.geometry.type.type.name, info.geometry.type.type.type.name].join(" ");
             } catch(TypeError) {
-                element_geom = [info.geometry.type.name, info.geometry.type.type.name].join("-");
+                element_geom = [info.geometry.type.name, info.geometry.type.type.name].join(" ");
             }
         } else {
             element_type = "ground";

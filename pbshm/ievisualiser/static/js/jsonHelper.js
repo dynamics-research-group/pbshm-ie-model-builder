@@ -33,13 +33,21 @@ function extractShapes(rawtext){
 				try {
 					element_material = [elements[i].material.type.name, elements[i].material.type.type.name, elements[i].material.type.type.type.name].join("-");
 				} catch(TypeError) {
-					element_material = [elements[i].material.type.name, elements[i].material.type.type.name].join("-");
+					try {
+						element_material = [elements[i].material.type.name, elements[i].material.type.type.name].join("-");
+					} catch(TypeError) {
+						element_material = undefined;
+					}
 				}
 				let element_geom;
 				try {
 					element_geom = [elements[i].geometry.type.name, elements[i].geometry.type.type.name, elements[i].geometry.type.type.type.name].join(" ");
 				} catch(TypeError) {
-					element_geom = [elements[i].geometry.type.name, elements[i].geometry.type.type.name].join(" ");
+					try {
+						element_geom = [elements[i].geometry.type.name, elements[i].geometry.type.type.name].join(" ");
+					} catch(TypeError) {
+						element_geom = undefined;
+					}	
 				}
 				let shape_name;
 				let method = elements[i].geometry.type.type.name;
@@ -320,9 +328,7 @@ function save(modelDetails, relationships, relationshipNatures, elements){
 		} else {
 			el_dict["type"] = "regular";
 			// Save contextual info
-			if (e.el_contextual != undefined) {
-				el_dict["contextual"] = {"type": e.el_contextual};
-			}
+			el_dict["contextual"] = {"type": e.el_contextual};
 			// Save material info
 			if (e.el_material != undefined) {
 				const split = e.el_material.indexOf('-');
@@ -350,6 +356,28 @@ function save(modelDetails, relationships, relationshipNatures, elements){
 				}
 				if (el_dict.geometry.type.type.name == "translateAndScale"){
 					el_dict.geometry["faces"] = relevantFaces(e);
+				}
+			} else {
+				el_dict["geometry"] = {"type": {"name": "undefined"}}; // don't know if it's a solid or shell
+				// but we do know if it's translate or not and what shape it is
+				if (e.geometry.type == "BoxGeometry") {
+						el_dict.geometry.type["type"] = {"name": "translate",
+														 "type": {"name": "cuboid"}};
+				} else if (e.geometry.type == "SphereGeometry") {
+						el_dict.geometry.type["type"] = {"name": "translate",
+														 "type": {"name": "sphere"}};
+				} else if (e.geometry.type == "CylinderGeometry") {
+					 	el_dict.geometry.type["type"] = {"name": "translate",
+														 "type": {"name": "cylinder"}};
+				} else if (e.geometry.type == "ObliqueCylinderGeometry") {
+					el_dict.geometry.type["type"] = {"name": "translateAndScale",
+														 "type": {"name": "cylinder"}};
+				} else if (e.geometry.type == "IBeamGeometry" || e.geometry.type == "CBeamGeometry") {
+						el_dict["geometry"] = {"type": {"name": "beam"}};
+					 	el_dict.geometry.type["type"] = {"name": undefined};
+				} else if (e.geometry.type == "TrapezoidGeometry") {
+					el_dict.geometry.type["type"] = {"name": "translateAndScale",
+															"type": {"name": "cuboid"}};
 				}
 			}
 				el_dict.geometry["dimensions"] = relevantDimensions(e);

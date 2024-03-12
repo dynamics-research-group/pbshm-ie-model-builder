@@ -113,7 +113,11 @@ function geometryDetails(element, scaleFactor=100){
     shape.name = element["element_name"];
     shape.el_material = element["element_material"];
     shape.el_contextual = element["element_type"];
-    shape.el_geometry = element["element_geometry"];
+    if (element["element_geometry"].substring(0, 9) == "undefined") {
+        shape.el_geometry = undefined;    
+    } else {
+        shape.el_geometry = element["element_geometry"];
+    }
     shape.position.x = x;
     shape.position.y = y;
     shape.position.z = z;
@@ -146,12 +150,12 @@ function geometryDetails(element, scaleFactor=100){
 
 
 /* i-beam labels:
-    -> ---------------  <-
-    t  |             |   |
-    -> ------   ------   |
-            |   |        |
-            | s |        |h
-            |   |        |
+     -> ---------------  <-
+     t  |             |   |
+     -> ------   ------   |
+             |   |        |
+             | s |        |h
+             |   |        |
         ------   ------   |
         |             |   |
         ---------------  <-
