@@ -332,8 +332,8 @@ function save(modelDetails, relationships, relationshipNatures, elements){
 			// Save coordinates
 			el_dict["coordinates"] = {"global": {"translational": {
 				"x": { "unit": "other", "value": glToJson(e, "x", e.position.x)},
-				"y": { "unit": "other", "value": glToJson(e, "x", e.position.y)},
-				"z": { "unit": "other", "value": glToJson(e, "x", e.position.z)}
+				"y": { "unit": "other", "value": glToJson(e, "y", e.position.y)},
+				"z": { "unit": "other", "value": glToJson(e, "z", e.position.z)}
 			}}};
 			// Save geometry info
 			el_dict["geometry"] = {}
