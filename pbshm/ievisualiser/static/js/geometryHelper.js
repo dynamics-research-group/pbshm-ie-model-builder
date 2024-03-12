@@ -4,9 +4,10 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { otherColours, contextualColours } from './colourHelper.js';
 import { TrapezoidGeometry } from './trapezoid.js';
 import {ObliqueCylinderGeometry} from './obliqueCylinder.js'
+import { jsonToGl } from './translationHelper.js';
 
 
-function geometryDetails(element, scaleFactor=100){
+function geometryDetails(element, scaleFactor=1){
     let geometry, x, y, z  // used by threejs
     
     // Threejs automatically puts a shape's (x,y,z) coords in the centre.
@@ -18,16 +19,10 @@ function geometryDetails(element, scaleFactor=100){
             const width = element["dimensions"].length / scaleFactor;	// called length in json
             const depth = element["dimensions"].width / scaleFactor;
             const height = element["dimensions"].height / scaleFactor;
-            x = (element["coords"][0] / scaleFactor) + (width / 2);
-            y = (element["coords"][1] / scaleFactor) + (height / 2);
-            z = (element["coords"][2] / scaleFactor) + (depth / 2);
             geometry = new THREE.BoxGeometry(width, height, depth);
         }
         else if (element["shape"] == "sphere") {
             const radius = element["dimensions"].radius
-            x = (element["coords"][0] / scaleFactor) + (radius / 2);
-            y = (element["coords"][1] / scaleFactor) + (radius / 2);
-            z = (element["coords"][2] / scaleFactor) + (radius / 2);
             geometry = new THREE.SphereGeometry(radius, 12, 8);
         }
         else if (element["shape"] == "cylinder" || element["shape"] == "circular") {
@@ -39,9 +34,6 @@ function geometryDetails(element, scaleFactor=100){
             else {
                 length = element["dimensions"].thickness
             }
-            x = (element["coords"][0] / scaleFactor) + (radius / 2);
-            y = (element["coords"][1] / scaleFactor) + (length / 2);
-            z = (element["coords"][2] / scaleFactor) + (radius / 2);
             geometry = new THREE.CylinderGeometry(radius, radius, length, 12);
             geometry.rotateZ(Math.PI/2);  // rotate because cylinder is horizontal in json but vertical in webGL
         }
@@ -70,9 +62,6 @@ function geometryDetails(element, scaleFactor=100){
             const width = element["dimensions"].length / scaleFactor;	// called length in json
             const height = Math.max(leftTransY+leftDimensY, rightTransY+rightDimensY);
             const depth = Math.max(leftTransZ+leftDimensZ, rightTransZ+rightDimensZ);
-            x = (element["coords"][0] / scaleFactor) + (width / 2);
-            y = (element["coords"][1] / scaleFactor) + (height / 2);
-            z = (element["coords"][2] / scaleFactor) + (depth / 2);
             geometry = new TrapezoidGeometry(leftTransY, leftTransZ,
                 leftDimensY, leftDimensZ, rightTransY, rightTransZ,
                     rightDimensY, rightDimensZ, width);
@@ -90,9 +79,6 @@ function geometryDetails(element, scaleFactor=100){
             geometry = new ObliqueCylinderGeometry(rightRadius, leftRadius, width, skewY, skewZ);
             // Rotate because cylinder is assumed horizontal in json but automatically vertical in webGL
             geometry.rotateZ(Math.PI/2);
-            x = (element["coords"][0] / scaleFactor) + (radius / 2);
-            y = (element["coords"][1] / scaleFactor) + (length / 2);
-            z = (element["coords"][2] / scaleFactor) + (radius / 2);
         }
         else if (element["shape"] == "other"){
             console.log("Element", element["element_name"], "is shape other.");
@@ -118,9 +104,9 @@ function geometryDetails(element, scaleFactor=100){
     } else {
         shape.el_geometry = element["element_geometry"];
     }
-    shape.position.x = x;
-    shape.position.y = y;
-    shape.position.z = z;
+    shape.position.x = jsonToGl(shape, 'x', element["coords"][0]);
+    shape.position.y = jsonToGl(shape, 'y', element["coords"][1]);
+    shape.position.z = jsonToGl(shape, 'z', element["coords"][2]);
     
     if (element["rotation"] != undefined){
         if (element["rotation"].alpha.unit == "radians"){
