@@ -238,6 +238,7 @@ function buildModel(preInfo=undefined, shapes=undefined, preRelationships=undefi
 		modelDetailsFolder.children[0].setValue(preInfo.name);
 		modelDetailsFolder.children[1].setValue(preInfo.description);
 		modelDetailsFolder.children[2].setValue(preInfo.population);
+		modelDetailsFolder.children[3].setValue(preInfo.type);
 		info = plotElements(renderer.domElement, scene, shapes);
 		camera = info.camera
 		const elementDict = {}  // to help track relationships
@@ -416,7 +417,6 @@ function onPointerDown( event ) {
 				}
 			}
 		} else {
-			console.log(currentId);
 			if (currentId != undefined){
 				// Add new object
 				if (currentId == "cube"){

@@ -11,7 +11,8 @@ function modelInfo(rawtext){
 	const data = JSON.parse(rawtext);
 	return {"name": data.name,
 			"description": data.description,
-			"population": data.population};
+			"population": data.population,
+		 	"type": data.models.irreducibleElement.type};
 }
 
 
@@ -329,21 +330,25 @@ function save(modelDetails, relationships, relationshipNatures, elements){
 				"z": { "unit": "other", "value": glToJson(e, "x", e.position.z)}
 			}}};
 			// Save geometry info
-			const split1 = e.el_geometry.indexOf(' ');
-			let split2 = e.el_geometry.substring(split1+1).indexOf(' ');
-			el_dict["geometry"] = {"type": {"name": e.el_geometry.substring(0, split1)}}
-			if (split2 == -1){
-				el_dict.geometry.type["type"] = {"name": e.el_geometry.substring(split1+1)}
-			} else {
-				split2 += split1 + 1;
-				el_dict.geometry.type["type"] = {"name": e.el_geometry.substring(split1+1, split2),
-										         "type": {"name": e.el_geometry.substring(split2+1)}}
+			el_dict["geometry"] = {}
+			if (e.el_geometry != undefined) {
+				const split1 = e.el_geometry.indexOf(' ');
+				let split2 = e.el_geometry.substring(split1+1).indexOf(' ');
+				el_dict["geometry"] = {"type": {"name": e.el_geometry.substring(0, split1)}}
+				if (split2 == -1){
+					el_dict.geometry.type["type"] = {"name": e.el_geometry.substring(split1+1)}
+				} else {
+					split2 += split1 + 1;
+					el_dict.geometry.type["type"] = {"name": e.el_geometry.substring(split1+1, split2),
+													"type": {"name": e.el_geometry.substring(split2+1)}}
+				}
+				if (el_dict.geometry.type.type.name == "translateAndScale"){
+					el_dict.geometry["faces"] = relevantFaces(e);
+				}
 			}
-			el_dict.geometry["dimensions"] = relevantDimensions(e);
-
-			if (el_dict.geometry.type.type.name == "translateAndScale"){
-				el_dict.geometry["faces"] = relevantFaces(e);
-			}
+				el_dict.geometry["dimensions"] = relevantDimensions(e);
+				
+				
 		}
 		elements_output.push(el_dict);
 	}
