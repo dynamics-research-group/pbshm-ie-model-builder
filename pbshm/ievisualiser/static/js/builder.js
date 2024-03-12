@@ -134,17 +134,21 @@ const floorParams = {'width': 300,
 					 'depth': 300};
 const boxParams = {'length': 5,
                    'height': 5,
-				   'width': 5};
-const sphereParams = {'radius': 3}
+				   'width': 5,
+				   'thickness': 1};
+const sphereParams = {'radius': 3,
+					  'thickness': 1}
 const cylinderParams = {'radius': 3,
-   			   		    'length': 5}
+   			   		    'length': 5,
+						'thickness': 1}
 const obliqueCylinderParams = {'Faces left radius': 3,
    			   		    	   'Faces right radius': 3,
 							   'Faces Left Trans. y': 0,
 							   'Faces Left Trans. z': 0,
 							   'Faces Right Trans. y': 0,
 							   'Faces Right Trans. z': 0,
- 							   'length': 5}
+ 							   'length': 5,
+							   'thickness': 1}
 const trapezoidParams = {"Faces Left Trans. y": 1.5,
 						 "Faces Left Trans. z": 1.5,
 						 "Faces Left Height": 2,
@@ -153,7 +157,8 @@ const trapezoidParams = {"Faces Left Trans. y": 1.5,
 						 "Faces Right Trans. z": 0,
 						 "Faces Right Height": 5,
 						 "Faces Right Width": 5,
-						 "length": 5}
+						 "length": 5,
+						 "thickness": 1}
 const beamParams = {"length": 8,
 				    "h": 4,
 				    "s": 1,
@@ -759,6 +764,12 @@ function updateJsonGeometry(){
 			&& currentObject.material.color.getHex() != otherColours['Selected element']) {
 		currentObject.material.color.setHex(geometryColours[currentObject.el_geometry]);
 	}
+	if (geometry.Type != undefined && geometry.Type.substring(0, 5) == "shell"){
+		// Show the thickness parameter within the (last child of the) geometry folder
+		currentFolder.children[currentFolder.children.length-1].show();
+	} else {
+		currentFolder.children[currentFolder.children.length-1].hide();
+	}
 	render();
 }
 
@@ -775,11 +786,18 @@ function showGeometryDropdown(geom){
 }
 
 
+function updateThickness(value){
+	currentObject.geometry.parameters['thickness'] = value;
+}
+
+
 function initBoxGui(){
 	boxFolder = elementFolder.addFolder('Geometry Dimensions');
 	boxFolder.add(boxParams, 'length').onChange(value => updateParameters("width", value));
 	boxFolder.add(boxParams, 'height').onChange(value => updateParameters("height", value));
 	boxFolder.add(boxParams, 'width').onChange(value => updateParameters("depth", value));
+	boxFolder.add(boxParams, 'thickness').onChange(value => updateThickness(value));
+	boxFolder.children[3].hide();  // Thickness is only necesssary for shells so hide until shell geometry is chosen
 	function updateParameters(changedParam, value){
 		if (currentObject.geometry.parameters[changedParam] != value){  // don't regenerate to the object if we're just updating the gui
 			const newParams = {...currentObject.geometry.parameters};
@@ -798,6 +816,8 @@ function initBoxGui(){
 function initSphereGui(){
 	sphereFolder = elementFolder.addFolder('Geometry Dimensions');
 	sphereFolder.add(sphereParams, 'radius').onChange(updateParameters);
+	sphereFolder.add(sphereParams, 'thickness').onChange(value => updateThickness(value));
+	sphereFolder.children[1].hide();  // Thickness is only necesssary for shells so hide until shell geometry is chosen
 	function updateParameters(){
 		if (currentObject.geometry.parameters.radius != sphereParams.radius) {
 			updateGeometry(currentObject, new THREE.SphereGeometry(sphereParams.radius));
@@ -814,6 +834,8 @@ function initCylinderGui(){
 	cylinderFolder = elementFolder.addFolder('Geometry Dimensions');
 	cylinderFolder.add(cylinderParams, 'radius').onChange(value => updateParameters("radiusTop", value));
 	cylinderFolder.add(cylinderParams, 'length').onChange(value => updateParameters("length", value));
+	cylinderFolder.add(cylinderParams, 'thickness').onChange(value => updateThickness(value));
+	cylinderFolder.children[2].hide();  // Thickness is only necesssary for shells so hide until shell geometry is chosen
 	function updateParameters(changedParam, value){
 		if (currentObject.geometry.parameters[changedParam] != value){  // don't regenerate to the object if we're just updating the gui
 			const newParams = {...currentObject.geometry.parameters};
@@ -843,6 +865,8 @@ function initObliqueCylinderGui(){
 	obliqueCylinderFolder.add(obliqueCylinderParams, 'Faces Left Trans. z').onChange(value => updateParameters("leftTransZ", value));
 	obliqueCylinderFolder.add(obliqueCylinderParams, 'Faces Right Trans. y').onChange(value => updateParameters("rightTransY", value));
 	obliqueCylinderFolder.add(obliqueCylinderParams, 'Faces Right Trans. z').onChange(value => updateParameters("rightTransZ", value));
+	obliqueCylinderFolder.add(obliqueCylinderParams, 'thickness').onChange(value => updateThickness(value));
+	obliqueCylinderFolder.children[7].hide();  // Thickness is only necesssary for shells so hide until shell geometry is chosen
 	function updateParameters(changedParam, value){
 		if (changedParam == "leftTransY" || changedParam == "rightTransY"){
 			changedParam = "topSkewX";
@@ -885,6 +909,8 @@ function initTrapezoidGui(){
 	trapezoidFolder.add(trapezoidParams, "Faces Right Height").onChange(value => updateParameters("rightDimensY", value));
 	trapezoidFolder.add(trapezoidParams, "Faces Right Width").onChange(value => updateParameters("rightDimensZ", value));
 	trapezoidFolder.add(trapezoidParams, "length").onChange(value => updateParameters("width", value));
+	trapezoidFolder.add(trapezoidParams, 'thickness').onChange(value => updateThickness(value));
+	trapezoidFolder.children[9].hide();  // Thickness is only necesssary for shells so hide until shell geometry is chosen
 	function updateParameters(changedParam, value){
 		if (currentObject.geometry.parameters[changedParam] != value){  // don't regenerate to the object if we're just updating the gui
 			const newParams = {...currentObject.geometry.parameters};
