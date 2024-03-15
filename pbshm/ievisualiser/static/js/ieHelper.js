@@ -41,7 +41,7 @@ function plotElements(canvas, scene, shapes){
 	
 	// Give the user the ability to control the camera
 	const controls = new OrbitControls(camera, canvas);
-	controls.target.set(maxX/2, maxY*0.75, 0);	// where the camera looks
+	controls.target.set((maxX-minX)/2, 0, -(maxZ-minZ));
 	controls.update();
 
 	// Add directional light to help highlight corners of the 3D shapes
@@ -60,10 +60,10 @@ function plotElements(canvas, scene, shapes){
 	scene.add(light2);
 
 	// Add ground	 
-	const planeGeometry = new THREE.PlaneGeometry((maxX-minX)*2, (maxX-minX)*2);
+	const planeGeometry = new THREE.PlaneGeometry((maxX-minX), (maxZ-minZ)*2);
 	planeGeometry.rotateX( - Math.PI / 2 );
 	const floor = new THREE.Mesh( planeGeometry, new THREE.MeshBasicMaterial( { visible: true } ) );
-	floor.position.set((minX + maxX) / 2, 0, (minZ + maxZ) / 2)
+	floor.position.set((maxX-minX)/2, 0, -(maxZ-minZ))
 	floor.name = "plane";
 	scene.add(floor);
 

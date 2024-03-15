@@ -198,12 +198,12 @@ const objects = [];  // list of all objects in the scene
 
 function loadBlankBuilder(){
 	camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 10000 );
-	camera.position.set( 0, 100, 300 );
-	camera.lookAt( 0, 0, 0 );
-
+	camera.position.set( floorParams.width/2, 100, 300 );
+	camera.lookAt(floorParams.width/2, 0, -floorParams.depth/2);  // where the camera looks
+	
 	// Give the user the ability to control the camera
 	controls = new OrbitControls(camera, renderer.domElement);
-	controls.target.set(0, 0, 0);	// where the camera looks
+	controls.target.set(floorParams.width/2, 0, -floorParams.depth/2);	// the centre when spinning the environmnet
 	// Only render when the user moves the camera
 	controls.addEventListener("change", () => renderer.render(scene, camera));
 	controls.update();
@@ -212,6 +212,7 @@ function loadBlankBuilder(){
 	planeGeometry = new THREE.PlaneGeometry(floorParams.width, floorParams.depth );
 	planeGeometry.rotateX( - Math.PI / 2 );
 	floor = new THREE.Mesh( planeGeometry, new THREE.MeshBasicMaterial( { visible: true } ) );
+	floor.position.set(floorParams.width/2, 0, -floorParams.depth/2)
 	floor.name = "plane";
 	scene.add( floor );
 	objects.push( floor );
@@ -661,6 +662,12 @@ function initGroundGui(){
 		planeGeometry = new THREE.PlaneGeometry( floorParams.width, floorParams.depth );
 		planeGeometry.rotateX( - Math.PI / 2 );
 		updateGeometry(floor, planeGeometry);
+		// Ensure the camera and controls are still centred on the floor,
+		// and that the front left corner is at (0, 0, 0).
+		camera.lookAt(floorParams.width/2, 0, -floorParams.depth/2);
+		controls.target.set(floorParams.width/2, 0, -floorParams.depth/2);
+		floor.position.set(floorParams.width/2, 0, -floorParams.depth/2)
+		render();
 	}
 }
 
