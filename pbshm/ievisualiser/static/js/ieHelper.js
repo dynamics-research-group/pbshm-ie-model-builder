@@ -20,11 +20,12 @@ function plotElements(canvas, scene, shapes){
 	const scaleFactor = 1;
 	for (let i=0; i<shapes.length; i++){
 		const shape = geometryDetails(shapes[i], scaleFactor);
-		maxX = Math.max(maxX, shape.position.x);
-		maxY = Math.max(maxY, shape.position.y);
-		maxZ = Math.max(maxZ, shape.position.z);
-		minX = Math.min(minX, shape.position.x);
-		minZ = Math.min(minZ, shape.position.z);
+		shape.geometry.computeBoundingBox();
+		maxX = Math.max(maxX, shape.position.x + shape.geometry.boundingBox.max.x);
+		maxY = Math.max(maxY, shape.position.y + shape.geometry.boundingBox.max.y);
+		maxZ = Math.max(maxZ, shape.position.z + shape.geometry.boundingBox.max.z);
+		minX = Math.min(minX, shape.position.x - shape.geometry.boundingBox.min.x);
+		minZ = Math.min(minZ, shape.position.z - shape.geometry.boundingBox.min.z);
 		scene.add(shape);
 		elements.push(shape);
 		cElements.push(shape);
