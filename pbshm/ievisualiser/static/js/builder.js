@@ -33,14 +33,14 @@ modelDetailsFolder.add(modelDetails, 'Name').onChange( value => { modelDetails['
 modelDetailsFolder.add(modelDetails, 'Description').onChange( value => { modelDetails['Description'] = value; });
 modelDetailsFolder.add(modelDetails, 'Population').onChange( value => { modelDetails['Population'] = value; });
 modelDetailsFolder.add(modelDetails, 'Type', ['grounded', 'free']).onChange( value => {
-																 modelDetails['Type'] = value;
-																 if (value == 'grounded') {
+																modelDetails['Type'] = value;
+																if (value == 'grounded') {
 																	document.getElementById("uigroundinfo").style.visibility = 'visible';
 																	document.getElementById("uiground").style.visibility = 'visible';
-																 } else {
+																} else {
 																	document.getElementById("uigroundinfo").style.visibility = 'hidden';
 																	document.getElementById("uiground").style.visibility = 'hidden';
-																 } });
+																} });
 
 
 addColourFolders(gui, render, "builder");
@@ -51,10 +51,10 @@ let selectedObjects = new Array(2); // Selecting objects for relationships
 const relationFolder = gui.addFolder('Relationships');
 const elRelationship = {'Relationship': 'none', 'Nature': undefined}  // current relationship type selected
 const relationshipTypes = {'free': ['none', 'perfect', 'connection', 'joint'],
-						   'grounded': ['none', 'perfect', 'connection', 'joint', 'boundary'],
-						   'nature': ['static bolted', 'static welded', 'static adhesive', 'static other',
-						              'dynamic hinge', 'dynamic ballAndSocket', 'dynamic pinned',
-									  'dynamic expansion', 'dynamic ballBearing', 'dynamic other']};
+						'grounded': ['none', 'perfect', 'connection', 'joint', 'boundary'],
+						'nature': ['static bolted', 'static welded', 'static adhesive', 'static other',
+									'dynamic hinge', 'dynamic ballAndSocket', 'dynamic pinned',
+									'dynamic expansion', 'dynamic ballBearing', 'dynamic other']};
 const showElements = {'Show orphans': false, 'Hide connected': false};
 relationFolder.add(showElements, 'Show orphans',).onChange(value => toggleHighlightUnrelated(value));
 relationFolder.addColor(otherColours, 'Orphans');
@@ -78,11 +78,11 @@ let floorFolder, boxFolder, sphereFolder, cylinderFolder, obliqueCylinderFolder,
 
 // Coordinates folders
 const posParams = {'x': 0,
-  				   'y': 0,
-				   'z': 0};
+					'y': 0,
+				'z': 0};
 const rotateParams = {'x': 0,
-					  'y': 0,
-					  'z': 0}
+					'y': 0,
+					'z': 0}
 const coordsFolder = elementFolder.addFolder('Coordinates');
 const gCoordsFolder = coordsFolder.addFolder('Global');
 const transFolder = gCoordsFolder.addFolder('Translational');
@@ -109,16 +109,16 @@ contextualFolder.add(context, 'Type', contextualColourKeys).onChange(updateConte
 // Geometry information
 const geometry = {"Type": undefined}
 const jsonGeometryMappings = {"box": ["solid translate cuboid", "shell translate cuboid",
-                                       "solid translate other", "shell translate other", "other"], 
-                              "sphere": ["solid translate sphere", "shell translate sphere",
-                                         "solid translate other", "shell translate other", "other"], 
-                              "cylinder": ["solid translate cylinder", "shell translate cylinder",
-                                           "solid translate other", "shell translate other", "other"], 
-                              "beam": ["beam rectangular", "beam i-beam", "beam other", "other"], 
-                              "trapezoid": ["solid translateAndScale cuboid", "shell translateAndScale cuboid",
-                                            "solid translateAndScale other", "shell translateAndScale other", "other"], 
-                              "obliqueCylinder": ["solid translateAndScale cylinder", "shell translateAndScale cylinder",
-                                                  "solid translateAndScale other", "shell translateAndScale other", "other"]};
+									"solid translate other", "shell translate other", "other"], 
+							"sphere": ["solid translate sphere", "shell translate sphere",
+										"solid translate other", "shell translate other", "other"], 
+							"cylinder": ["solid translate cylinder", "shell translate cylinder",
+										"solid translate other", "shell translate other", "other"], 
+							"beam": ["beam rectangular", "beam i-beam", "beam other", "other"], 
+							"trapezoid": ["solid translateAndScale cuboid", "shell translateAndScale cuboid",
+											"solid translateAndScale other", "shell translateAndScale other", "other"], 
+							"obliqueCylinder": ["solid translateAndScale cylinder", "shell translateAndScale cylinder",
+												"solid translateAndScale other", "shell translateAndScale other", "other"]};
 const geometryKeys = Object.keys(jsonGeometryMappings);
 geometryKeys.sort();
 const geometryFolder = elementFolder.addFolder('Geometry');
@@ -131,39 +131,39 @@ geometryFolder.hide();
 
 // Geometry folders
 const floorParams = {'width': 300,
-					 'depth': 300};
+					'depth': 300};
 const boxParams = {'length': 5,
-                   'height': 5,
-				   'width': 5,
-				   'thickness': 1};
+				'height': 5,
+				'width': 5,
+				'thickness': 1};
 const sphereParams = {'radius': 3,
-					  'thickness': 1}
+					'thickness': 1}
 const cylinderParams = {'radius': 3,
-   			   		    'length': 5,
+							'length': 5,
 						'thickness': 1}
 const obliqueCylinderParams = {'Faces left radius': 3,
-   			   		    	   'Faces right radius': 3,
-							   'Faces Left Trans. y': 0,
-							   'Faces Left Trans. z': 0,
-							   'Faces Right Trans. y': 0,
-							   'Faces Right Trans. z': 0,
- 							   'length': 5,
-							   'thickness': 1}
+									'Faces right radius': 3,
+							'Faces Left Trans. y': 0,
+							'Faces Left Trans. z': 0,
+							'Faces Right Trans. y': 0,
+							'Faces Right Trans. z': 0,
+								'length': 5,
+							'thickness': 1}
 const trapezoidParams = {"Faces Left Trans. y": 1.5,
-						 "Faces Left Trans. z": 1.5,
-						 "Faces Left Height": 2,
-						 "Faces Left Width": 2,
-						 "Faces Right Trans. y": 0,
-						 "Faces Right Trans. z": 0,
-						 "Faces Right Height": 5,
-						 "Faces Right Width": 5,
-						 "length": 5,
-						 "thickness": 1}
+						"Faces Left Trans. z": 1.5,
+						"Faces Left Height": 2,
+						"Faces Left Width": 2,
+						"Faces Right Trans. y": 0,
+						"Faces Right Trans. z": 0,
+						"Faces Right Height": 5,
+						"Faces Right Width": 5,
+						"length": 5,
+						"thickness": 1}
 const beamParams = {"length": 8,
-				    "h": 4,
-				    "s": 1,
-				    "t": 1,
-				    "b": 3}
+					"h": 4,
+					"s": 1,
+					"t": 1,
+					"b": 3}
 const groundRadius = 3;
 
 
@@ -174,15 +174,15 @@ const rollOverCubeGeo = new THREE.BoxGeometry(boxParams.length, boxParams.height
 const rollOverSphereGeo = new THREE.SphereGeometry(sphereParams.radius);
 const rollOverCylinderGeo = new THREE.CylinderGeometry(cylinderParams.radius, cylinderParams.radius, cylinderParams.length);
 const rollOverObliqueCylinderGeo = new ObliqueCylinderGeometry(obliqueCylinderParams['Faces left radius'],
-															   obliqueCylinderParams['Faces left radius'],
-															   obliqueCylinderParams.length,
-															   obliqueCylinderParams['Faces Right Trans. y']  - obliqueCylinderParams['Faces Left Trans. y'] ,
-															   -(obliqueCylinderParams['Faces Right Trans. z']  - obliqueCylinderParams['Faces Left Trans. z']));
+															obliqueCylinderParams['Faces left radius'],
+															obliqueCylinderParams.length,
+															obliqueCylinderParams['Faces Right Trans. y']  - obliqueCylinderParams['Faces Left Trans. y'] ,
+															-(obliqueCylinderParams['Faces Right Trans. z']  - obliqueCylinderParams['Faces Left Trans. z']));
 const rollOverTrapezoidGeo = new TrapezoidGeometry(trapezoidParams['Faces Left Trans. y'], trapezoidParams['Faces Left Trans. z'],
-												   trapezoidParams['Faces Left Height'], trapezoidParams['Faces Left Width'],
-												   trapezoidParams['Faces Right Trans. y'], trapezoidParams['Faces Right Trans. z'],
-												   trapezoidParams['Faces Right Height'], trapezoidParams['Faces Right Width'],
-												   trapezoidParams.length);
+												trapezoidParams['Faces Left Height'], trapezoidParams['Faces Left Width'],
+												trapezoidParams['Faces Right Trans. y'], trapezoidParams['Faces Right Trans. z'],
+												trapezoidParams['Faces Right Height'], trapezoidParams['Faces Right Width'],
+												trapezoidParams.length);
 const rollOverIBeamGeo = generateBeam("i-beam", beamParams.length, beamParams.h, beamParams.s, beamParams.t, beamParams.b);
 const rollOverCBeamGeo = generateBeam("c-beam", beamParams.length, beamParams.h, beamParams.s, beamParams.t, beamParams.b);
 const rollOverGroundGeo = new THREE.SphereGeometry(groundRadius);
@@ -262,7 +262,7 @@ function buildModel(preInfo=undefined, shapes=undefined, preRelationships=undefi
 			e.relationshipCount = 0;
 			elementDict[e.name] = e;  // relationships are referred to by name in json
 		}
-		resetColours(gui.children[2].children[0].getValue());
+		resetColours(gui.children[2].children[0].getValue());  // Set the colours to match the colourScheme chosen in the GUI
 		controls = info.controls;
 		floor = info.floor;
 		floorParams.width = floor.geometry.parameters.width;
@@ -1085,4 +1085,4 @@ function render() {
 }
 
 
-export {buildModel};
+export {buildModel, gui};

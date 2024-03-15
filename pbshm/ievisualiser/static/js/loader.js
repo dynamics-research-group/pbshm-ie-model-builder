@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import {plotNetworkFromFile} from './networkHelper.js';
 import { plotModel } from './ieHelper.js';
 import { modelInfo, extractShapes, extractRelationships } from './jsonHelper.js';
-import { buildModel } from './builder.js';
+import { gui, buildModel } from './builder.js';
 
 
 export function loadFile(filepath, purpose='viewer'){
@@ -16,6 +16,7 @@ export function loadFile(filepath, purpose='viewer'){
         const shapes = extractShapes(data);
         if (shapes.length > 0){
           if (purpose == 'viewer') {
+            gui.destroy();  // stop the builder gui interfering with the viewer gui
             plotModel(shapes);
           } else {
             const info = modelInfo(data);
