@@ -3,9 +3,9 @@ import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { Line2 } from 'three/addons/lines/Line2.js';
-import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 
-import * as picker from './pickerHelper.js';
+
+import * as gui from './guiHelper.js';
 import { otherColours, contextualColours, addColourFolders, cElements,
          makeContextColourVisible, makeMaterialColourVisible, makeGeometryColourVisible } from './colourHelper.js';
 
@@ -148,8 +148,8 @@ function drawNetwork(coords, edges, elInfo, threeD=true){
     controls.update();
 
     // GUI for changing the colour scheme
-	const gui = new GUI();
-    addColourFolders(gui, render, "contextual");
+	addColourFolders(gui.coloursFolder, render, "contextual");
+	gui.setViewerMode();
   
     // Add ambient light because otherwise the shadow from the directional light is too dark
     const color = 0xFFFFFF;
@@ -188,13 +188,23 @@ function drawNetwork(coords, edges, elInfo, threeD=true){
         }
     }
 
-    // Print the name of the currently selected node
-	picker.setup(scene, camera);
-	picker.clearPickPosition();
-    document.addEventListener('mousedown', picker.selectPickPosition, false);
-    // window.addEventListener('mouseout', picker.clearPickPosition);
-    // window.addEventListener('mouseleave', picker.clearPickPosition);
+    document.addEventListener('pointerdown', selectElement);
 
+	function selectElement(event){
+		let raycaster = new THREE.Raycaster();
+		let pointer = new THREE.Vector2();
+		pointer.set( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1 );
+		raycaster.setFromCamera( pointer, camera );
+		const intersects = raycaster.intersectObjects( cElements, false );
+		if ( intersects.length > 0 ) {
+			if (intersects[0].object.name != "plane") {
+				const currentObject = intersects[0].object;
+				gui.setGeometryFolder(currentObject);
+                gui.gCoordsFolder.hide();
+                gui.sphereFolder.hide();
+			}
+		}
+	}
 
     
     function render() {

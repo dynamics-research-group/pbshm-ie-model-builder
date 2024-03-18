@@ -86,9 +86,8 @@ let contextualColoursFolder, materialColoursFolder, geometryColoursFolder;
 let cElements = [];
 
 
-function addColourFolders(gui, render, defaultScheme="contextual") {
+function addColourFolders(coloursFolder, render, defaultScheme="contextual") {
     // Find out what contexts, materials and geometries are used by the cElements
-    const coloursFolder = gui.addFolder('Colours');
     let schemes;
     if (defaultScheme == 'builder'){
         schemes = ['builder', 'contextual', 'material', 'geometry'];

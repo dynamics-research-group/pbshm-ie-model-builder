@@ -1,17 +1,17 @@
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js'; 
-import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 
-
+import * as gui from './guiHelper.js';
 import { plotElements } from './ieHelper.js';
 import {ObliqueCylinderGeometry} from './obliqueCylinder.js';
 import {TrapezoidGeometry} from './trapezoid.js'
 import {generateBeam} from './geometryHelper.js';
-import {glToJson, jsonToGl} from './translationHelper.js';
+import {jsonToGl} from './translationHelper.js';
 import { save } from './jsonHelper.js';
 import { builderColours, addColourFolders, contextualColours, materialColours, geometryColours,
-	     cElements, materialColourKeys, contextualColourKeys, resetColour, resetColours,
+	     cElements, resetColour, resetColours,
 	     makeContextColourVisible, makeMaterialColourVisible, makeGeometryColourVisible, otherColours} from './colourHelper.js';
+
 
 
 const canvas = document.querySelector('#c');
@@ -20,171 +20,30 @@ let floor;
 let pointer, raycaster, isShiftDown = false, isCtrlDown = false;
 let relationships = {};
 let relationshipNatures = {};
-
-
-// Gui handlers
-const gui = new GUI();
-
-
-const modelDetails = {'Name': '', 'Description': '', 'Population': '', 'Type': 'grounded', 'Save': function() {save(modelDetails, relationships, relationshipNatures, cElements);}};
-gui.add(modelDetails, 'Save');
-const modelDetailsFolder = gui.addFolder('Model details');
-modelDetailsFolder.add(modelDetails, 'Name').onChange( value => { modelDetails['Name'] = value; });
-modelDetailsFolder.add(modelDetails, 'Description').onChange( value => { modelDetails['Description'] = value; });
-modelDetailsFolder.add(modelDetails, 'Population').onChange( value => { modelDetails['Population'] = value; });
-modelDetailsFolder.add(modelDetails, 'Type', ['grounded', 'free']).onChange( value => {
-																modelDetails['Type'] = value;
-																if (value == 'grounded') {
-																	document.getElementById("uigroundinfo").style.visibility = 'visible';
-																	document.getElementById("uiground").style.visibility = 'visible';
-																} else {
-																	document.getElementById("uigroundinfo").style.visibility = 'hidden';
-																	document.getElementById("uiground").style.visibility = 'hidden';
-																} });
-
-
-addColourFolders(gui, render, "builder");
-
-
-// Folder for defining objects between elements
 let selectedObjects = new Array(2); // Selecting objects for relationships
-const relationFolder = gui.addFolder('Relationships');
-const elRelationship = {'Relationship': 'none', 'Nature': undefined}  // current relationship type selected
-const relationshipTypes = {'free': ['none', 'perfect', 'connection', 'joint'],
-						'grounded': ['none', 'perfect', 'connection', 'joint', 'boundary'],
-						'nature': ['static bolted', 'static welded', 'static adhesive', 'static other',
-									'dynamic hinge', 'dynamic ballAndSocket', 'dynamic pinned',
-									'dynamic expansion', 'dynamic ballBearing', 'dynamic other']};
-const showElements = {'Show orphans': false, 'Hide connected': false};
-relationFolder.add(showElements, 'Show orphans',).onChange(value => toggleHighlightUnrelated(value));
-relationFolder.addColor(otherColours, 'Orphans');
-relationFolder.add(showElements, 'Hide connected',).onChange(value => toggleHideConnected(value));
-relationFolder.add(elRelationship, 'Relationship', relationshipTypes['free']).onChange( value => updateRelationship(value));
-relationFolder.add(elRelationship, 'Relationship', relationshipTypes['grounded']).onChange( value => updateRelationship(value));
-relationFolder.add(elRelationship, 'Nature', relationshipTypes['nature']).onChange( value => updateRelationshipNature(value));
-relationFolder.children[3].hide();
-relationFolder.children[4].hide();
-relationFolder.children[5].hide();
+let floorFolder;
 
-
-
-const elementFolder = gui.addFolder('Element');
-const elInfo = {'Name': ''}
-elementFolder.add(elInfo, 'Name').onChange(updateElementName);
-elementFolder.hide();
-let floorFolder, boxFolder, sphereFolder, cylinderFolder, obliqueCylinderFolder, trapezoidFolder, beamFolder, folders, currentFolder;
-
-
-
-// Coordinates folders
-const posParams = {'x': 0,
-					'y': 0,
-				'z': 0};
-const rotateParams = {'x': 0,
-					'y': 0,
-					'z': 0}
-const coordsFolder = elementFolder.addFolder('Coordinates');
-const gCoordsFolder = coordsFolder.addFolder('Global');
-const transFolder = gCoordsFolder.addFolder('Translational');
-const rotFolder = gCoordsFolder.addFolder('Rotational');
-transFolder.add(posParams, 'x').onChange(moveGeometryX);
-transFolder.add(posParams, 'y').onChange(moveGeometryY);
-transFolder.add(posParams, 'z').onChange(moveGeometryZ);
-rotFolder.add(rotateParams, 'x', 0, 360).onChange(rotateGeometryX);
-rotFolder.add(rotateParams, 'y', 0, 360).onChange(rotateGeometryY);
-rotFolder.add(rotateParams, 'z', 0, 360).onChange(rotateGeometryZ);
-
-// Material information
-const material = {"Type": "other"};
-const materialFolder = elementFolder.addFolder('Material');
-materialFolder.add(material, 'Type', materialColourKeys).onChange(updateMaterial);
-
-
-// Contextual information
-const context = {'Type': 'other'};
-const contextualFolder = elementFolder.addFolder('Contextual');
-contextualFolder.add(context, 'Type', contextualColourKeys).onChange(updateContext);
-
-
-// Geometry information
-const geometry = {"Type": undefined}
-const jsonGeometryMappings = {"box": ["solid translate cuboid", "shell translate cuboid",
-									"solid translate other", "shell translate other", "other"], 
-							"sphere": ["solid translate sphere", "shell translate sphere",
-										"solid translate other", "shell translate other", "other"], 
-							"cylinder": ["solid translate cylinder", "shell translate cylinder",
-										"solid translate other", "shell translate other", "other"], 
-							"beam": ["beam rectangular", "beam i-beam", "beam other", "other"], 
-							"trapezoid": ["solid translateAndScale cuboid", "shell translateAndScale cuboid",
-											"solid translateAndScale other", "shell translateAndScale other", "other"], 
-							"obliqueCylinder": ["solid translateAndScale cylinder", "shell translateAndScale cylinder",
-												"solid translateAndScale other", "shell translateAndScale other", "other"]};
-const geometryKeys = Object.keys(jsonGeometryMappings);
-geometryKeys.sort();
-const geometryFolder = elementFolder.addFolder('Geometry');
-for (let i=0; i<geometryKeys.length; i++){
-	geometryFolder.add(geometry, 'Type', jsonGeometryMappings[geometryKeys[i]]).onChange(updateJsonGeometry);
-	geometryFolder.children[i].hide();
-}
-geometryFolder.hide();
-
-
-// Geometry folders
 const floorParams = {'width': 300,
 					'depth': 300};
-const boxParams = {'length': 5,
-				'height': 5,
-				'width': 5,
-				'thickness': 1};
-const sphereParams = {'radius': 3,
-					'thickness': 1}
-const cylinderParams = {'radius': 3,
-							'length': 5,
-						'thickness': 1}
-const obliqueCylinderParams = {'Faces left radius': 3,
-									'Faces right radius': 3,
-							'Faces Left Trans. y': 0,
-							'Faces Left Trans. z': 0,
-							'Faces Right Trans. y': 0,
-							'Faces Right Trans. z': 0,
-								'length': 5,
-							'thickness': 1}
-const trapezoidParams = {"Faces Left Trans. y": 1.5,
-						"Faces Left Trans. z": 1.5,
-						"Faces Left Height": 2,
-						"Faces Left Width": 2,
-						"Faces Right Trans. y": 0,
-						"Faces Right Trans. z": 0,
-						"Faces Right Height": 5,
-						"Faces Right Width": 5,
-						"length": 5,
-						"thickness": 1}
-const beamParams = {"length": 8,
-					"h": 4,
-					"s": 1,
-					"t": 1,
-					"b": 3}
 const groundRadius = 3;
-
-
 
 let rollOverMesh;
 const rollOverMaterial = new THREE.MeshBasicMaterial( { color: 0xff0000, opacity: 0.5, transparent: true } );
-const rollOverCubeGeo = new THREE.BoxGeometry(boxParams.length, boxParams.height, boxParams.width);
-const rollOverSphereGeo = new THREE.SphereGeometry(sphereParams.radius);
-const rollOverCylinderGeo = new THREE.CylinderGeometry(cylinderParams.radius, cylinderParams.radius, cylinderParams.length);
-const rollOverObliqueCylinderGeo = new ObliqueCylinderGeometry(obliqueCylinderParams['Faces left radius'],
-															obliqueCylinderParams['Faces left radius'],
-															obliqueCylinderParams.length,
-															obliqueCylinderParams['Faces Right Trans. y']  - obliqueCylinderParams['Faces Left Trans. y'] ,
-															-(obliqueCylinderParams['Faces Right Trans. z']  - obliqueCylinderParams['Faces Left Trans. z']));
-const rollOverTrapezoidGeo = new TrapezoidGeometry(trapezoidParams['Faces Left Trans. y'], trapezoidParams['Faces Left Trans. z'],
-												trapezoidParams['Faces Left Height'], trapezoidParams['Faces Left Width'],
-												trapezoidParams['Faces Right Trans. y'], trapezoidParams['Faces Right Trans. z'],
-												trapezoidParams['Faces Right Height'], trapezoidParams['Faces Right Width'],
-												trapezoidParams.length);
-const rollOverIBeamGeo = generateBeam("i-beam", beamParams.length, beamParams.h, beamParams.s, beamParams.t, beamParams.b);
-const rollOverCBeamGeo = generateBeam("c-beam", beamParams.length, beamParams.h, beamParams.s, beamParams.t, beamParams.b);
+const rollOverCubeGeo = new THREE.BoxGeometry(gui.boxParams.length, gui.boxParams.height, gui.boxParams.width);
+const rollOverSphereGeo = new THREE.SphereGeometry(gui.sphereParams.radius);
+const rollOverCylinderGeo = new THREE.CylinderGeometry(gui.sphereParams.radius, gui.sphereParams.radius, gui.sphereParams.length);
+const rollOverObliqueCylinderGeo = new ObliqueCylinderGeometry(gui.obliqueCylinderParams['Faces left radius'],
+															gui.obliqueCylinderParams['Faces left radius'],
+															gui.obliqueCylinderParams.length,
+															gui.obliqueCylinderParams['Faces Right Trans. y']  - gui.obliqueCylinderParams['Faces Left Trans. y'] ,
+															-(gui.obliqueCylinderParams['Faces Right Trans. z']  - gui.obliqueCylinderParams['Faces Left Trans. z']));
+const rollOverTrapezoidGeo = new TrapezoidGeometry(gui.trapezoidParams['Faces Left Trans. y'], gui.trapezoidParams['Faces Left Trans. z'],
+												gui.trapezoidParams['Faces Left Height'], gui.trapezoidParams['Faces Left Width'],
+												gui.trapezoidParams['Faces Right Trans. y'], gui.trapezoidParams['Faces Right Trans. z'],
+												gui.trapezoidParams['Faces Right Height'], gui.trapezoidParams['Faces Right Width'],
+												gui.trapezoidParams.length);
+const rollOverIBeamGeo = generateBeam("i-beam", gui.beamParams.length, gui.beamParams.h, gui.beamParams.s, gui.beamParams.t, gui.beamParams.b);
+const rollOverCBeamGeo = generateBeam("c-beam", gui.beamParams.length, gui.beamParams.h, gui.beamParams.s, gui.beamParams.t, gui.beamParams.b);
 const rollOverGroundGeo = new THREE.SphereGeometry(groundRadius);
 rollOverCylinderGeo.rotateZ(Math.PI/2);
 rollOverObliqueCylinderGeo.rotateZ(Math.PI/2);
@@ -195,6 +54,53 @@ let currentGeometry;
 let currentObject;  // specific existing object to be edited
 const objects = [];  // list of all objects in the scene
 
+
+function setupGui(){
+	addColourFolders(gui.coloursFolder, render, "builder");
+
+	gui.modelDetailsFolder.children[3].onChange( value => {
+                                                                gui.modelDetails['Type'] = value;
+                                                                if (value == 'grounded') {
+                                                                    document.getElementById("uigroundinfo").style.visibility = 'visible';
+                                                                    document.getElementById("uiground").style.visibility = 'visible';
+                                                                } else {
+                                                                    document.getElementById("uigroundinfo").style.visibility = 'hidden';
+                                                                    document.getElementById("uiground").style.visibility = 'hidden';
+                                                                } });
+	gui.relationFolder.children[0].onChange(value => toggleHighlightUnrelated(value));  // 'Show orphans'
+	gui.relationFolder.children[2].onChange(value => toggleHideConnected(value));  // 'Hide connected'
+	gui.relationFolder.children[3].onChange( value => updateRelationship(value));
+	gui.relationFolder.children[4].onChange( value => updateRelationship(value));
+	gui.relationFolder.children[5].onChange( value => updateRelationshipNature(value));
+	
+	gui.elementFolder.children[0].onChange(updateElementName);
+
+	gui.transFolder.children[0].onChange(moveGeometryX);
+	gui.transFolder.children[1].onChange(moveGeometryY);
+	gui.transFolder.children[2].onChange(moveGeometryZ);
+
+	gui.rotFolder.children[0].onChange(rotateGeometryX);
+	gui.rotFolder.children[1].onChange(rotateGeometryY);
+	gui.rotFolder.children[2].onChange(rotateGeometryZ);
+
+	gui.materialFolder.children[0].onChange(updateMaterial);
+	gui.contextualFolder.children[0].onChange(updateContext);
+	for (let i=0; i<gui.geometryKeys.length; i++){
+    	gui.geometryFolder.children[i].onChange(updateJsonGeometry);
+	}
+
+	initBoxGui()
+	initSphereGui();
+	initCylinderGui();
+	initObliqueCylinderGui();
+	initTrapezoidGui();
+	initBeamGui();
+	initGroundGui();  // Not added to list of folders so it is always visible
+
+	const saver = {'Save': function() {save(gui.modelDetails, relationships, relationshipNatures, cElements);}};
+	gui.gui.add(saver, 'Save');
+
+}
 
 function loadBlankBuilder(){
 	camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 10000 );
@@ -228,7 +134,8 @@ function loadBlankBuilder(){
 }
 
 
-function buildModel(preInfo=undefined, shapes=undefined, preRelationships=undefined, preNatures=undefined) {
+function buildModel(shapes=undefined, preRelationships=undefined, preNatures=undefined) {
+	setupGui();
 	scene = new THREE.Scene();
 	scene.background = new THREE.Color( 0xf0f0f0 );
 	
@@ -236,15 +143,11 @@ function buildModel(preInfo=undefined, shapes=undefined, preRelationships=undefi
 	renderer.setPixelRatio( window.devicePixelRatio );
 	renderer.setSize( window.innerWidth, window.innerHeight );
 	document.body.appendChild( renderer.domElement );
-		
+	
 	let info;
 	if (shapes == undefined) {
 		loadBlankBuilder();
 	} else {
-		modelDetailsFolder.children[0].setValue(preInfo.name);
-		modelDetailsFolder.children[1].setValue(preInfo.description);
-		modelDetailsFolder.children[2].setValue(preInfo.population);
-		modelDetailsFolder.children[3].setValue(preInfo.type);
 		info = plotElements(renderer.domElement, scene, shapes);
 		camera = info.camera
 		const elementDict = {}  // to help track relationships
@@ -262,7 +165,7 @@ function buildModel(preInfo=undefined, shapes=undefined, preRelationships=undefi
 			e.relationshipCount = 0;
 			elementDict[e.name] = e;  // relationships are referred to by name in json
 		}
-		resetColours(gui.children[2].children[0].getValue());  // Set the colours to match the colourScheme chosen in the GUI
+		resetColours(gui.gui.children[1].children[0].getValue());  // Set the colours to match the colourScheme chosen in the GUI
 		controls = info.controls;
 		floor = info.floor;
 		floorParams.width = floor.geometry.parameters.width;
@@ -314,15 +217,8 @@ function buildModel(preInfo=undefined, shapes=undefined, preRelationships=undefi
 	window.addEventListener( 'resize', onWindowResize );
 
 	
-	initBoxGui()
-	initSphereGui();
-	initCylinderGui();
-	initObliqueCylinderGui();
-	initTrapezoidGui();
-	initBeamGui();
-	initGroundGui();  // Not added to list of folders so it is always visible
-	folders = [boxFolder, sphereFolder, cylinderFolder, obliqueCylinderFolder, trapezoidFolder, beamFolder];
-	folders.forEach(folder => folder.hide()); // Initially hide all folders, then show only the ones we want when required
+	
+	gui.hideGeometryFolders; // Initially hide all folders, then show only the ones we want when required
 	render();
 }
 
@@ -366,24 +262,24 @@ function onPointerDown( event ) {
 			}
 		} else if ( isCtrlDown ) {
 			// select object
-			elementFolder.hide();
+			gui.elementFolder.hide();
 			if ( intersect.object !== floor ) {
 				if (selectedObjects[0] == intersect.object) {
 					// If it was already object 0, deselect it
-					resetColour(gui.children[2].children[0].getValue(), intersect.object);
+					resetColour(gui.gui.children[1].children[0].getValue(), intersect.object);
 					// Move object 1 to first place
 					selectedObjects[0] = selectedObjects[1];
 					selectedObjects[1] = undefined;
-					relationFolder.children[3].hide();
-					relationFolder.children[4].hide();
-					relationFolder.children[5].hide();
+					gui.relationFolder.children[3].hide();
+					gui.relationFolder.children[4].hide();
+					gui.relationFolder.children[5].hide();
 				} else if (selectedObjects[1] == intersect.object) {	
 					// If it was already object 1, deselect it
-					resetColour(gui.children[2].children[0].getValue(), intersect.object);
+					resetColour(gui.gui.children[1].children[0].getValue(), intersect.object);
 					selectedObjects[1] = undefined;
-					relationFolder.children[3].hide();
-					relationFolder.children[4].hide();
-					relationFolder.children[5].hide();
+					gui.relationFolder.children[3].hide();
+					gui.relationFolder.children[4].hide();
+					gui.relationFolder.children[5].hide();
 				} else {
 					// Otherwise, select it
 					intersect.object.material.color.setHex(otherColours['Selected element']);
@@ -393,33 +289,33 @@ function onPointerDown( event ) {
 					} else {
 						if (selectedObjects[1] != undefined) {	
 							// If two objects are already selected, deselect object 1 (i.e. reset its colour)
-							resetColour(gui.children[2].children[0].getValue(), selectedObjects[1]);
+							resetColour(gui.gui.children[1].children[0].getValue(), selectedObjects[1]);
 						}
 						// Assign as object 1
 						selectedObjects[1] = intersect.object;
 						// Two elements are selected so show the dropdown menu to select their relationship
 						// Show the current relationship they have
 						const currentRelat = currentRelationship(selectedObjects[0].id, selectedObjects[1].id);
-						relationFolder.show();
+						gui.relationFolder.show();
 						if (selectedObjects[0].el_contextual == "ground" || selectedObjects[1].el_contextual == "ground"){
-							relationFolder.children[3].hide();  // hide 'free' relationships folder
-							relationFolder.children[4].show();  // show 'grounded' relationships folder
-							relationFolder.children[4].setValue(currentRelat);
+							gui.relationFolder.children[3].hide();  // hide 'free' relationships folder
+							gui.relationFolder.children[4].show();  // show 'grounded' relationships folder
+							gui.relationFolder.children[4].setValue(currentRelat);
 							if (currentRelat == 'joint' || currentRelat == 'connection') {
-								relationFolder.children[5].show();
-								relationFolder.children[5].setValue(currentRelationshipNature(selectedObjects[0].id, selectedObjects[1].id));
+								gui.relationFolder.children[5].show();
+								gui.relationFolder.children[5].setValue(currentRelationshipNature(selectedObjects[0].id, selectedObjects[1].id));
 							} else {
-								relationFolder.children[5].hide();
+								gui.relationFolder.children[5].hide();
 							}
 						} else {
-							relationFolder.children[3].show();  // show 'free'
-							relationFolder.children[3].setValue(currentRelat);
-							relationFolder.children[4].hide();  // hide 'grounded'
+							gui.relationFolder.children[3].show();  // show 'free'
+							gui.relationFolder.children[3].setValue(currentRelat);
+							gui.relationFolder.children[4].hide();  // hide 'grounded'
 							if (currentRelat == 'joint' || currentRelat == 'connection') {
-								relationFolder.children[5].show();
-								relationFolder.children[5].setValue(currentRelationshipNature(selectedObjects[0].id, selectedObjects[1].id));
+								gui.relationFolder.children[5].show();
+								gui.relationFolder.children[5].setValue(currentRelationshipNature(selectedObjects[0].id, selectedObjects[1].id));
 							} else {
-								relationFolder.children[5].hide();
+								gui.relationFolder.children[5].hide();
 							}
 						}
 					}
@@ -429,35 +325,35 @@ function onPointerDown( event ) {
 			if (currentId != undefined){
 				// Add new object
 				if (currentId == "cube"){
-					currentGeometry = new THREE.BoxGeometry(boxParams.length, boxParams.height, boxParams.width);;
+					currentGeometry = new THREE.BoxGeometry(gui.boxParams.length, gui.boxParams.height, gui.boxParams.width);;
 				} else if (currentId == "sphere"){
-					currentGeometry = new THREE.SphereGeometry(sphereParams.radius);;
+					currentGeometry = new THREE.SphereGeometry(gui.sphereParams.radius);;
 				} else if (currentId == "cylinder"){
-					currentGeometry = new THREE.CylinderGeometry(cylinderParams.radius, cylinderParams.radius, cylinderParams.length);;
+					currentGeometry = new THREE.CylinderGeometry(gui.sphereParams.radius, gui.sphereParams.radius, gui.sphereParams.length);;
 					// Rotate because cylinder is assumed horizontal in json but vertical in webGL
 					currentGeometry.rotateZ(Math.PI/2);
 				} else if (currentId == "obliqueCylinder"){
-					currentGeometry = new ObliqueCylinderGeometry(obliqueCylinderParams['Faces left radius'],
-						obliqueCylinderParams['Faces right radius'],
-						obliqueCylinderParams.length,
-						obliqueCylinderParams['Faces Right Trans. y']  - obliqueCylinderParams['Faces Left Trans. y'] ,
-						-(obliqueCylinderParams['Faces Right Trans. z']  - obliqueCylinderParams['Faces Left Trans. z']));
-					currentGeometry.parameters['Faces Left Trans. y'] = obliqueCylinderParams['Faces Left Trans. y']
-					currentGeometry.parameters['Faces Left Trans. z'] = obliqueCylinderParams['Faces Left Trans. z']
-					currentGeometry.parameters['Faces Right Trans. y'] = obliqueCylinderParams['Faces Right Trans. y']
-					currentGeometry.parameters['Faces Right Trans. z'] = obliqueCylinderParams['Faces Right Trans. z']
+					currentGeometry = new ObliqueCylinderGeometry(gui.obliqueCylinderParams['Faces left radius'],
+						gui.obliqueCylinderParams['Faces right radius'],
+						gui.obliqueCylinderParams.length,
+						gui.obliqueCylinderParams['Faces Right Trans. y']  - gui.obliqueCylinderParams['Faces Left Trans. y'] ,
+						-(gui.obliqueCylinderParams['Faces Right Trans. z']  - gui.obliqueCylinderParams['Faces Left Trans. z']));
+					currentGeometry.parameters['Faces Left Trans. y'] = gui.obliqueCylinderParams['Faces Left Trans. y']
+					currentGeometry.parameters['Faces Left Trans. z'] = gui.obliqueCylinderParams['Faces Left Trans. z']
+					currentGeometry.parameters['Faces Right Trans. y'] = gui.obliqueCylinderParams['Faces Right Trans. y']
+					currentGeometry.parameters['Faces Right Trans. z'] = gui.obliqueCylinderParams['Faces Right Trans. z']
 					// Rotate because cylinder is assumed horizontal in json but vertical in webGL
 					currentGeometry.rotateZ(Math.PI/2);
 				} else if (currentId == "trapezoid"){
-					currentGeometry = new TrapezoidGeometry(trapezoidParams['Faces Left Trans. y'], trapezoidParams['Faces Left Trans. z'],
-															trapezoidParams['Faces Left Height'], trapezoidParams['Faces Left Width'],
-															trapezoidParams['Faces Right Trans. y'], trapezoidParams['Faces Right Trans. z'],
-															trapezoidParams['Faces Right Height'], trapezoidParams['Faces Right Width'],
-															trapezoidParams.length);
+					currentGeometry = new TrapezoidGeometry(gui.trapezoidParams['Faces Left Trans. y'], gui.trapezoidParams['Faces Left Trans. z'],
+															gui.trapezoidParams['Faces Left Height'], gui.trapezoidParams['Faces Left Width'],
+															gui.trapezoidParams['Faces Right Trans. y'], gui.trapezoidParams['Faces Right Trans. z'],
+															gui.trapezoidParams['Faces Right Height'], gui.trapezoidParams['Faces Right Width'],
+															gui.trapezoidParams.length);
 				} else if (currentId == "ibeam"){
-					currentGeometry = generateBeam("i-beam", beamParams.length, beamParams.h, beamParams.s, beamParams.t, beamParams.b);;
+					currentGeometry = generateBeam("i-beam", gui.beamParams.length, gui.beamParams.h, gui.beamParams.s, gui.beamParams.t, gui.beamParams.b);;
 				} else if (currentId == "cbeam"){
-					currentGeometry = generateBeam("c-beam", beamParams.length, beamParams.h, beamParams.s, beamParams.t, beamParams.b);;
+					currentGeometry = generateBeam("c-beam", gui.beamParams.length, gui.beamParams.h, gui.beamParams.s, gui.beamParams.t, gui.beamParams.b);;
 				} else if (currentId == "ground") {
 					currentGeometry = new THREE.SphereGeometry(groundRadius);
 					currentGeometry.type = "ground";
@@ -492,80 +388,7 @@ function onPointerDown( event ) {
 					currentObject = intersect.object;
 				}
 			}
-			folders.forEach(folder => folder.hide());
-			const geometryType = currentObject.geometry.type;
-			if (geometryType == "BoxGeometry"){
-				boxFolder.children[0].setValue(currentObject.geometry.parameters.width);
-				boxFolder.children[1].setValue(currentObject.geometry.parameters.height);
-				boxFolder.children[2].setValue(currentObject.geometry.parameters.depth);
-				currentFolder = boxFolder;
-				showGeometryDropdown("box");
-			} else if (geometryType == "SphereGeometry"){
-				sphereFolder.children[0].setValue(currentObject.geometry.parameters.radius);
-				currentFolder = sphereFolder;
-				showGeometryDropdown("sphere");
-			} else if (geometryType == "CylinderGeometry"){
-				cylinderFolder.children[0].setValue(currentObject.geometry.parameters.radiusTop);
-				cylinderFolder.children[1].setValue(currentObject.geometry.parameters.height);
-				currentFolder = cylinderFolder;
-				showGeometryDropdown("cylinder");
-			} else if (geometryType == "ObliqueCylinderGeometry"){
-				obliqueCylinderFolder.children[0].setValue(currentObject.geometry.parameters.radiusTop);
-				obliqueCylinderFolder.children[1].setValue(currentObject.geometry.parameters.radiusBottom);
-				obliqueCylinderFolder.children[2].setValue(currentObject.geometry.parameters.height);
-				obliqueCylinderFolder.children[3].setValue(currentObject.geometry.parameters['Faces Left Trans. y']);
-				obliqueCylinderFolder.children[4].setValue(currentObject.geometry.parameters['Faces Left Trans. z']);
-				obliqueCylinderFolder.children[5].setValue(currentObject.geometry.parameters['Faces Right Trans. y']);
-				obliqueCylinderFolder.children[6].setValue(currentObject.geometry.parameters['Faces Right Trans. z']);
-				currentFolder = obliqueCylinderFolder;
-				showGeometryDropdown("obliqueCylinder");
-			} else if  (geometryType == "TrapezoidGeometry"){
-				trapezoidFolder.children[0].setValue(currentObject.geometry.parameters.leftTransY);
-				trapezoidFolder.children[1].setValue(currentObject.geometry.parameters.leftTransZ);
-				trapezoidFolder.children[2].setValue(currentObject.geometry.parameters.leftDimensY);
-				trapezoidFolder.children[3].setValue(currentObject.geometry.parameters.leftDimensZ);
-				trapezoidFolder.children[4].setValue(currentObject.geometry.parameters.rightTransY);
-				trapezoidFolder.children[5].setValue(currentObject.geometry.parameters.rightTransZ);
-				trapezoidFolder.children[6].setValue(currentObject.geometry.parameters.rightDimensY);
-				trapezoidFolder.children[7].setValue(currentObject.geometry.parameters.rightDimensZ);
-				trapezoidFolder.children[8].setValue(currentObject.geometry.parameters.width);
-				currentFolder = trapezoidFolder;
-				showGeometryDropdown("trapezoid");
-			} else if (geometryType == "IBeamGeometry" || geometryType == "CBeamGeometry"){
-				beamFolder.children[0].setValue(currentObject.geometry.parameters["width"]);
-				beamFolder.children[1].setValue(currentObject.geometry.parameters["h"]);
-				beamFolder.children[2].setValue(currentObject.geometry.parameters["s"]);
-				beamFolder.children[3].setValue(currentObject.geometry.parameters["t"]);
-				beamFolder.children[4].setValue(currentObject.geometry.parameters["b"]);
-				currentFolder = beamFolder;
-				showGeometryDropdown("beam");
-			} else {
-				// Need to deselect if we click away so we don't accidentally edit something else (e.g. the plane)
-				currentFolder = undefined;
-			}
-			// If the ground plane has been selected, or anywhere outside of this then there'll be no current folder.
-			elementFolder.children[0].setValue(currentObject.name);
-			elementFolder.show();
-			if (currentId == "ground") {
-				gCoordsFolder.hide();
-				contextualFolder.hide();
-				materialFolder.hide();
-				geometryFolder.hide();
-			}
-			if (currentFolder != undefined){
-				transFolder.children[0].setValue(glToJson(currentObject, "x", currentObject.position.x));
-				transFolder.children[1].setValue(glToJson(currentObject, "y", currentObject.position.y));
-				transFolder.children[2].setValue(glToJson(currentObject, "z", currentObject.position.z));
-				rotFolder.children[0].setValue(currentObject.rotation.x * (180 / Math.PI));
-				rotFolder.children[1].setValue(currentObject.rotation.y * (180 / Math.PI));
-				rotFolder.children[2].setValue(currentObject.rotation.z * (180 / Math.PI));
-				materialFolder.children[0].setValue(currentObject.el_material);
-				contextualFolder.children[0].setValue(currentObject.el_contextual);
-				gCoordsFolder.show();
-				contextualFolder.show();
-				materialFolder.show();
-				currentFolder.show();
-			}
+			gui.setGeometryFolder(currentObject);
 		}
 	}
 	render();
@@ -577,22 +400,22 @@ function onDocumentKeyDown( event ) {
 		case 16: isShiftDown = true; break;
 		case 17: isCtrlDown = true; break;
 		// case 37:  // left
-		// 	currentFolder.children[0].setValue(currentObject.position.x - 10);
+		// 	gui.currentFolder.children[0].setValue(currentObject.position.x - 10);
 		// 	break;
 		// case 38:  // up
-		// 	currentFolder.children[2].setValue(currentObject.position.z - 10);
+		// 	gui.currentFolder.children[2].setValue(currentObject.position.z - 10);
 		// 	break;
 		// case 39:  // right
-		// 	currentFolder.children[0].setValue(currentObject.position.x + 10);
+		// 	gui.currentFolder.children[0].setValue(currentObject.position.x + 10);
 		// 	break;
 		// case 40:  // down
-		// 	currentFolder.children[2].setValue(currentObject.position.z + 10);
+		// 	gui.currentFolder.children[2].setValue(currentObject.position.z + 10);
 		// 	break;
 		// case 83:  // s
-		// 	currentFolder.children[1].setValue(currentObject.position.y - 10);
+		// 	gui.currentFolder.children[1].setValue(currentObject.position.y - 10);
 		// 	break;
 		// case 87:  // w
-		// 	currentFolder.children[1].setValue(currentObject.position.y + 10);
+		// 	gui.currentFolder.children[1].setValue(currentObject.position.y + 10);
 		// 	break;
 	}
 	render();
@@ -617,32 +440,32 @@ function allowUncheck() {
 		rollOverMesh.geometry.dispose()
 		if (currentId == "cube"){
 			rollOverMesh.geometry = rollOverCubeGeo;
-			currentFolder = boxFolder;
+			gui.currentFolder = gui.boxFolder;
 		} else if (currentId == "sphere"){
 			rollOverMesh.geometry = rollOverSphereGeo;
-			currentFolder = sphereFolder;
+			gui.currentFolder = gui.sphereFolder;
 		} else if (currentId == "cylinder"){
 			rollOverMesh.geometry = rollOverCylinderGeo;
-			currentFolder = cylinderFolder;	
+			gui.currentFolder = gui.cylinderFolder;	
 		} else if (currentId == "obliqueCylinder"){
 			rollOverMesh.geometry = rollOverObliqueCylinderGeo;
-			currentFolder = obliqueCylinderFolder;
+			gui.currentFolder = gui.obliqueCylinderFolder;
 		} else if (currentId == "trapezoid"){
 			rollOverMesh.geometry = rollOverTrapezoidGeo;
-			currentFolder = trapezoidFolder;
+			gui.currentFolder = gui.trapezoidFolder;
 		} else if (currentId == "ibeam"){
 			rollOverMesh.geometry = rollOverIBeamGeo;
-			currentFolder = beamFolder;
+			gui.currentFolder = gui.beamFolder;
 		} else if (currentId == "cbeam"){
 			rollOverMesh.geometry = rollOverCBeamGeo;
-			currentFolder = beamFolder;
+			gui.currentFolder = gui.beamFolder;
 		} else if (currentId == "ground"){
 			rollOverMesh.geometry = rollOverGroundGeo;
-			currentFolder = undefined;
+			gui.currentFolder = undefined;
 		}
 		rollOverMesh.visible = true;
 	}
-	folders.forEach(folder => folder.hide());
+	gui.hideGeometryFolders;
 	
 }
 
@@ -654,7 +477,7 @@ function updateGeometry(mesh, geometry){
 
 
 function initGroundGui(){
-	floorFolder = gui.addFolder('Ground dimensions (visual only)');
+	floorFolder = gui.gui.addFolder('Ground dimensions (visual only)');
 	floorFolder.add(floorParams, 'width').onChange(generateGeometry);
 	floorFolder.add(floorParams, 'depth').onChange(generateGeometry);
 
@@ -673,7 +496,7 @@ function initGroundGui(){
 
 
 function updateElementName(){
-	currentObject.name = elInfo.Name;
+	currentObject.name = gui.elInfo.Name;
 }
 
 
@@ -683,37 +506,37 @@ function updateElementName(){
 // are in the gui before the gui has been updated to show the parameters.
 // of the object that has just been selected.
 function moveGeometryX(){
-	currentObject.position.x = jsonToGl(currentObject, "x", posParams.x);
+	currentObject.position.x = jsonToGl(currentObject, "x", gui.posParams.x);
 	currentObject.geometry.attributes.position.needsUpdate = true;
 	render();
 }
 
 
 function moveGeometryY(){
-	currentObject.position.y = jsonToGl(currentObject, "y", posParams.y);
+	currentObject.position.y = jsonToGl(currentObject, "y", gui.posParams.y);
 	currentObject.geometry.attributes.position.needsUpdate = true;
 	render();
 }
 
 
 function moveGeometryZ(){
-	currentObject.position.z = jsonToGl(currentObject, "z", posParams.z);
+	currentObject.position.z = jsonToGl(currentObject, "z", gui.posParams.z);
 	currentObject.geometry.attributes.position.needsUpdate = true;
 	render();
 }
 
 
 function moveGeometryXYZ(pos){
-	currentObject.position.x = jsonToGl(currentObject, "x", posParams.x);
-	currentObject.position.y = jsonToGl(currentObject, "y", posParams.y);
-	currentObject.position.z = jsonToGl(currentObject, "z", posParams.z);
+	currentObject.position.x = jsonToGl(currentObject, "x", gui.posParams.x);
+	currentObject.position.y = jsonToGl(currentObject, "y", gui.posParams.y);
+	currentObject.position.z = jsonToGl(currentObject, "z", gui.posParams.z);
 	currentObject.geometry.attributes.position.needsUpdate = true;
 	render();
 }
 
 
 function rotateGeometryX(){
-	const newAngle = rotateParams.x * (Math.PI/180)
+	const newAngle = gui.rotateParams.x * (Math.PI/180)
 	const rotation = newAngle - currentObject.currentAngleX;
 	currentObject.rotateX(rotation);
 	currentObject.currentAngleX = newAngle;
@@ -725,7 +548,7 @@ function rotateGeometryX(){
 
 
 function rotateGeometryY(){
-	const newAngle = rotateParams.y * (Math.PI/180)
+	const newAngle = gui.rotateParams.y * (Math.PI/180)
 	const rotation = newAngle - currentObject.currentAngleY;
 	currentObject.rotateY(rotation);
 	currentObject.currentAngleY = newAngle;
@@ -737,7 +560,7 @@ function rotateGeometryY(){
 
 
 function rotateGeometryZ(){
-	const newAngle = rotateParams.z * (Math.PI/180)
+	const newAngle = gui.rotateParams.z * (Math.PI/180)
 	const rotation = newAngle - currentObject.currentAngleZ;
 	currentObject.rotateZ(rotation);
 	currentObject.currentAngleZ = newAngle;
@@ -749,9 +572,9 @@ function rotateGeometryZ(){
 
 
 function updateContext(){
-	currentObject.el_contextual = context.Type;
-	makeContextColourVisible(context.Type);
-	if (gui.children[2].children[0].getValue() == "contextual"
+	currentObject.el_contextual = gui.context.Type;
+	makeContextColourVisible(gui.context.Type);
+	if (gui.gui.children[1].children[0].getValue() == "contextual"
 			&& currentObject.material.color.getHex() != otherColours['Orphans']
 			&& currentObject.material.color.getHex() != otherColours['Selected element']) {
 		currentObject.material.color.setHex(contextualColours[currentObject.el_contextual]);
@@ -761,9 +584,9 @@ function updateContext(){
 
 
 function updateMaterial(){
-	currentObject.el_material = material.Type;
-	makeMaterialColourVisible(material.Type);
-	if (gui.children[2].children[0].getValue() == "material"
+	currentObject.el_material = gui.material.Type;
+	makeMaterialColourVisible(gui.material.Type);
+	if (gui.gui.children[1].children[0].getValue() == "material"
 			&& currentObject.material.color.getHex() != otherColours['Orphans']
 			&& currentObject.material.color.getHex() != otherColours['Selected element']) {
 		currentObject.material.color.setHex(materialColours[currentObject.el_material]);
@@ -773,36 +596,25 @@ function updateMaterial(){
 
 
 function updateJsonGeometry(){
-	currentObject.el_geometry = geometry.Type;
-	makeGeometryColourVisible(geometry.Type);
-	if (gui.children[2].children[0].getValue() == "geometry"
+	currentObject.el_geometry = gui.geometry.Type;
+	makeGeometryColourVisible(gui.geometry.Type);
+	if (gui.gui.children[1].children[0].getValue() == "geometry"
 			&& currentObject.material.color.getHex() != otherColours['Orphans']
 			&& currentObject.material.color.getHex() != otherColours['Selected element']) {
 		currentObject.material.color.setHex(geometryColours[currentObject.el_geometry]);
 	}
-	if (geometry.Type != undefined && geometry.Type.substring(0, 5) == "shell"){
+	if (gui.geometry.Type != undefined && gui.geometry.Type.substring(0, 5) == "shell"){
 		// Show the thickness parameter within the (last child of the) geometry folder
-		currentFolder.children[currentFolder.children.length-1].show();
+		gui.currentFolder.children[gui.currentFolder.children.length-1].show();
 	} else {
-		const lastFolderItem =  currentFolder.children[currentFolder.children.length-1]
+		const lastFolderItem =  gui.currentFolder.children[gui.currentFolder.children.length-1]
 		if (lastFolderItem.property == "thickness"){
-			currentFolder.children[currentFolder.children.length-1].hide();
+			gui.currentFolder.children[gui.currentFolder.children.length-1].hide();
 		}
 	}
 	render();
 }
 
-function showGeometryDropdown(geom){
-	// Hide whichever geometry dropdown is on display
-	for (let i=0; i<geometryKeys.length; i++){
-		geometryFolder.children[i].hide();
-	}
-	// Show the desired dropdown
-	geometryFolder.show();
-	const idx = geometryKeys.indexOf(geom)
-	geometryFolder.children[idx].show();
-	geometryFolder.children[idx].setValue(currentObject.el_geometry);
-}
 
 
 function updateThickness(value){
@@ -811,15 +623,14 @@ function updateThickness(value){
 
 
 function initBoxGui(){
-	boxFolder = elementFolder.addFolder('Geometry Dimensions');
-	boxFolder.add(boxParams, 'length').onChange(value => updateParameters("width", value));
-	boxFolder.add(boxParams, 'height').onChange(value => updateParameters("height", value));
-	boxFolder.add(boxParams, 'width').onChange(value => updateParameters("depth", value));
-	boxFolder.add(boxParams, 'thickness').onChange(value => updateThickness(value));
-	boxFolder.children[3].hide();  // Thickness is only necesssary for shells so hide until shell geometry is chosen
+	gui.boxFolder.children[0].onChange(value => updateParameters("width", value));
+	gui.boxFolder.children[1].onChange(value => updateParameters("height", value));
+	gui.boxFolder.children[2].onChange(value => updateParameters("depth", value));
+	gui.boxFolder.children[3].onChange(value => updateThickness(value));
+	
 	function updateParameters(changedParam, value){
 		if (currentObject.geometry.parameters[changedParam] != value){  // don't regenerate to the object if we're just updating the gui
-			const pos = {...posParams};  // threejs makes the centre of the object stay in the same place but we want the corner to stay the same instead
+			const pos = {...gui.posParams};  // threejs makes the centre of the object stay in the same place but we want the corner to stay the same instead
 			const newParams = {...currentObject.geometry.parameters};
 			newParams[changedParam] = value;
 			updateGeometry(currentObject,
@@ -831,14 +642,13 @@ function initBoxGui(){
   
 
 function initSphereGui(){
-	sphereFolder = elementFolder.addFolder('Geometry Dimensions');
-	sphereFolder.add(sphereParams, 'radius').onChange(updateParameters);
-	sphereFolder.add(sphereParams, 'thickness').onChange(value => updateThickness(value));
-	sphereFolder.children[1].hide();  // Thickness is only necesssary for shells so hide until shell geometry is chosen
+	gui.sphereFolder.children[0].onChange(updateParameters);
+	gui.sphereFolder.children[0].onChange(value => updateThickness(value));
+	
 	function updateParameters(){
-		if (currentObject.geometry.parameters.radius != sphereParams.radius) {
-			const pos = {...posParams};
-			updateGeometry(currentObject, new THREE.SphereGeometry(sphereParams.radius));
+		if (currentObject.geometry.parameters.radius != gui.sphereParams.radius) {
+			const pos = {...gui.posParams};
+			updateGeometry(currentObject, new THREE.SphereGeometry(gui.sphereParams.radius));
 			moveGeometryXYZ(pos);
 		}
 	}
@@ -846,14 +656,13 @@ function initSphereGui(){
 
 
 function initCylinderGui(){
-	cylinderFolder = elementFolder.addFolder('Geometry Dimensions');
-	cylinderFolder.add(cylinderParams, 'radius').onChange(value => updateParameters("radiusTop", value));
-	cylinderFolder.add(cylinderParams, 'length').onChange(value => updateParameters("length", value));
-	cylinderFolder.add(cylinderParams, 'thickness').onChange(value => updateThickness(value));
-	cylinderFolder.children[2].hide();  // Thickness is only necesssary for shells so hide until shell geometry is chosen
+	gui.cylinderFolder.children[0].onChange(value => updateParameters("radiusTop", value));
+	gui.cylinderFolder.children[0].onChange(value => updateParameters("length", value));
+	gui.cylinderFolder.children[0].onChange(value => updateThickness(value));
+	
 	function updateParameters(changedParam, value){
 		if (currentObject.geometry.parameters[changedParam] != value){  // don't regenerate to the object if we're just updating the gui
-			const pos = {...posParams};
+			const pos = {...gui.posParams};
 			const newParams = {...currentObject.geometry.parameters};
 			newParams[changedParam] = value;
 			if (changedParam == "radiusTop"){
@@ -870,36 +679,36 @@ function initCylinderGui(){
 
 
 function initObliqueCylinderGui(){
-	obliqueCylinderFolder = elementFolder.addFolder('Geometry Dimensions');
-	obliqueCylinderFolder.add(obliqueCylinderParams, 'Faces left radius').onChange(value => updateParameters("radiusTop", value));
-	obliqueCylinderFolder.add(obliqueCylinderParams, 'Faces right radius').onChange(value => updateParameters("radiusBottom", value));
-	obliqueCylinderFolder.add(obliqueCylinderParams, 'length').onChange(value => updateParameters("height", value));
-	obliqueCylinderFolder.add(obliqueCylinderParams, 'Faces Left Trans. y').onChange(value => updateParameters("leftTransY", value));
-	obliqueCylinderFolder.add(obliqueCylinderParams, 'Faces Left Trans. z').onChange(value => updateParameters("leftTransZ", value));
-	obliqueCylinderFolder.add(obliqueCylinderParams, 'Faces Right Trans. y').onChange(value => updateParameters("rightTransY", value));
-	obliqueCylinderFolder.add(obliqueCylinderParams, 'Faces Right Trans. z').onChange(value => updateParameters("rightTransZ", value));
-	obliqueCylinderFolder.add(obliqueCylinderParams, 'thickness').onChange(value => updateThickness(value));
-	obliqueCylinderFolder.children[7].hide();  // Thickness is only necesssary for shells so hide until shell geometry is chosen
+	
+	gui.obliqueCylinderFolder.children[0].onChange(value => updateParameters("radiusTop", value));
+	gui.obliqueCylinderFolder.children[1].onChange(value => updateParameters("radiusBottom", value));
+	gui.obliqueCylinderFolder.children[2].onChange(value => updateParameters("height", value));
+	gui.obliqueCylinderFolder.children[3].onChange(value => updateParameters("leftTransY", value));
+	gui.obliqueCylinderFolder.children[4].onChange(value => updateParameters("leftTransZ", value));
+	gui.obliqueCylinderFolder.children[5].onChange(value => updateParameters("rightTransY", value));
+	gui.obliqueCylinderFolder.children[6].onChange(value => updateParameters("rightTransZ", value));
+	gui.obliqueCylinderFolder.children[7].onChange(value => updateThickness(value));
+	
 	function updateParameters(changedParam, value){
 		if (changedParam == "leftTransY" || changedParam == "rightTransY"){
 			changedParam = "topSkewX";
-			value = obliqueCylinderParams['Faces Right Trans. y']  - obliqueCylinderParams['Faces Left Trans. y'];
+			value = gui.obliqueCylinderParams['Faces Right Trans. y']  - gui.obliqueCylinderParams['Faces Left Trans. y'];
 		} else if (changedParam == "leftTransZ" || changedParam == "rightTransZ"){
 			changedParam = "topSkewZ";
-			value = -(obliqueCylinderParams['Faces Right Trans. z']  - obliqueCylinderParams['Faces Left Trans. z']);
+			value = -(gui.obliqueCylinderParams['Faces Right Trans. z']  - gui.obliqueCylinderParams['Faces Left Trans. z']);
 		}
 		if (currentObject.geometry.parameters[changedParam] != value){  // don't regenerate to the object if we're just updating the gui
-			const pos = {...posParams};
+			const pos = {...gui.posParams};
 			const newParams = {...currentObject.geometry.parameters};
 			newParams[changedParam] = value;
 			updateGeometry(currentObject,
 						new ObliqueCylinderGeometry(newParams.radiusTop, newParams.radiusBottom, newParams.height,
 							                        newParams.topSkewX, newParams.topSkewZ));
 			currentObject.geometry.rotateZ(Math.PI/2);
-			currentObject.geometry.parameters['Faces Left Trans. y'] = obliqueCylinderParams['Faces Left Trans. y']
-			currentObject.geometry.parameters['Faces Left Trans. z'] = obliqueCylinderParams['Faces Left Trans. z']
-			currentObject.geometry.parameters['Faces Right Trans. y'] = obliqueCylinderParams['Faces Right Trans. y']
-			currentObject.geometry.parameters['Faces Right Trans. z'] = obliqueCylinderParams['Faces Right Trans. z']
+			currentObject.geometry.parameters['Faces Left Trans. y'] = gui.obliqueCylinderParams['Faces Left Trans. y']
+			currentObject.geometry.parameters['Faces Left Trans. z'] = gui.obliqueCylinderParams['Faces Left Trans. z']
+			currentObject.geometry.parameters['Faces Right Trans. y'] = gui.obliqueCylinderParams['Faces Right Trans. y']
+			currentObject.geometry.parameters['Faces Right Trans. z'] = gui.obliqueCylinderParams['Faces Right Trans. z']
 			render();
 			moveGeometryXYZ(pos);
 		}
@@ -910,21 +719,20 @@ function initObliqueCylinderGui(){
 
 
 function initTrapezoidGui(){
-	trapezoidFolder = elementFolder.addFolder('Geometry Dimensions');
-	trapezoidFolder.add(trapezoidParams, "Faces Left Trans. y").onChange(value => updateParameters("leftTransY", value));
-	trapezoidFolder.add(trapezoidParams, "Faces Left Trans. z").onChange(value => updateParameters("leftTransZ", value));
-	trapezoidFolder.add(trapezoidParams, "Faces Left Height").onChange(value => updateParameters("leftDimensY", value));
-	trapezoidFolder.add(trapezoidParams, "Faces Left Width").onChange(value => updateParameters("leftDimensZ", value));
-	trapezoidFolder.add(trapezoidParams, "Faces Right Trans. y").onChange(value => updateParameters("rightTransY", value));
-	trapezoidFolder.add(trapezoidParams, "Faces Right Trans. z").onChange(value => updateParameters("rightTransZ", value));
-	trapezoidFolder.add(trapezoidParams, "Faces Right Height").onChange(value => updateParameters("rightDimensY", value));
-	trapezoidFolder.add(trapezoidParams, "Faces Right Width").onChange(value => updateParameters("rightDimensZ", value));
-	trapezoidFolder.add(trapezoidParams, "length").onChange(value => updateParameters("width", value));
-	trapezoidFolder.add(trapezoidParams, 'thickness').onChange(value => updateThickness(value));
-	trapezoidFolder.children[9].hide();  // Thickness is only necesssary for shells so hide until shell geometry is chosen
+	gui.trapezoidFolder.children[0].onChange(value => updateParameters("leftTransY", value));
+	gui.trapezoidFolder.children[1].onChange(value => updateParameters("leftTransZ", value));
+	gui.trapezoidFolder.children[2].onChange(value => updateParameters("leftDimensY", value));
+	gui.trapezoidFolder.children[3].onChange(value => updateParameters("leftDimensZ", value));
+	gui.trapezoidFolder.children[4].onChange(value => updateParameters("rightTransY", value));
+	gui.trapezoidFolder.children[5].onChange(value => updateParameters("rightTransZ", value));
+	gui.trapezoidFolder.children[6].onChange(value => updateParameters("rightDimensY", value));
+	gui.trapezoidFolder.children[7].onChange(value => updateParameters("rightDimensZ", value));
+	gui.trapezoidFolder.children[8].onChange(value => updateParameters("width", value));
+	gui.trapezoidFolder.children[9].onChange(value => updateThickness(value));
+	
 	function updateParameters(changedParam, value){
 		if (currentObject.geometry.parameters[changedParam] != value){  // don't regenerate to the object if we're just updating the gui
-			const pos = {...posParams};
+			const pos = {...gui.posParams};
 			const newParams = {...currentObject.geometry.parameters};
 			newParams[changedParam] = value;
 			updateGeometry(currentObject,
@@ -938,22 +746,22 @@ function initTrapezoidGui(){
 
 
 function initBeamGui(){
-	beamFolder = elementFolder.addFolder('Geometry Dimensions');
-	beamFolder.add(beamParams, "length").onChange(value => updateParameters("width", value));
-	beamFolder.add(beamParams, "h").onChange(value => updateParameters("h", value));
-	beamFolder.add(beamParams, "s").onChange(value => updateParameters("s", value));
-	beamFolder.add(beamParams, "t").onChange(value => updateParameters("t", value));
-	beamFolder.add(beamParams, "b").onChange(value => updateParameters("b", value));
+	gui.beamFolder.children[0].onChange(value => updateParameters("width", value));
+	gui.beamFolder.children[1].onChange(value => updateParameters("h", value));
+	gui.beamFolder.children[2].onChange(value => updateParameters("s", value));
+	gui.beamFolder.children[3].onChange(value => updateParameters("t", value));
+	gui.beamFolder.children[4].onChange(value => updateParameters("b", value));
+
 	function updateParameters(changedParam, value){
 		if (currentObject.geometry.parameters[changedParam] != value){  // don't regenerate to the object if we're just updating the gui
-			const pos = {...posParams};
+			const pos = {...gui.posParams};
 			const newParams = {...currentObject.geometry.parameters};
 			newParams[changedParam] = value;
 			let newGeom;
 			if (currentObject.geometry.type == "IBeamGeometry") {
-				newGeom = generateBeam("i-beam", newParams.width, newParams.h, newParams.s, newParams.t, newParams.b, posParams.x, posParams.y, posParams.z);
+				newGeom = generateBeam("i-beam", newParams.width, newParams.h, newParams.s, newParams.t, newParams.b, gui.posParams.x, gui.posParams.y, gui.posParams.z);
 			} else {
-				newGeom = generateBeam("c-beam", newParams.width, newParams.h, newParams.s, newParams.t, newParams.b, posParams.x, posParams.y, posParams.z);
+				newGeom = generateBeam("c-beam", newParams.width, newParams.h, newParams.s, newParams.t, newParams.b, gui.posParams.x, gui.posParams.y, gui.posParams.z);
 			}
 			currentObject.geometry.dispose();
 			currentObject.geometry = newGeom;
@@ -993,10 +801,10 @@ function updateRelationship(value){
 	}
 	// Show dropdown to select nature of relationship
 	if (value == 'joint' || value == 'connection'){
-		relationFolder.children[5].show();
-		relationFolder.children[5].setValue(currentRelationshipNature(id1, id2));
+		gui.relationFolder.children[5].show();
+		gui.relationFolder.children[5].setValue(currentRelationshipNature(id1, id2));
 	} else {
-		relationFolder.children[5].hide();
+		gui.relationFolder.children[5].hide();
 	}
 }
 
@@ -1019,15 +827,15 @@ function toggleHighlightUnrelated(value){
 	if (value == true){
 		// Deselect selected objects to avoid confusion
 		try {
-			resetColour(gui.children[2].children[0].getValue(), selectedObjects[0]);
+			resetColour(gui.gui.children[1].children[0].getValue(), selectedObjects[0]);
 			selectedObjects[0] = undefined;
 		} catch (TypeError) {;}
 		try {
-			resetColour(gui.children[2].children[0].getValue(), selectedObjects[1]);
+			resetColour(gui.gui.children[1].children[0].getValue(), selectedObjects[1]);
 			selectedObjects[1] = undefined;
 		} catch (TypeError) {;}
-		relationFolder.children[3].hide();
-		relationFolder.children[4].hide();
+		gui.relationFolder.children[3].hide();
+		gui.relationFolder.children[4].hide();
 		
 		// Highlight orphaned elements
 		for (let el of cElements){
@@ -1036,7 +844,7 @@ function toggleHighlightUnrelated(value){
 			}
 		}
 	} else {
-		resetColours(gui.children[2].children[0].getValue());
+		resetColours(gui.gui.children[1].children[0].getValue());
 	}
 	render();
 }
@@ -1085,4 +893,4 @@ function render() {
 }
 
 
-export {buildModel, gui};
+export {buildModel};

@@ -1,16 +1,16 @@
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
-import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
+import * as gui from './guiHelper.js';
 
 import { geometryDetails } from './geometryHelper.js';
 import { addColourFolders, makeContextColourVisible, makeMaterialColourVisible, makeGeometryColourVisible, cElements } from './colourHelper.js';
-import * as picker from './pickerHelper.js';
 
+
+let elements = [];  // for accessing all IEs in the model
 
 function plotElements(canvas, scene, shapes){
 // Some shapes are too big to easily display, so find the range
 	// of x, y and z values (for calculating FOV) and then scale them down.
-	let elements = [];  // for accessing all IEs in the model
 	// To know how big the floor needs to be
 	let minX = 0;
 	let minZ = 0;
@@ -83,8 +83,9 @@ function plotModel(shapes) {
 	const viewer = plotElements(canvas, scene, shapes);
 
 	// GUI for changing the colour scheme
-	const gui = new GUI();
-	addColourFolders(gui, render, "contextual");
+	addColourFolders(gui.coloursFolder, render, "contextual");
+	gui.setViewerMode();
+	
 	
 	// Show the relevant colours
 	for (let shape of viewer.elements) {
@@ -95,14 +96,23 @@ function plotModel(shapes) {
 		}
 	}
     
-	// Print the name of the currently selected element
-	picker.setup(scene, viewer.camera);
-	picker.clearPickPosition();
-    document.addEventListener('mousedown', picker.selectPickPosition, false);
-    //window.addEventListener('mouseout', picker.clearPickPosition);
-    //window.addEventListener('mouseleave', picker.clearPickPosition);
-
+	document.addEventListener('pointerdown', selectElement);
+    
 	
+	function selectElement(event){
+		let raycaster = new THREE.Raycaster();
+		let pointer = new THREE.Vector2();
+		pointer.set( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1 );
+		raycaster.setFromCamera( pointer, viewer.camera );
+		const intersects = raycaster.intersectObjects( elements, false );
+		if ( intersects.length > 0 ) {
+			if (intersects[0].object.name != "plane") {
+				const currentObject = intersects[0].object;
+				gui.setGeometryFolder(currentObject);
+			}
+		}
+	}
+
 
     function resizeRendererToDisplaySize( renderer ) {
         const canvas = renderer.domElement;

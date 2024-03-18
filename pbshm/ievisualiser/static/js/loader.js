@@ -2,7 +2,8 @@ import * as THREE from 'three';
 import {plotNetworkFromFile} from './networkHelper.js';
 import { plotModel } from './ieHelper.js';
 import { modelInfo, extractShapes, extractRelationships } from './jsonHelper.js';
-import { gui, buildModel } from './builder.js';
+import { buildModel } from './builder.js';
+import  * as gui from './guiHelper.js';
 
 
 export function loadFile(filepath, purpose='viewer'){
@@ -13,15 +14,18 @@ export function loadFile(filepath, purpose='viewer'){
       // onLoad callback
       function ( data ) {
         // output the text to the console
+        const info = modelInfo(data);
+        gui.modelDetailsFolder.children[0].setValue(info.name);
+        gui.modelDetailsFolder.children[1].setValue(info.description);
+        gui.modelDetailsFolder.children[2].setValue(info.population);
+        gui.modelDetailsFolder.children[3].setValue(info.type);
         const shapes = extractShapes(data);
         if (shapes.length > 0){
           if (purpose == 'viewer') {
-            gui.destroy();  // stop the builder gui interfering with the viewer gui
             plotModel(shapes);
           } else {
-            const info = modelInfo(data);
             const [relationships, natures] = extractRelationships(data);
-            buildModel(info, shapes, relationships, natures);
+            buildModel(shapes, relationships, natures);
           }
         }
         else {
