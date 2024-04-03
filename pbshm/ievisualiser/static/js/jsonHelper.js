@@ -172,9 +172,11 @@ function extractRelationships(rawtext){
 		const r = relationships[i].type;
 		relatDict[[el1, el2]] = r;
 		if (r == 'joint' ){
-			natureDict[[el1, el2]] = relationships[i].nature.name + ' ' + relationships[i].nature.nature.name;
+			natureDict[[el1, el2]] = 'joint ' + relationships[i].nature.name + ' ' + relationships[i].nature.nature.name;
 		} else if (r == 'connection') {
-			natureDict[[el1, el2]] = relationships[i].elements[0].nature.name + ' ' + relationships[i].elements[0].nature.nature.name;
+			natureDict[[el1, el2]] = 'connection ' + relationships[i].elements[0].nature.name + ' ' + relationships[i].elements[0].nature.nature.name;
+		} else if (r == 'boundary' || r == 'perfect') {
+			natureDict[[el1, el2]] = r;
 		}
 	}
 	return [relatDict, natureDict];

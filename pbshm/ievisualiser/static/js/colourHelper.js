@@ -74,19 +74,48 @@ const geometryColours = {"beam rectangular": 0x00B9E8,
                           "other":0x63452c};
 
 
+/* perfect: brown,
+   boundary: grey,
+   connection static: blue,
+   connection dynamic: purple,
+   joint static: red,
+   joint dynamic: green */
+const relationshipColours = {'perfect': 0x000000,
+                            'boundary': 0x5e5c64,
+                            'connection static bolted': 0x00B9E8,
+                            'connection static welded': 0x5D8AA8,
+                            'connection static adhesive': 0x6CB4EE,
+                            'connection static other': 0x0070BB,
+                            'connection dynamic hinge': 0x702963,
+                            'connection dynamic ballAndSocket': 0x9966CC,
+                            'connection dynamic pinned': 0xB284BE,
+                            'connection dynamic other': 0xB53389,
+                            'joint static bolted': 0xAB274F,
+                            'joint static welded': 0x7C0902,
+                            'joint static adhesive': 0xFE6F5E,
+                            'joint static other': 0xFB607F,
+                            'joint dynamic hinge': 0x90EE90,
+                            'joint dynamic ballAndSocket': 0x8DB600,
+                            'joint dynamic pinned': 0x7BA05B,
+                            'joint dynamic other': 0x004225}
+
+
 const contextualColourKeys = Object.keys(contextualColours);
 contextualColourKeys.sort();
 const materialColourKeys = Object.keys(materialColours);
 materialColourKeys.sort();
 const geometryColourKeys = Object.keys(geometryColours);
 geometryColourKeys.sort();
+const relationshipColourKeys = Object.keys(relationshipColours);
+relationshipColourKeys.sort();
 
 
-let contextualColoursFolder, materialColoursFolder, geometryColoursFolder;
+let contextualColoursFolder, materialColoursFolder, geometryColoursFolder, relationshipColoursFolder;
 let cElements = [];
+let cLines = [];
 
 
-function addColourFolders(coloursFolder, render, defaultScheme="contextual") {
+function addColourFolders(coloursFolder, render, defaultScheme="contextual", includeNetworkEdges=false) {
     // Find out what contexts, materials and geometries are used by the cElements
     let schemes;
     if (defaultScheme == 'builder'){
@@ -123,6 +152,14 @@ function addColourFolders(coloursFolder, render, defaultScheme="contextual") {
     for (i=0; i<geometryColourKeys.length; i++) {
         geometryColoursFolder.addColor(geometryColours, geometryColourKeys[i]).onChange( value => {updateColourScheme('geometry')} );;
         geometryColoursFolder.children[i].hide();
+    }
+
+    if (includeNetworkEdges){
+        relationshipColoursFolder = coloursFolder.addFolder('Relationship Colours');
+        for (i=0; i<relationshipColourKeys.length; i++) {
+            relationshipColoursFolder.addColor(relationshipColours, relationshipColourKeys[i]).onChange( value => {updateColourScheme('edges')} );;
+            relationshipColoursFolder.children[i].hide();
+        }
     }
 
 
@@ -181,6 +218,11 @@ function addColourFolders(coloursFolder, render, defaultScheme="contextual") {
                     cElements[i].material.color.setHex(builderColours[cElements[i].geometry.type]);
                 }
             }
+        } else if (scheme == "edges") {
+            for (let i=0; i<cLines.length; i++) {
+                cLines[i].material.color.setHex(relationshipColours[cLines[i].nature]);
+            }
+
         }
         render();
     }
@@ -212,6 +254,15 @@ function makeGeometryColourVisible(geometry){
     }
 }
 
+
+function makeEdgeColourVisible(relationship){
+    if (relationship != undefined) {
+        const i = relationshipColourKeys.indexOf(relationship);
+        relationshipColoursFolder.children[i].show();
+    }
+}
+
+
 /* Of a single element */
 function resetColour(scheme, element){
     if (element.el_contextual == "ground") {
@@ -237,5 +288,5 @@ function resetColours(scheme){
 }
 
 
-export {otherColours, builderColours, contextualColours, materialColours, geometryColours, cElements, materialColourKeys, contextualColourKeys,
-        addColourFolders, makeContextColourVisible, makeMaterialColourVisible, makeGeometryColourVisible, resetColour, resetColours};
+export {otherColours, builderColours, contextualColours, materialColours, geometryColours, relationshipColours, cElements, cLines, materialColourKeys, contextualColourKeys,
+        addColourFolders, makeContextColourVisible, makeMaterialColourVisible, makeGeometryColourVisible, makeEdgeColourVisible, resetColour, resetColours};

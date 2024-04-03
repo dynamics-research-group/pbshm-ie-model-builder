@@ -6,7 +6,8 @@ import { Line2 } from 'three/addons/lines/Line2.js';
 
 
 import * as gui from './guiHelper.js';
-import { otherColours, contextualColours, addColourFolders, cElements,
+import { extractRelationships } from './jsonHelper.js';
+import { otherColours, contextualColours, addColourFolders, cElements, cLines, relationshipColours, makeEdgeColourVisible,
          makeContextColourVisible, makeMaterialColourVisible, makeGeometryColourVisible } from './colourHelper.js';
 
 
@@ -42,6 +43,9 @@ function plotNetworkFromFile(rawtext){
             edgeCoords[i2].push([x, y, z])
         }
     }
+    
+    const [relationships, natures] = extractRelationships(rawtext);
+
     let nodeCoords;
     // See if there were any coordinates given detailing where two elements join
     let totalCoords = 0;
@@ -56,7 +60,7 @@ function plotNetworkFromFile(rawtext){
     // If none were given then calculate where to position the nodes.
     if (totalCoords == 0){
         nodeCoords = fruchterman_reingold(edges);
-        drawNetwork(nodeCoords, edges, elInfo, true)
+        drawNetwork(nodeCoords, edges, elInfo, natures, true)
     }
     // If joint coordinates were given then use them to decide on node coordinates
     else{
@@ -64,7 +68,7 @@ function plotNetworkFromFile(rawtext){
             return arr.slice();
         });
         nodeCoords = getNodeCoords(tempEdges, edgeCoords, counts);
-        drawNetwork(nodeCoords, edges, elInfo);
+        drawNetwork(nodeCoords, edges, elInfo, natures);
     }
     
 }
@@ -98,7 +102,7 @@ function getNodeCoords(edges, edgeCoords, counts){
     return nodeCoords;
 }
 
-function drawNetwork(coords, edges, elInfo, threeD=true){
+function drawNetwork(coords, edges, elInfo, natures, threeD=true){
     const nNodes = coords.length;
     let minX = 0;
     let minY = 0
@@ -148,7 +152,7 @@ function drawNetwork(coords, edges, elInfo, threeD=true){
     controls.update();
 
     // GUI for changing the colour scheme
-	addColourFolders(gui.coloursFolder, render, "contextual");
+	addColourFolders(gui.coloursFolder, render, "contextual", true);
 	gui.setViewerMode();
   
     // Add ambient light because otherwise the shadow from the directional light is too dark
@@ -183,7 +187,9 @@ function drawNetwork(coords, edges, elInfo, threeD=true){
         for (let j=0; j<edges[i].length; j++){
             if (i < edges[i][j]) {  // don't draw lines twice (once for each way)
                 pos2 = coords[edges[i][j]];
-                drawLine(pos1, pos2)
+                const nature = currentRelationshipNature(elInfo[i].name, elInfo[edges[i][j]].name);
+                makeEdgeColourVisible(nature);
+                drawLine(pos1, pos2, nature);
             }
         }
     }
@@ -197,14 +203,21 @@ function drawNetwork(coords, edges, elInfo, threeD=true){
 		raycaster.setFromCamera( pointer, camera );
 		const intersects = raycaster.intersectObjects( cElements, false );
 		if ( intersects.length > 0 ) {
-			if (intersects[0].object.name != "plane") {
-				const currentObject = intersects[0].object;
-				gui.setGeometryFolder(currentObject);
-                gui.gCoordsFolder.hide();
-                gui.sphereFolder.hide();
-			}
+            const currentObject = intersects[0].object;
+            gui.setGeometryFolder(currentObject);
+            gui.gCoordsFolder.hide();
+            gui.sphereFolder.hide();
 		}
 	}
+
+    function currentRelationshipNature(id1, id2){
+        //console.log(id1, id2)
+        if (natures[[id1, id2]] != undefined){
+            return natures[[id1, id2]];
+        } else if (natures[[id2, id1]] != undefined){
+            return natures[[id2, id1]];
+        }
+    }
 
     
     function render() {
@@ -274,10 +287,13 @@ function drawNetwork(coords, edges, elInfo, threeD=true){
         return shape;
     }
     
-    function drawLine(pos1, pos2){
+    function drawLine(pos1, pos2, nature){
       const geometry = new LineGeometry();
       geometry.setPositions([pos1[0], pos1[1], pos1[2], pos2[0], pos2[1], pos2[2]]);
-      scene.add(new Line2( geometry, matLine ));
+      const edge = new Line2( geometry, new LineMaterial( {color: relationshipColours[nature], linewidth: 0.002 } ) )
+      edge.nature = nature;
+      cLines.push(edge);
+      scene.add(edge);
     }
     
     requestAnimationFrame(render);
@@ -401,7 +417,6 @@ function fruchterman_reingold(edges, iterations=50, scale=1){
 	return pos;
 
 }
-
 
 
 export {plotNetworkFromFile};
