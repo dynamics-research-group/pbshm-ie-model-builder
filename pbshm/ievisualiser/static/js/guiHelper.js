@@ -22,7 +22,7 @@ export const coloursFolder = gui.addFolder('Colours');
 export const relationFolder = gui.addFolder('Relationships');
 const elRelationship = {'Relationship': 'none', 'Nature': undefined}  // current relationship type selected
 const relationshipTypes = {'free': ['none', 'perfect', 'connection', 'joint'],
-                        'grounded': ['none', 'perfect', 'connection', 'joint', 'boundary'],
+                        'grounded': ['none', 'boundary'],
                         'nature': ['static bolted', 'static welded', 'static adhesive', 'static other',
                                     'dynamic hinge', 'dynamic ballAndSocket', 'dynamic pinned',
                                     'dynamic expansion', 'dynamic ballBearing', 'dynamic other']};
