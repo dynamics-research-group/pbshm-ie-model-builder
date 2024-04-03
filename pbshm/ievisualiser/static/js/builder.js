@@ -22,6 +22,7 @@ let relationships = {};
 let relationshipNatures = {};
 let selectedObjects = new Array(2); // Selecting objects for relationships
 let floorFolder;
+let nextID = 0;  // for automatically assigning unique names when creating objects
 
 const floorParams = {'width': 300,
 					'depth': 300};
@@ -377,6 +378,7 @@ function onPointerDown( event ) {
 				}
 				voxel.el_material = undefined;
 				voxel.relationshipCount = 0;
+				voxel.name = 'element' + (nextID++);
 				scene.add( voxel );
 				objects.push( voxel );
 				currentObject = voxel;
