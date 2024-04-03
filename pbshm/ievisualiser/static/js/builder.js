@@ -235,17 +235,16 @@ function onPointerMove( event ) {
 		pointer.set( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1 );
 		raycaster.setFromCamera( pointer, camera );
 		const intersects = raycaster.intersectObjects( objects, false );
-		rollOverMesh.geometry.computeBoundingBox();
-		const rollOverHeight = (rollOverMesh.geometry.boundingBox.max.z - rollOverMesh.geometry.boundingBox.min.z) / 2
 		if ( intersects.length > 0 ) {
 			const intersect = intersects[ 0 ];
-			rollOverMesh.position.copy( intersect.point ).add( intersect.face.normal );
+			rollOverMesh.position.copy( intersect.point );
+			rollOverMesh.geometry.computeBoundingBox();
+			const rollOverHeight = (rollOverMesh.geometry.boundingBox.max.y - rollOverMesh.geometry.boundingBox.min.y) / 2
 			rollOverMesh.position.addScalar(rollOverHeight);
 			render();
 		}
 	}
 }
-
 
 function onPointerDown( event ) {
 	pointer.set( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1 );
@@ -440,28 +439,28 @@ function allowUncheck() {
 		rollOverMesh.geometry.dispose()
 		if (currentId == "cube"){
 			rollOverMesh.geometry = rollOverCubeGeo;
-			gui.currentFolder = gui.boxFolder;
+			gui.setCurrentFolder(gui.boxFolder);
 		} else if (currentId == "sphere"){
 			rollOverMesh.geometry = rollOverSphereGeo;
-			gui.currentFolder = gui.sphereFolder;
+			gui.setCurrentFolder(gui.sphereFolder);
 		} else if (currentId == "cylinder"){
 			rollOverMesh.geometry = rollOverCylinderGeo;
-			gui.currentFolder = gui.cylinderFolder;	
+			gui.setCurrentFolder(gui.cylinderFolder);	
 		} else if (currentId == "obliqueCylinder"){
 			rollOverMesh.geometry = rollOverObliqueCylinderGeo;
-			gui.currentFolder = gui.obliqueCylinderFolder;
+			gui.setCurrentFolder(gui.obliqueCylinderFolder);
 		} else if (currentId == "trapezoid"){
 			rollOverMesh.geometry = rollOverTrapezoidGeo;
-			gui.currentFolder = gui.trapezoidFolder;
+			gui.setCurrentFolder(gui.trapezoidFolder);
 		} else if (currentId == "ibeam"){
 			rollOverMesh.geometry = rollOverIBeamGeo;
-			gui.currentFolder = gui.beamFolder;
+			gui.setCurrentFolder(gui.beamFolder);
 		} else if (currentId == "cbeam"){
 			rollOverMesh.geometry = rollOverCBeamGeo;
-			gui.currentFolder = gui.beamFolder;
+			gui.setCurrentFolder(gui.beamFolder);
 		} else if (currentId == "ground"){
 			rollOverMesh.geometry = rollOverGroundGeo;
-			gui.currentFolder = undefined;
+			gui.setCurrentFolder(undefined);
 		}
 		rollOverMesh.visible = true;
 	}

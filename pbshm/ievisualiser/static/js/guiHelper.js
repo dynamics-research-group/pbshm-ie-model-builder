@@ -4,6 +4,8 @@ import {glToJson} from './translationHelper.js';
 import { materialColourKeys, contextualColourKeys, otherColours} from './colourHelper.js';
 
 
+// Note that any parts of the gui that are related to colours are handled in colourHelper.js
+
 export const gui = new GUI();
 
 export const modelDetails = {'Name': '', 'Description': '', 'Population': '', 'Type': 'grounded'};
@@ -182,6 +184,9 @@ beamFolder.add(beamParams, "b");
 
 
 export let currentFolder;
+export function setCurrentFolder(folder){
+    currentFolder = folder;
+}
    
 export function setGeometryFolder(currentObject){
     hideGeometryFolders();  // First hide all, then show the one relevant folder
