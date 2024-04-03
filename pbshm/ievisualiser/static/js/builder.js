@@ -31,7 +31,7 @@ let rollOverMesh;
 const rollOverMaterial = new THREE.MeshBasicMaterial( { color: 0xff0000, opacity: 0.5, transparent: true } );
 const rollOverCubeGeo = new THREE.BoxGeometry(gui.boxParams.length, gui.boxParams.height, gui.boxParams.width);
 const rollOverSphereGeo = new THREE.SphereGeometry(gui.sphereParams.radius);
-const rollOverCylinderGeo = new THREE.CylinderGeometry(gui.sphereParams.radius, gui.sphereParams.radius, gui.sphereParams.length);
+const rollOverCylinderGeo = new THREE.CylinderGeometry(gui.cylinderParams.radius, gui.cylinderParams.radius, gui.cylinderParams.length);
 const rollOverObliqueCylinderGeo = new ObliqueCylinderGeometry(gui.obliqueCylinderParams['Faces left radius'],
 															gui.obliqueCylinderParams['Faces left radius'],
 															gui.obliqueCylinderParams.length,
@@ -328,7 +328,7 @@ function onPointerDown( event ) {
 				} else if (currentId == "sphere"){
 					currentGeometry = new THREE.SphereGeometry(gui.sphereParams.radius);;
 				} else if (currentId == "cylinder"){
-					currentGeometry = new THREE.CylinderGeometry(gui.sphereParams.radius, gui.sphereParams.radius, gui.sphereParams.length);;
+					currentGeometry = new THREE.CylinderGeometry(gui.cylinderParams.radius, gui.cylinderParams.radius, gui.cylinderParams.length);;
 					// Rotate because cylinder is assumed horizontal in json but vertical in webGL
 					currentGeometry.rotateZ(Math.PI/2);
 				} else if (currentId == "obliqueCylinder"){
