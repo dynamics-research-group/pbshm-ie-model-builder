@@ -166,6 +166,7 @@ function buildModel(shapes=undefined, preRelationships=undefined, preNatures=und
 			}
 			e.relationshipCount = 0;
 			elementDict[e.name] = e;  // relationships are referred to by name in json
+			nextID++;
 		}
 		resetColours(gui.gui.children[1].children[0].getValue());  // Set the colours to match the colourScheme chosen in the GUI
 		controls = info.controls;
