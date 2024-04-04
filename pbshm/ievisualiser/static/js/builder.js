@@ -20,7 +20,7 @@ let floor;
 let pointer, raycaster, isShiftDown = false, isCtrlDown = false;
 let relationships = {};
 let relationshipNatures = {};
-let selectedObjects = new Array(2); // Selecting objects for relationships
+let selectedObjects = []; // Selecting objects for relationships
 let floorFolder;
 let nextID = 0;  // for automatically assigning unique names when creating objects
 
@@ -72,7 +72,8 @@ function setupGui(){
 	gui.relationFolder.children[2].onChange(value => toggleHideConnected(value));  // 'Hide connected'
 	gui.relationFolder.children[3].onChange( value => updateRelationship(value));
 	gui.relationFolder.children[4].onChange( value => updateRelationship(value));
-	gui.relationFolder.children[5].onChange( value => updateRelationshipNature(value));
+	gui.relationFolder.children[5].onChange( value => updateRelationship(value));
+	gui.relationFolder.children[6].onChange( value => updateRelationshipNature(value));
 	
 	gui.elementFolder.children[0].onChange(updateElementName);
 
@@ -174,17 +175,19 @@ function buildModel(shapes=undefined, preRelationships=undefined, preNatures=und
 		objects.push(floor);
 
 		for (const [key, value] of Object.entries(preRelationships)){
-			const pair = key.split(',');
-			elementDict[pair[0]].relationshipCount++;
-			elementDict[pair[1]].relationshipCount++;
-			relationships[[elementDict[pair[0]].id, elementDict[pair[1]].id]] = value;
+			const relatedEls = key.split(',');
+			let relationshipGroup = [];
+			for (let i=0; i<relatedEls.length; i++) {
+				elementDict[relatedEls[i]].relationshipCount++;
+				relationshipGroup.push(elementDict[relatedEls[i]].id);
+			}
+			relationships[relationshipGroup] = value;
 			if (value == 'joint' || value == 'connection') {
-				relationshipNatures[[elementDict[pair[0]].id, elementDict[pair[1]].id]] = preNatures[key];
+				relationshipNatures[relationshipGroup] = preNatures[key];
 			}
 		}
 	}
 	
-
 	// Only render when the user moves the camera
 	controls.addEventListener("change", () => renderer.render(scene, camera));
 	controls.update();
@@ -264,59 +267,66 @@ function onPointerDown( event ) {
 			// select object
 			gui.elementFolder.hide();
 			if ( intersect.object !== floor ) {
-				if (selectedObjects[0] == intersect.object) {
-					// If it was already object 0, deselect it
+				const selectedIndex = selectedObjects.indexOf(intersect.object);
+				if (selectedIndex >= 0){
+					// If it was already selected, deselect it
 					resetColour(gui.gui.children[1].children[0].getValue(), intersect.object);
-					// Move object 1 to first place
-					selectedObjects[0] = selectedObjects[1];
-					selectedObjects[1] = undefined;
 					gui.relationFolder.children[3].hide();
 					gui.relationFolder.children[4].hide();
 					gui.relationFolder.children[5].hide();
-				} else if (selectedObjects[1] == intersect.object) {	
-					// If it was already object 1, deselect it
-					resetColour(gui.gui.children[1].children[0].getValue(), intersect.object);
-					selectedObjects[1] = undefined;
-					gui.relationFolder.children[3].hide();
-					gui.relationFolder.children[4].hide();
-					gui.relationFolder.children[5].hide();
+					// Shift everything down to fill the gap of the deselected object
+					for (let i=selectedIndex; i<selectedObjects.length-1; i++){
+						selectedObjects[i] = selectedObjects[i+1];
+					}
+					selectedObjects.pop();
 				} else {
-					// Otherwise, select it
+					// Select the object
 					intersect.object.material.color.setHex(otherColours['Selected element']);
-					if (selectedObjects[0] == undefined) { 
-						// Assign as object 0 if the space was free
-						selectedObjects[0] = intersect.object;
-					} else {
-						if (selectedObjects[1] != undefined) {	
-							// If two objects are already selected, deselect object 1 (i.e. reset its colour)
-							resetColour(gui.gui.children[1].children[0].getValue(), selectedObjects[1]);
+					selectedObjects.push(intersect.object);
+				}
+				if (selectedObjects.length >= 2) {
+					// Can't have more than two elements selected where one is ground
+					if (selectedObjects.length > 2){
+						for (let i=0; i<selectedObjects.length; i++){
+							if (selectedObjects[i].el_contextual == "ground"){
+								gui.relationFolder.children[3].hide();
+								gui.relationFolder.children[4].hide();
+								gui.relationFolder.children[5].hide();
+								gui.relationFolder.children[6].hide();
+								return;
+							}
 						}
-						// Assign as object 1
-						selectedObjects[1] = intersect.object;
-						// Two elements are selected so show the dropdown menu to select their relationship
-						// Show the current relationship they have
-						const currentRelat = currentRelationship(selectedObjects[0].id, selectedObjects[1].id);
-						gui.relationFolder.show();
-						if (selectedObjects[0].el_contextual == "ground" || selectedObjects[1].el_contextual == "ground"){
+					}
+					// Show the existing relationship they have //TODO: change, don't event need to pass anything
+					const currentRelat = currentRelationship();
+					gui.relationFolder.show();
+					if (selectedObjects.length == 2 && (selectedObjects[0].el_contextual == "ground" || selectedObjects[1].el_contextual == "ground")){
 							gui.relationFolder.children[3].hide();  // hide 'free' relationships folder
-							gui.relationFolder.children[4].show();  // show 'grounded' relationships folder
-							gui.relationFolder.children[4].setValue(currentRelat);
-							if (currentRelat == 'joint' || currentRelat == 'connection') {
-								gui.relationFolder.children[5].show();
-								gui.relationFolder.children[5].setValue(currentRelationshipNature(selectedObjects[0].id, selectedObjects[1].id));
-							} else {
-								gui.relationFolder.children[5].hide();
-							}
+							gui.relationFolder.children[4].hide();  // hide 'connection' relationships folder
+							gui.relationFolder.children[5].show();  // show 'grounded' relationships folder
+							gui.relationFolder.children[5].setValue(currentRelat);
+							gui.relationFolder.children[6].hide();  // hide natures
+					} else if (selectedObjects.length == 2) {
+						gui.relationFolder.children[3].show();  // show 'free'
+						gui.relationFolder.children[3].setValue(currentRelat);
+						gui.relationFolder.children[4].hide();  // hide 'connection'
+						gui.relationFolder.children[5].hide();  // hide 'grounded'
+						if (currentRelat == 'joint' || currentRelat == 'connection') {
+							gui.relationFolder.children[6].show();
+							gui.relationFolder.children[6].setValue(currentRelationshipNature());
 						} else {
-							gui.relationFolder.children[3].show();  // show 'free'
-							gui.relationFolder.children[3].setValue(currentRelat);
-							gui.relationFolder.children[4].hide();  // hide 'grounded'
-							if (currentRelat == 'joint' || currentRelat == 'connection') {
-								gui.relationFolder.children[5].show();
-								gui.relationFolder.children[5].setValue(currentRelationshipNature(selectedObjects[0].id, selectedObjects[1].id));
-							} else {
-								gui.relationFolder.children[5].hide();
-							}
+							gui.relationFolder.children[6].hide();
+						}
+					} else if (selectedObjects.length > 2) {
+						gui.relationFolder.children[3].hide();  // show 'free'
+						gui.relationFolder.children[4].show();  // hide 'connection'
+						gui.relationFolder.children[4].setValue(currentRelat);
+						gui.relationFolder.children[5].hide();  // hide 'grounded'
+						if (currentRelat == 'connection') {
+							gui.relationFolder.children[6].show();
+							gui.relationFolder.children[6].setValue(currentRelationshipNature());
+						} else {
+							gui.relationFolder.children[6].hide();
 						}
 					}
 				}
@@ -772,55 +782,56 @@ function initBeamGui(){
 	}
 }
 
-/* Functions dealing with relationships between elements */
+/* Functions dealing with relationships between elements.
+The elements involved in a relationship are stored in alphabetical order or element id
+so we can easily check if a relationship already exists between a set of elements. */
+
+function sortedSelectedIds(){
+	let elementIds = [];
+	for (let i=0; i<selectedObjects.length; i++){
+		elementIds.push(selectedObjects[i].id)
+	}
+	elementIds.sort();
+	return elementIds;
+}
 
 function updateRelationship(value){
 	// Check if a relationship is already defined
-	const id1 = selectedObjects[0].id;
-	const id2 = selectedObjects[1].id;
-	let pair;
-	if (relationships[[id1, id2]] != undefined){
-		pair = [id1, id2];
-	} else if (relationships[[id2, id1]] != undefined){
-		pair = [id2, id1];
-	}
-
-	if (pair != undefined) {
-		// If they're already paired then update the relationship (or remove it if 'none' has been selected)
-		if (value == 'none'){
-			delete relationships[pair];
-			selectedObjects[0].relationshipCount--;
-			selectedObjects[1].relationshipCount--;
+	if (value != 'none') {
+		const elementIds = sortedSelectedIds();
+		
+		if (relationships[elementIds] != undefined) {
+			// If they're already paired then update the relationship (or remove it if 'none' has been selected)
+			if (value == 'none'){
+				delete relationships[elementIds];
+				for (let i=0; i<selectedObjects.length; i++){
+					selectedObjects[i].relationshipCount--;
+				}
+			} else {
+				relationships[elementIds] = value;
+			}
 		} else {
-			relationships[pair] = value;
+			// Add the new relationship
+			relationships[elementIds] = value;
+			for (let i=0; i<selectedObjects.length; i++){
+				selectedObjects[i].relationshipCount++;
+			}
 		}
-	} else {
-		// Add the new relationship
-		relationships[[id1, id2]] = value;
-		selectedObjects[0].relationshipCount++;
-		selectedObjects[1].relationshipCount++;
-	}
-	// Show dropdown to select nature of relationship
-	if (value == 'joint' || value == 'connection'){
-		gui.relationFolder.children[5].show();
-		gui.relationFolder.children[5].setValue(currentRelationshipNature(id1, id2));
-	} else {
-		gui.relationFolder.children[5].hide();
+		// Show dropdown to select nature of relationship
+		if (value == 'joint' || value == 'connection'){
+			gui.relationFolder.children[6].show();
+			gui.relationFolder.children[6].setValue(currentRelationshipNature());
+		} else {
+			gui.relationFolder.children[6].hide();
+		}
 	}
 }
 
 
 function updateRelationshipNature(value){
-	const id1 = selectedObjects[0].id;
-	const id2 = selectedObjects[1].id;
+	const elementIds = sortedSelectedIds();
 	// Find out which way round the pair is stored
-	let pair;
-	if (relationships[[id1, id2]] != undefined){
-		pair = [id1, id2];
-	} else if (relationships[[id2, id1]] != undefined){
-		pair = [id2, id1];
-	}
-	relationshipNatures[[id1, id2]] = value;
+	relationshipNatures[elementIds] = value;
 }
 
 
@@ -837,6 +848,8 @@ function toggleHighlightUnrelated(value){
 		} catch (TypeError) {;}
 		gui.relationFolder.children[3].hide();
 		gui.relationFolder.children[4].hide();
+		gui.relationFolder.children[5].hide();
+		gui.relationFolder.children[6].hide();
 		
 		// Highlight orphaned elements
 		for (let el of cElements){
@@ -851,23 +864,21 @@ function toggleHighlightUnrelated(value){
 }
 
 
-function currentRelationship(id1, id2){
-	if (relationships[[id1, id2]] != undefined){
-		return relationships[[id1, id2]];
-	} else if (relationships[[id2, id1]] != undefined){
-		return relationships[[id2, id1]];
+function currentRelationship(){
+	const elementIds = sortedSelectedIds();
+	if (relationships[elementIds] == undefined){
+		return 'none';
 	}
-	return 'none';
+	return relationships[elementIds]
 }
 
 
-function currentRelationshipNature(id1, id2){
-	if (relationshipNatures[[id1, id2]] != undefined){
-		return relationshipNatures[[id1, id2]];
-	} else if (relationshipNatures[[id2, id1]] != undefined){
-		return relationshipNatures[[id2, id1]];
+function currentRelationshipNature(){
+	const elementIds = sortedSelectedIds();
+	if (relationshipNatures[elementIds] == undefined){
+		return 'none';
 	}
-	return 'none';
+	return relationshipNatures[elementIds]
 }
 
 

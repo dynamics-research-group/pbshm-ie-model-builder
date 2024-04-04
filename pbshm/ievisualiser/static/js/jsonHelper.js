@@ -167,16 +167,18 @@ function extractRelationships(rawtext){
 	const data = JSON.parse(rawtext);
 	const relationships = data.models.irreducibleElement.relationships;
 	for (let i=0; i<relationships.length; i++){
-		const el1 = relationships[i].elements[0].name;
-		const el2 = relationships[i].elements[1].name;
+		let elList = [];
+		for (let j=0; j<relationships[i].elements.length; j++){
+			elList.push(relationships[i].elements[j].name);
+		}
 		const r = relationships[i].type;
-		relatDict[[el1, el2]] = r;
+		relatDict[elList] = r;
 		if (r == 'joint' ){
-			natureDict[[el1, el2]] = 'joint ' + relationships[i].nature.name + ' ' + relationships[i].nature.nature.name;
+			natureDict[elList] = 'joint ' + relationships[i].nature.name + ' ' + relationships[i].nature.nature.name;
 		} else if (r == 'connection') {
-			natureDict[[el1, el2]] = 'connection ' + relationships[i].elements[0].nature.name + ' ' + relationships[i].elements[0].nature.nature.name;
+			natureDict[elList] = 'connection ' + relationships[i].elements[0].nature.name + ' ' + relationships[i].elements[0].nature.nature.name;
 		} else if (r == 'boundary' || r == 'perfect') {
-			natureDict[[el1, el2]] = r;
+			natureDict[elList] = r;
 		}
 	}
 	return [relatDict, natureDict];
@@ -399,13 +401,19 @@ function save(modelDetails, relationships, relationshipNatures, elements){
 	output.models.irreducibleElement.elements = elements_output;
 
 	for (const [key, value] of Object.entries(relationships)){
-		const pair = key.split(',');
-		const element1 = elementIdDict[pair[0]];
-		const element2 = elementIdDict[pair[1]]
-		let relatDict = {"name": element1.name + "-" + element2.name,
+		const relatedElIds = key.split(',');
+		let elementsList = [];
+		let relationshipName = '';
+		for (let i=0; i<relatedElIds.length; i++){
+			elementsList.push({"name": elementIdDict[relatedElIds[i]].name});
+			relationshipName += elementIdDict[relatedElIds[i]].name;
+			if (i < relatedElIds.length-1) {
+				relationshipName += '-';
+			}
+		}
+		let relatDict = {"name": relationshipName,
 						"type": value,
-						"elements": [{"name": element1.name},
-									{"name": element2.name}]}
+						"elements": elementsList}
 		
 		if (value == 'joint'){
 			const nature = relationshipNatures[key].split(" ");
@@ -413,6 +421,8 @@ function save(modelDetails, relationships, relationshipNatures, elements){
 		}
 
 		// Find out where they're connected if they're not the ground
+		const element1 = elementIdDict[relatedElIds[0]];
+		const element2 = elementIdDict[relatedElIds[1]];
 		if (element1.el_contextual != "ground" && element2.el_contextual != "ground") {
 			if (value == 'perfect' || value == 'boundary') {
 				const x = new THREE.Box3().setFromObject(element1);
@@ -426,22 +436,21 @@ function save(modelDetails, relationships, relationshipNatures, elements){
 																		"z": {"unit": "other",
 																				"value": intersectVector.z}}}}
 			} else {
-				relatDict.elements[0]["coordinates"] = {"global": {"translational": {"x": {"unit": "other",
-																							"value": element1.position.x},
-																					"y": {"unit": "other",
-																							"value": element1.position.y},
-																					"z": {"unit": "other",
-																							"value": element1.position.z}}}}
-				relatDict.elements[1]["coordinates"] = {"global": {"translational": {"x": {"unit": "other",
-																							"value": element2.position.x},
-																					"y": {"unit": "other",
-																							"value": element2.position.y},
-																					"z": {"unit": "other",
-																							"value": element2.position.z}}}}
+				// In this case there may be more than two elements
+				for (let i=0; i<relatedElIds.length; i++){
+					relatDict.elements[i]["coordinates"] = {"global": {"translational":
+															{"x": {"unit": "other",
+																	"value": elementIdDict[relatedElIds[i]].position.x},
+															"y": {"unit": "other",
+																	"value": elementIdDict[relatedElIds[i]].position.y},
+															"z": {"unit": "other",
+																	"value": elementIdDict[relatedElIds[i]].position.z}}}}
+				}
 				if (value == 'connection'){
 					const nature = relationshipNatures[key].split(" ");
-					relatDict.elements[0]["nature"] = {"name": nature[0], "nature": {"name": nature[1]}};
-					relatDict.elements[1]["nature"] = {"name": nature[0], "nature": {"name": nature[1]}};
+					for (let i=0; i<relatedElIds.length; i++){
+						relatDict.elements[i]["nature"] = {"name": nature[0], "nature": {"name": nature[1]}};
+					}
 				}
 			}
 		}

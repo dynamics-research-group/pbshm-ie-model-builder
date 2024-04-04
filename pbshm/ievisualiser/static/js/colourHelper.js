@@ -97,6 +97,7 @@ const relationshipColours = {'perfect': 0x000000,
                             'joint dynamic hinge': 0x90EE90,
                             'joint dynamic ballAndSocket': 0x8DB600,
                             'joint dynamic pinned': 0x7BA05B,
+                            'joint dynamic expansion': 0xACE1AF,
                             'joint dynamic other': 0x004225}
 
 

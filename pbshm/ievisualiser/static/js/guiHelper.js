@@ -22,6 +22,7 @@ export const coloursFolder = gui.addFolder('Colours');
 export const relationFolder = gui.addFolder('Relationships');
 const elRelationship = {'Relationship': 'none', 'Nature': undefined}  // current relationship type selected
 const relationshipTypes = {'free': ['none', 'perfect', 'connection', 'joint'],
+                        'connection': ['none', 'connection'],
                         'grounded': ['none', 'boundary'],
                         'nature': ['static bolted', 'static welded', 'static adhesive', 'static other',
                                     'dynamic hinge', 'dynamic ballAndSocket', 'dynamic pinned',
@@ -31,11 +32,13 @@ relationFolder.add(showElements, 'Show orphans');
 relationFolder.addColor(otherColours, 'Orphans');
 relationFolder.add(showElements, 'Hide connected');
 relationFolder.add(elRelationship, 'Relationship', relationshipTypes['free']);
+relationFolder.add(elRelationship, 'Relationship', relationshipTypes['connection']);
 relationFolder.add(elRelationship, 'Relationship', relationshipTypes['grounded']);
 relationFolder.add(elRelationship, 'Nature', relationshipTypes['nature']);
 relationFolder.children[3].hide();
 relationFolder.children[4].hide();
 relationFolder.children[5].hide();
+relationFolder.children[6].hide();
 
 
 export const elementFolder = gui.addFolder('Element');

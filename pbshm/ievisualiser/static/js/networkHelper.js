@@ -27,24 +27,40 @@ function plotNetworkFromFile(rawtext){
     elements.forEach((node) => {
         elNames.push(node.name);
     });
-    let i1, i2, i, x, y, z;
+    let nodej, nodek, i, j, k, x, y, z;
     for (i=0; i<relat.length; i++){
-        i1 = elNames.indexOf(relat[i].elements[0].name);
-        i2 = elNames.indexOf(relat[i].elements[1].name);
-        edges[i1].push(i2);
-        edges[i2].push(i1);
-        counts[i1]++;
-        counts[i2]++;
+        for (j=0; j<relat[i].elements.length-1; j++){
+            nodej = elNames.indexOf(relat[i].elements[j].name);
+            for (k=1; k<relat[i].elements.length; k++){
+                nodek = elNames.indexOf(relat[i].elements[k].name);
+                edges[nodej].push(nodek);
+                edges[nodek].push(nodej);
+                counts[nodej]++;
+                counts[nodek]++;
+            }
+        }
         if ("coordinates" in relat[0].elements[1]){
             x = relat[i].elements[0].coordinates.global.translational.x.value;
             y = relat[i].elements[0].coordinates.global.translational.y.value;
             z = relat[i].elements[0].coordinates.global.translational.z.value;
-            edgeCoords[i1].push([x, y, z])
-            edgeCoords[i2].push([x, y, z])
+            edgeCoords[nodej].push([x, y, z])
+            edgeCoords[nodek].push([x, y, z])
         }
     }
     
+    // Get natures of relationships and unpack groups of more than two in a connection
+    // to just the paired natures
     const [relationships, natures] = extractRelationships(rawtext);
+    let naturePairs = [];
+    const keys = Object.keys(natures)
+    for (i=0; i<keys.length; i++){
+        const groupedElNames = keys[i].split(',');
+        for (j=0; j<groupedElNames.length-1; j++){
+            for (k=1; k<groupedElNames.length; k++){
+                naturePairs[[groupedElNames[j], groupedElNames[k]]] = natures[keys[i]];
+            }
+        }
+    }
 
     let nodeCoords;
     // See if there were any coordinates given detailing where two elements join
@@ -60,7 +76,7 @@ function plotNetworkFromFile(rawtext){
     // If none were given then calculate where to position the nodes.
     if (totalCoords == 0){
         nodeCoords = fruchterman_reingold(edges);
-        drawNetwork(nodeCoords, edges, elInfo, natures, true)
+        drawNetwork(nodeCoords, edges, elInfo, naturePairs, true)
     }
     // If joint coordinates were given then use them to decide on node coordinates
     else{
@@ -68,7 +84,7 @@ function plotNetworkFromFile(rawtext){
             return arr.slice();
         });
         nodeCoords = getNodeCoords(tempEdges, edgeCoords, counts);
-        drawNetwork(nodeCoords, edges, elInfo, natures);
+        drawNetwork(nodeCoords, edges, elInfo, naturePairs);
     }
     
 }
