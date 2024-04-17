@@ -22,18 +22,12 @@ function geometryDetails(element, scaleFactor=1){
             geometry = new THREE.BoxGeometry(width, height, depth);
         }
         else if (element["shape"] == "sphere") {
-            const radius = element["dimensions"].radius
+            const radius = element["dimensions"].radius;
             geometry = new THREE.SphereGeometry(radius, 12, 8);
         }
         else if (element["shape"] == "cylinder" || element["shape"] == "circular") {
-            const radius = element["dimensions"].radius
-            let length
-            if ("length" in element["dimensions"]){
-                length = element["dimensions"].length
-            }
-            else {
-                length = element["dimensions"].thickness
-            }
+            const radius = element["dimensions"].radius;
+            const length = element["dimensions"].length;
             geometry = new THREE.CylinderGeometry(radius, radius, length, 12);
             geometry.rotateZ(Math.PI/2);  // rotate because cylinder is horizontal in json but vertical in webGL
         }
@@ -103,7 +97,13 @@ function geometryDetails(element, scaleFactor=1){
         shape.el_geometry = undefined;    
     } else {
         shape.el_geometry = element["element_geometry"];
+        if (shape.el_geometry.substring(0, shape.el_geometry.indexOf(' ')) == 'shell'){
+            shape.geometry.parameters["thickness"] = element["dimensions"].thickness;
+        } else {
+            shape.geometry.parameters["thickness"] = 1;  // default in case element is changed to shell
+        }
     }
+    
     shape.position.x = jsonToGl(shape, 'x', element["coords"][0]);
     shape.position.y = jsonToGl(shape, 'y', element["coords"][1]);
     shape.position.z = jsonToGl(shape, 'z', element["coords"][2]);

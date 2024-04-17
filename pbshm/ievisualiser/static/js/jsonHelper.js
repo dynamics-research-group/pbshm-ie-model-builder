@@ -308,7 +308,7 @@ function relevantFaces(element){
  * Saving
  **********/
 
-function save(modelDetails, relationships, relationshipNatures, elements){
+function save(saveUrl, modelDetails, relationships, relationshipNatures, elements){
 	let output = {"version": "1.1.0",
                   "name": modelDetails.Name,
 				  "description": modelDetails.Description,
@@ -401,71 +401,70 @@ function save(modelDetails, relationships, relationshipNatures, elements){
 	output.models.irreducibleElement.elements = elements_output;
 
 	for (const [key, value] of Object.entries(relationships)){
-		const relatedElIds = key.split(',');
-		let elementsList = [];
-		let relationshipName = '';
-		for (let i=0; i<relatedElIds.length; i++){
-			elementsList.push({"name": elementIdDict[relatedElIds[i]].name});
-			relationshipName += elementIdDict[relatedElIds[i]].name;
-			if (i < relatedElIds.length-1) {
-				relationshipName += '-';
-			}
-		}
-		let relatDict = {"name": relationshipName,
+		const pair = key.split(',');
+		const element1 = elementIdDict[pair[0]];
+		const element2 = elementIdDict[pair[1]]
+		let relatDict = {"name": element1.name + "-" + element2.name,
 						"type": value,
-						"elements": elementsList}
+						"elements": [{"name": element1.name},
+									{"name": element2.name}]}
 		
 		if (value == 'joint'){
 			const nature = relationshipNatures[key].split(" ");
-			relatDict["nature"] = {"name": nature[0], "nature": {"name": nature[1]}};
+			relatDict["nature"] = {"name": nature[1], "nature": {"name": nature[2]}};
 		}
 
 		// Find out where they're connected if they're not the ground
-		const element1 = elementIdDict[relatedElIds[0]];
-		const element2 = elementIdDict[relatedElIds[1]];
 		if (element1.el_contextual != "ground" && element2.el_contextual != "ground") {
+			const a = new THREE.Box3().setFromObject(element1);
+			const b = new THREE.Box3().setFromObject(element2);
+			const c = a.intersect(b);  // Get the bounding bounding box of their intersection
+			const intersectVector = c.min.add(c.max).divide(new THREE.Vector3(2, 2, 2));  // Get the centre of the box
 			if (value == 'perfect' || value == 'boundary') {
-				const x = new THREE.Box3().setFromObject(element1);
-				const y = new THREE.Box3().setFromObject(element2);
-				const z = x.intersect(y);  // Get the bounding bounding box of their intersection
-				const intersectVector = z.min.add(z.max).divide(new THREE.Vector3(2, 2, 2));  // Get the centre of the box
-				relatDict["coordinates"] = {"global": {"translational": {"x": {"unit": "other",
-																				"value": intersectVector.x},
-																		"y": {"unit": "other",
-																				"value": intersectVector.y},
-																		"z": {"unit": "other",
-																				"value": intersectVector.z}}}}
+				relatDict["coordinates"] = {"global": {"translational": {"x": {"unit": "other", "value": intersectVector.x},
+																		 "y": {"unit": "other", "value": intersectVector.y},
+																		 "z": {"unit": "other", "value": -intersectVector.z}}}}
 			} else {
-				// In this case there may be more than two elements
-				for (let i=0; i<relatedElIds.length; i++){
-					relatDict.elements[i]["coordinates"] = {"global": {"translational":
-															{"x": {"unit": "other",
-																	"value": elementIdDict[relatedElIds[i]].position.x},
-															"y": {"unit": "other",
-																	"value": elementIdDict[relatedElIds[i]].position.y},
-															"z": {"unit": "other",
-																	"value": elementIdDict[relatedElIds[i]].position.z}}}}
-				}
+				relatDict.elements[0]["coordinates"] = {"global": {"translational": {"x": {"unit": "other", "value": intersectVector.x },
+																					 "y": {"unit": "other", "value": intersectVector.y },
+																					 "z": {"unit": "other", "value": -intersectVector.z }}}}
+				relatDict.elements[1]["coordinates"] = {"global": {"translational": {"x": {"unit": "other", "value": intersectVector.x },
+																					 "y": {"unit": "other", "value": intersectVector.y },
+																					 "z": {"unit": "other", "value": -intersectVector.z }}}}
 				if (value == 'connection'){
 					const nature = relationshipNatures[key].split(" ");
-					for (let i=0; i<relatedElIds.length; i++){
-						relatDict.elements[i]["nature"] = {"name": nature[0], "nature": {"name": nature[1]}};
-					}
+					relatDict.elements[0]["nature"] = {"name": nature[1], "nature": {"name": nature[2]}};
+					relatDict.elements[1]["nature"] = {"name": nature[1], "nature": {"name": nature[2]}};
 				}
 			}
 		}
 		output.models.irreducibleElement.relationships.push(relatDict);
 	}
-
 	
 	// Save
-	let element = document.createElement('a');
-	element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(JSON.stringify(output, null, 2)));
-	element.setAttribute('download', 'temp');
-	element.style.display = 'none';
-	document.body.appendChild(element);
-	element.click();
-	document.body.removeChild(element);
+	// let element = document.createElement('a');
+	// element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(JSON.stringify(output, null, 2)));
+	// element.setAttribute('download', 'temp');
+	// element.style.display = 'none';
+	// document.body.appendChild(element);
+	// element.click();
+	// document.body.removeChild(element);
+
+	var saveHTTPRequest = new XMLHttpRequest();
+	saveHTTPRequest.onreadystatechange = function () {
+		if (this.readyState == 4 && this.status == 200) {//OK Status
+			//dataCallback(card, JSON.parse(this.responseText));
+			;
+		} else if (this.readyState == 1) {//Connection Established
+			;
+		} else if (this.readyState == 4) {//Error Status
+			;
+		}
+	};
+	saveHTTPRequest.open("POST", saveUrl);
+	saveHTTPRequest.setRequestHeader("Accept", "application/json");
+	saveHTTPRequest.setRequestHeader("Content-Type", "application/json");
+	saveHTTPRequest.send(JSON.stringify(output));
 }
 
 export {modelInfo, extractShapes, extractRelationships, save}

@@ -56,7 +56,7 @@ let currentObject;  // specific existing object to be edited
 const objects = [];  // list of all objects in the scene
 
 
-function setupGui(){
+function setupGui(saveUrl){
 	addColourFolders(gui.coloursFolder, render, "builder");
 
 	gui.modelDetailsFolder.children[3].onChange( value => {
@@ -99,7 +99,7 @@ function setupGui(){
 	initBeamGui();
 	initGroundGui();  // Not added to list of folders so it is always visible
 
-	const saver = {'Save': function() {save(gui.modelDetails, relationships, relationshipNatures, cElements);}};
+	const saver = {'Save': function() {save(saveUrl, gui.modelDetails, relationships, relationshipNatures, cElements);}};
 	gui.gui.add(saver, 'Save');
 
 }
@@ -136,8 +136,8 @@ function loadBlankBuilder(){
 }
 
 
-function buildModel(shapes=undefined, preRelationships=undefined, preNatures=undefined) {
-	setupGui();
+function buildModel(saveUrl, shapes=undefined, preRelationships=undefined, preNatures=undefined) {
+	setupGui(saveUrl);
 	scene = new THREE.Scene();
 	scene.background = new THREE.Color( 0xf0f0f0 );
 	
@@ -154,7 +154,6 @@ function buildModel(shapes=undefined, preRelationships=undefined, preNatures=und
 		camera = info.camera
 		const elementDict = {}  // to help track relationships
 		for (let e of info.elements) {
-			cElements.push(e);
 			objects.push(e)
 			e.currentAngleX = 0;
 			e.currentAngleY = 0;
@@ -336,13 +335,16 @@ function onPointerDown( event ) {
 			if (currentId != undefined){
 				// Add new object
 				if (currentId == "cube"){
-					currentGeometry = new THREE.BoxGeometry(gui.boxParams.length, gui.boxParams.height, gui.boxParams.width);;
+					currentGeometry = new THREE.BoxGeometry(gui.boxParams.length, gui.boxParams.height, gui.boxParams.width);
+					currentGeometry.parameters['thickness'] = gui.boxParams.thickness;
 				} else if (currentId == "sphere"){
-					currentGeometry = new THREE.SphereGeometry(gui.sphereParams.radius);;
+					currentGeometry = new THREE.SphereGeometry(gui.sphereParams.radius);
+					currentGeometry.parameters['thickness'] = gui.sphereParams.thickness;
 				} else if (currentId == "cylinder"){
-					currentGeometry = new THREE.CylinderGeometry(gui.cylinderParams.radius, gui.cylinderParams.radius, gui.cylinderParams.length);;
+					currentGeometry = new THREE.CylinderGeometry(gui.cylinderParams.radius, gui.cylinderParams.radius, gui.cylinderParams.length);
 					// Rotate because cylinder is assumed horizontal in json but vertical in webGL
 					currentGeometry.rotateZ(Math.PI/2);
+					currentGeometry.parameters['thickness'] = gui.cylinderParams.thickness;
 				} else if (currentId == "obliqueCylinder"){
 					currentGeometry = new ObliqueCylinderGeometry(gui.obliqueCylinderParams['Faces left radius'],
 						gui.obliqueCylinderParams['Faces right radius'],
@@ -353,6 +355,7 @@ function onPointerDown( event ) {
 					currentGeometry.parameters['Faces Left Trans. z'] = gui.obliqueCylinderParams['Faces Left Trans. z']
 					currentGeometry.parameters['Faces Right Trans. y'] = gui.obliqueCylinderParams['Faces Right Trans. y']
 					currentGeometry.parameters['Faces Right Trans. z'] = gui.obliqueCylinderParams['Faces Right Trans. z']
+					currentGeometry.parameters['thickness'] = gui.obliqueCylinderParams.thickness;
 					// Rotate because cylinder is assumed horizontal in json but vertical in webGL
 					currentGeometry.rotateZ(Math.PI/2);
 				} else if (currentId == "trapezoid"){
@@ -361,10 +364,13 @@ function onPointerDown( event ) {
 															gui.trapezoidParams['Faces Right Trans. y'], gui.trapezoidParams['Faces Right Trans. z'],
 															gui.trapezoidParams['Faces Right Height'], gui.trapezoidParams['Faces Right Width'],
 															gui.trapezoidParams.length);
+					currentGeometry.parameters['thickness'] = gui.trapezoidParams.thickness;
 				} else if (currentId == "ibeam"){
-					currentGeometry = generateBeam("i-beam", gui.beamParams.length, gui.beamParams.h, gui.beamParams.s, gui.beamParams.t, gui.beamParams.b);;
+					currentGeometry = generateBeam("i-beam", gui.beamParams.length, gui.beamParams.h, gui.beamParams.s, gui.beamParams.t, gui.beamParams.b);
+					currentGeometry.parameters['thickness'] = gui.beamParams.thickness;
 				} else if (currentId == "cbeam"){
-					currentGeometry = generateBeam("c-beam", gui.beamParams.length, gui.beamParams.h, gui.beamParams.s, gui.beamParams.t, gui.beamParams.b);;
+					currentGeometry = generateBeam("c-beam", gui.beamParams.length, gui.beamParams.h, gui.beamParams.s, gui.beamParams.t, gui.beamParams.b);
+					currentGeometry.parameters['thickness'] = gui.beamParams.thickness;
 				} else if (currentId == "ground") {
 					currentGeometry = new THREE.SphereGeometry(groundRadius);
 					currentGeometry.type = "ground";

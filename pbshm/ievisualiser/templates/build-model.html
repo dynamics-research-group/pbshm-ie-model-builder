@@ -50,11 +50,13 @@
     <script type="module">
       import { buildModel } from "{{ url_for('ie-visualiser.static', filename='js/builder.js') }}";
       import { loadFile } from "{{ url_for('ie-visualiser.static', filename='js/loader.js') }}";
+      const saveUrl = "{{ url_for('ie-visualiser.save_model', id=id) }}";
       if ("{{ id }}" == '') {
-        buildModel();
+        buildModel(saveUrl);
       } else {
-        loadFile("{{ url_for('ie-visualiser.view_model', id=id) }}", 'builder');
+        loadFile("{{ url_for('ie-visualiser.view_model', id=id) }}", 'builder', saveUrl);
       }
+      
     </script>
   </body>
 </html>

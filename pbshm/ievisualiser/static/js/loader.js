@@ -6,7 +6,7 @@ import { buildModel } from './builder.js';
 import  * as gui from './guiHelper.js';
 
 
-export function loadFile(filepath, purpose='viewer'){
+export function loadFile(filepath, purpose='viewer', saveUrl=''){
 	const loader = new THREE.FileLoader();
   loader.load(
       filepath,
@@ -25,7 +25,7 @@ export function loadFile(filepath, purpose='viewer'){
             plotModel(shapes);
           } else {
             const [relationships, natures] = extractRelationships(data);
-            buildModel(shapes, relationships, natures);
+            buildModel(saveUrl, shapes, relationships, natures);
           }
         }
         else {

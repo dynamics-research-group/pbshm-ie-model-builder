@@ -198,15 +198,18 @@ export function setGeometryFolder(currentObject){
         boxFolder.children[0].setValue(currentObject.geometry.parameters.width);
         boxFolder.children[1].setValue(currentObject.geometry.parameters.height);
         boxFolder.children[2].setValue(currentObject.geometry.parameters.depth);
+        boxFolder.children[3].setValue(currentObject.geometry.parameters.thickness);
         currentFolder = boxFolder;
         showGeometryDropdown("box", currentObject);
     } else if (geometryType == "SphereGeometry"){
         sphereFolder.children[0].setValue(currentObject.geometry.parameters.radius);
+        sphereFolder.children[1].setValue(currentObject.geometry.parameters.thickness);
         currentFolder = sphereFolder;
         showGeometryDropdown("sphere", currentObject);
     } else if (geometryType == "CylinderGeometry"){
         cylinderFolder.children[0].setValue(currentObject.geometry.parameters.radiusTop);
         cylinderFolder.children[1].setValue(currentObject.geometry.parameters.height);
+        cylinderFolder.children[2].setValue(currentObject.geometry.parameters.thickness);
         currentFolder = cylinderFolder;
         showGeometryDropdown("cylinder", currentObject);
     } else if (geometryType == "ObliqueCylinderGeometry"){
@@ -217,6 +220,7 @@ export function setGeometryFolder(currentObject){
         obliqueCylinderFolder.children[4].setValue(currentObject.geometry.parameters['Faces Left Trans. z']);
         obliqueCylinderFolder.children[5].setValue(currentObject.geometry.parameters['Faces Right Trans. y']);
         obliqueCylinderFolder.children[6].setValue(currentObject.geometry.parameters['Faces Right Trans. z']);
+        obliqueCylinderFolder.children[7].setValue(currentObject.geometry.parameters.thickness);
         currentFolder = obliqueCylinderFolder;
         showGeometryDropdown("obliqueCylinder", currentObject);
     } else if  (geometryType == "TrapezoidGeometry"){
@@ -229,6 +233,7 @@ export function setGeometryFolder(currentObject){
         trapezoidFolder.children[6].setValue(currentObject.geometry.parameters.rightDimensY);
         trapezoidFolder.children[7].setValue(currentObject.geometry.parameters.rightDimensZ);
         trapezoidFolder.children[8].setValue(currentObject.geometry.parameters.width);
+        trapezoidFolder.children[9].setValue(currentObject.geometry.parameters.thickness);
         currentFolder = trapezoidFolder;
         showGeometryDropdown("trapezoid", currentObject);
     } else if (geometryType == "IBeamGeometry" || geometryType == "CBeamGeometry"){
@@ -237,6 +242,7 @@ export function setGeometryFolder(currentObject){
         beamFolder.children[2].setValue(currentObject.geometry.parameters["s"]);
         beamFolder.children[3].setValue(currentObject.geometry.parameters["t"]);
         beamFolder.children[4].setValue(currentObject.geometry.parameters["b"]);
+        beamFolder.children[5].setValue(currentObject.geometry.parameters.thickness);
         currentFolder = beamFolder;
         showGeometryDropdown("beam", currentObject);
     } else {
@@ -253,6 +259,15 @@ export function setGeometryFolder(currentObject){
         geometryFolder.hide();
     }
     if (currentFolder != undefined){
+        if (currentObject.el_geometry != undefined && currentObject.el_geometry.substring(0, 5) == "shell"){
+            // Show the thickness parameter within the (last child of the) geometry folder
+            currentFolder.children[currentFolder.children.length-1].show();
+        } else {
+            const lastFolderItem =  currentFolder.children[currentFolder.children.length-1]
+            if (lastFolderItem.property == "thickness"){
+                currentFolder.children[currentFolder.children.length-1].hide();
+            }
+        }
         transFolder.children[0].setValue(glToJson(currentObject, "x", currentObject.position.x));
         transFolder.children[1].setValue(glToJson(currentObject, "y", currentObject.position.y));
         transFolder.children[2].setValue(glToJson(currentObject, "z", currentObject.position.z));
