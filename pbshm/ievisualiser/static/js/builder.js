@@ -263,6 +263,19 @@ function onPointerDown( event ) {
 				objects.splice( objects.indexOf( intersect.object ), 1 );
 				cElements.splice( cElements.indexOf( intersect.object ), 1 );
 			}
+			// delete any relationships involving this object
+			for (let key of Object.keys(relationships)){
+				key = key.split(',');
+				if ( key.indexOf(String(intersect.object.id)) >=0 ){
+					delete relationships[key];
+				}
+			}
+			for (let key of Object.keys(relationshipNatures)){
+				key = key.split(',');
+				if ( key.indexOf(String(intersect.object.id)) >=0 ){
+					delete relationshipNatures[key];
+				}
+			}
 		} else if ( isCtrlDown ) {
 			// select object
 			gui.elementFolder.hide();
