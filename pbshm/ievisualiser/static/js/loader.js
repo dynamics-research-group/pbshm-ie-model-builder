@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import {plotNetworkFromFile} from './networkHelper.js';
-import { plotModel } from './ieHelper.js';
+import { plotModel } from './viewer.js';
 import { modelInfo, extractShapes, extractRelationships } from './jsonHelper.js';
 import { buildModel } from './builder.js';
 import  * as gui from './guiHelper.js';

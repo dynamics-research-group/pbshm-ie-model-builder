@@ -2,7 +2,7 @@ import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js'; 
 
 import * as gui from './guiHelper.js';
-import { plotElements } from './ieHelper.js';
+import { plotElements } from './viewer.js';
 import {ObliqueCylinderGeometry} from './obliqueCylinder.js';
 import {TrapezoidGeometry} from './trapezoid.js'
 import {generateBeam} from './geometryHelper.js';
