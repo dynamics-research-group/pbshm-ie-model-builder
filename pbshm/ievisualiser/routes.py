@@ -54,13 +54,9 @@ def view_model(id):
 def save_model(id=None):
     if id == None:
         result = default_collection().insert_one(request.json)
-        print(result)
-        return jsonify({"id": result.inserted_id})  # id might be a bson object and need converting to string
+        return jsonify({"id": result.inserted_id})
     else:
         result = default_collection().update_one({"_id": ObjectId(id)}, {"$set": request.json})
-        print(result.modified_count)
-        print(result.raw_result)
-        print(result.upserted_id)
         return jsonify({"id": result.upserted_id})
 
 # Explore Route

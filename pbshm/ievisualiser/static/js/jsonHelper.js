@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { glToJson } from "./translationHelper.js";
-
+import * as gui from './guiHelper.js';
 
 
 /**********
@@ -441,24 +441,26 @@ function save(saveUrl, modelDetails, relationships, relationshipNatures, element
 		output.models.irreducibleElement.relationships.push(relatDict);
 	}
 	
-	// Save
+	// Save to file
 	// let element = document.createElement('a');
 	// element.setAttribute('href', 'data:text/plain;charset=utf-8,' + encodeURIComponent(JSON.stringify(output, null, 2)));
-	// element.setAttribute('download', 'temp');
+	// element.setAttribute('download', 'output.json');
 	// element.style.display = 'none';
 	// document.body.appendChild(element);
 	// element.click();
 	// document.body.removeChild(element);
 
+	// Save to database
 	var saveHTTPRequest = new XMLHttpRequest();
 	saveHTTPRequest.onreadystatechange = function () {
 		if (this.readyState == 4 && this.status == 200) {//OK Status
-			//dataCallback(card, JSON.parse(this.responseText));
-			;
+			gui.gui.children[gui.gui.children.length-1].name("Save successful")
+			setTimeout(function f(){gui.gui.children[gui.gui.children.length-1].name("Save")}, 2000);
 		} else if (this.readyState == 1) {//Connection Established
 			;
 		} else if (this.readyState == 4) {//Error Status
-			;
+			gui.gui.children[gui.gui.children.length-1].name("Failed")
+			setTimeout(function f(){gui.gui.children[gui.gui.children.length-1].name("Save")}, 2000);
 		}
 	};
 	saveHTTPRequest.open("POST", saveUrl);
