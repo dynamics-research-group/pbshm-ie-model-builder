@@ -691,7 +691,7 @@ function initCylinderGui(){
 				newParams["radiusBottom"] = value;  // they must be the same
 			}
 			updateGeometry(currentObject,
-						new THREE.CylinderGeometry(newParams.radiusTop, newParams.radiusBottom, newParams.length));
+						new THREE.CylinderGeometry(newParams.radiusTop, newParams.radiusBottom, newParams.height));
 			currentObject.geometry.rotateZ(Math.PI/2);
 			render();
 			moveGeometryXYZ(pos);
