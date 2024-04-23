@@ -59,7 +59,7 @@ const objects = [];  // list of all objects in the scene
 function setupGui(saveUrl){
 	addColourFolders(gui.coloursFolder, render, "builder");
 
-	gui.modelDetailsFolder.children[3].onChange( value => {
+	gui.modelDetailsFolder.children[gui.modelIdx.type].onChange( value => {
                                                                 gui.modelDetails['Type'] = value;
                                                                 if (value == 'grounded') {
                                                                     document.getElementById("uigroundinfo").style.visibility = 'visible';
@@ -68,25 +68,25 @@ function setupGui(saveUrl){
                                                                     document.getElementById("uigroundinfo").style.visibility = 'hidden';
                                                                     document.getElementById("uiground").style.visibility = 'hidden';
                                                                 } });
-	gui.relationFolder.children[0].onChange(value => toggleHighlightUnrelated(value));  // 'Show orphans'
-	gui.relationFolder.children[2].onChange(value => toggleHideConnected(value));  // 'Hide connected'
-	gui.relationFolder.children[3].onChange( value => updateRelationship(value));
-	gui.relationFolder.children[4].onChange( value => updateRelationship(value));
-	gui.relationFolder.children[5].onChange( value => updateRelationship(value));
-	gui.relationFolder.children[6].onChange( value => updateRelationshipNature(value));
+	gui.relationFolder.children[gui.relIdx.showOrphans].onChange(value => toggleHighlightUnrelated(value));  // 'Show orphans'
+	gui.relationFolder.children[gui.relIdx.hideConn].onChange(value => toggleHideConnected(value));  // 'Hide connected'
+	gui.relationFolder.children[gui.relIdx.freeTypes].onChange( value => updateRelationship(value));
+	gui.relationFolder.children[gui.relIdx.connTypes].onChange( value => updateRelationship(value));
+	gui.relationFolder.children[gui.relIdx.groundTypes].onChange( value => updateRelationship(value));
+	gui.relationFolder.children[gui.relIdx.natures].onChange( value => updateRelationshipNature(value));
 	
-	gui.elementFolder.children[0].onChange(updateElementName);
+	gui.elementFolder.children[gui.eleIdx.name].onChange(updateElementName);
 
-	gui.transFolder.children[0].onChange(moveGeometryX);
-	gui.transFolder.children[1].onChange(moveGeometryY);
-	gui.transFolder.children[2].onChange(moveGeometryZ);
+	gui.transFolder.children[gui.transIdx.x].onChange(moveGeometryX);
+	gui.transFolder.children[gui.transIdx.y].onChange(moveGeometryY);
+	gui.transFolder.children[gui.transIdx.z].onChange(moveGeometryZ);
 
-	gui.rotFolder.children[0].onChange(rotateGeometryX);
-	gui.rotFolder.children[1].onChange(rotateGeometryY);
-	gui.rotFolder.children[2].onChange(rotateGeometryZ);
+	gui.rotFolder.children[gui.rotIdx.x].onChange(rotateGeometryX);
+	gui.rotFolder.children[gui.rotIdx.y].onChange(rotateGeometryY);
+	gui.rotFolder.children[gui.rotIdx.z].onChange(rotateGeometryZ);
 
-	gui.materialFolder.children[0].onChange(updateMaterial);
-	gui.contextualFolder.children[0].onChange(updateContext);
+	gui.materialFolder.children[gui.matIdx.type].onChange(updateMaterial);
+	gui.contextualFolder.children[gui.conIdx.type].onChange(updateContext);
 	for (let i=0; i<gui.geometryKeys.length; i++){
     	gui.geometryFolder.children[i].onChange(updateJsonGeometry);
 	}
@@ -167,7 +167,7 @@ function buildModel(saveUrl, shapes=undefined, preRelationships=undefined, preNa
 			elementDict[e.name] = e;  // relationships are referred to by name in json
 			nextID++;
 		}
-		resetColours(gui.gui.children[1].children[0].getValue());  // Set the colours to match the colourScheme chosen in the GUI
+		resetColours(gui.gui.children[gui.guiIdx.colours].children[gui.colIdx.scheme].getValue());  // Set the colours to match the colourScheme chosen in the GUI
 		controls = info.controls;
 		floor = info.floor;
 		floorParams.width = floor.geometry.parameters.width;
@@ -283,10 +283,10 @@ function onPointerDown( event ) {
 				const selectedIndex = selectedObjects.indexOf(intersect.object);
 				if (selectedIndex >= 0){
 					// If it was already selected, deselect it
-					resetColour(gui.gui.children[1].children[0].getValue(), intersect.object);
-					gui.relationFolder.children[3].hide();
-					gui.relationFolder.children[4].hide();
-					gui.relationFolder.children[5].hide();
+					resetColour(gui.gui.children[gui.guiIdx.colours].children[gui.colIdx.scheme].getValue(), intersect.object);
+					gui.relationFolder.children[gui.relIdx.freeTypes].hide();
+					gui.relationFolder.children[gui.relIdx.connTypes].hide();
+					gui.relationFolder.children[gui.relIdx.groundTypes].hide();
 					// Shift everything down to fill the gap of the deselected object
 					for (let i=selectedIndex; i<selectedObjects.length-1; i++){
 						selectedObjects[i] = selectedObjects[i+1];
@@ -302,10 +302,10 @@ function onPointerDown( event ) {
 					if (selectedObjects.length > 2){
 						for (let i=0; i<selectedObjects.length; i++){
 							if (selectedObjects[i].el_contextual == "ground"){
-								gui.relationFolder.children[3].hide();
-								gui.relationFolder.children[4].hide();
-								gui.relationFolder.children[5].hide();
-								gui.relationFolder.children[6].hide();
+								gui.relationFolder.children[gui.relIdx.freeTypes].hide();
+								gui.relationFolder.children[gui.relIdx.connTypes].hide();
+								gui.relationFolder.children[gui.relIdx.groundTypes].hide();
+								gui.relationFolder.children[gui.relIdx.natures].hide();
 								return;
 							}
 						}
@@ -314,32 +314,32 @@ function onPointerDown( event ) {
 					const currentRelat = currentRelationship();
 					gui.relationFolder.show();
 					if (selectedObjects.length == 2 && (selectedObjects[0].el_contextual == "ground" || selectedObjects[1].el_contextual == "ground")){
-							gui.relationFolder.children[3].hide();  // hide 'free' relationships folder
-							gui.relationFolder.children[4].hide();  // hide 'connection' relationships folder
-							gui.relationFolder.children[5].show();  // show 'grounded' relationships folder
-							gui.relationFolder.children[5].setValue(currentRelat);
-							gui.relationFolder.children[6].hide();  // hide natures
+							gui.relationFolder.children[gui.relIdx.freeTypes].hide();  // hide 'free' relationships folder
+							gui.relationFolder.children[gui.relIdx.connTypes].hide();  // hide 'connection' relationships folder
+							gui.relationFolder.children[gui.relIdx.groundTypes].show();  // show 'grounded' relationships folder
+							gui.relationFolder.children[gui.relIdx.groundTypes].setValue(currentRelat);
+							gui.relationFolder.children[gui.relIdx.natures].hide();  // hide natures
 					} else if (selectedObjects.length == 2) {
-						gui.relationFolder.children[3].show();  // show 'free'
-						gui.relationFolder.children[3].setValue(currentRelat);
-						gui.relationFolder.children[4].hide();  // hide 'connection'
-						gui.relationFolder.children[5].hide();  // hide 'grounded'
+						gui.relationFolder.children[gui.relIdx.freeTypes].show();  // show 'free'
+						gui.relationFolder.children[gui.relIdx.freeTypes].setValue(currentRelat);
+						gui.relationFolder.children[gui.relIdx.connTypes].hide();  // hide 'connection'
+						gui.relationFolder.children[gui.relIdx.groundTypes].hide();  // hide 'grounded'
 						if (currentRelat == 'joint' || currentRelat == 'connection') {
-							gui.relationFolder.children[6].show();
-							gui.relationFolder.children[6].setValue(currentRelationshipNature());
+							gui.relationFolder.children[gui.relIdx.natures].show();  // show natures
+							gui.relationFolder.children[gui.relIdx.natures].setValue(currentRelationshipNature());
 						} else {
-							gui.relationFolder.children[6].hide();
+							gui.relationFolder.children[gui.relIdx.natures].hide();  // hide natures
 						}
 					} else if (selectedObjects.length > 2) {
-						gui.relationFolder.children[3].hide();  // show 'free'
-						gui.relationFolder.children[4].show();  // hide 'connection'
-						gui.relationFolder.children[4].setValue(currentRelat);
-						gui.relationFolder.children[5].hide();  // hide 'grounded'
+						gui.relationFolder.children[gui.relIdx.freeTypes].hide();  // hide 'free'
+						gui.relationFolder.children[gui.relIdx.connTypes].show();  // show 'connection'
+						gui.relationFolder.children[gui.relIdx.connTypes].setValue(currentRelat);
+						gui.relationFolder.children[gui.relIdx.groundTypes].hide();  // hide 'grounded'
 						if (currentRelat == 'connection') {
-							gui.relationFolder.children[6].show();
-							gui.relationFolder.children[6].setValue(currentRelationshipNature());
+							gui.relationFolder.children[gui.relIdx.natures].show();  // show natures
+							gui.relationFolder.children[gui.relIdx.natures].setValue(currentRelationshipNature());
 						} else {
-							gui.relationFolder.children[6].hide();
+							gui.relationFolder.children[gui.relIdx.natures].hide();  // hide natures
 						}
 					}
 				}
@@ -431,22 +431,16 @@ function onDocumentKeyDown( event ) {
 		case 16: isShiftDown = true; break;
 		case 17: isCtrlDown = true; break;
 		// case 37:  // left
-		// 	gui.currentFolder.children[0].setValue(currentObject.position.x - 10);
 		// 	break;
 		// case 38:  // up
-		// 	gui.currentFolder.children[2].setValue(currentObject.position.z - 10);
 		// 	break;
 		// case 39:  // right
-		// 	gui.currentFolder.children[0].setValue(currentObject.position.x + 10);
 		// 	break;
 		// case 40:  // down
-		// 	gui.currentFolder.children[2].setValue(currentObject.position.z + 10);
 		// 	break;
 		// case 83:  // s
-		// 	gui.currentFolder.children[1].setValue(currentObject.position.y - 10);
 		// 	break;
 		// case 87:  // w
-		// 	gui.currentFolder.children[1].setValue(currentObject.position.y + 10);
 		// 	break;
 	}
 	render();
@@ -605,7 +599,7 @@ function rotateGeometryZ(){
 function updateContext(){
 	currentObject.el_contextual = gui.context.Type;
 	makeContextColourVisible(gui.context.Type);
-	if (gui.gui.children[1].children[0].getValue() == "contextual"
+	if (gui.gui.children[gui.guiIdx.colours].children[gui.colIdx.scheme].getValue() == "contextual"
 			&& currentObject.material.color.getHex() != otherColours['Orphans']
 			&& currentObject.material.color.getHex() != otherColours['Selected element']) {
 		currentObject.material.color.setHex(contextualColours[currentObject.el_contextual]);
@@ -617,7 +611,7 @@ function updateContext(){
 function updateMaterial(){
 	currentObject.el_material = gui.material.Type;
 	makeMaterialColourVisible(gui.material.Type);
-	if (gui.gui.children[1].children[0].getValue() == "material"
+	if (gui.gui.children[gui.guiIdx.colours].children[gui.colIdx.scheme].getValue() == "material"
 			&& currentObject.material.color.getHex() != otherColours['Orphans']
 			&& currentObject.material.color.getHex() != otherColours['Selected element']) {
 		currentObject.material.color.setHex(materialColours[currentObject.el_material]);
@@ -629,7 +623,7 @@ function updateMaterial(){
 function updateJsonGeometry(){
 	currentObject.el_geometry = gui.geometry.Type;
 	makeGeometryColourVisible(gui.geometry.Type);
-	if (gui.gui.children[1].children[0].getValue() == "geometry"
+	if (gui.gui.children[gui.guiIdx.colours].children[gui.colIdx.scheme].getValue() == "geometry"
 			&& currentObject.material.color.getHex() != otherColours['Orphans']
 			&& currentObject.material.color.getHex() != otherColours['Selected element']) {
 		currentObject.material.color.setHex(geometryColours[currentObject.el_geometry]);
@@ -654,11 +648,10 @@ function updateThickness(value){
 
 
 function initBoxGui(){
-	gui.boxFolder.children[0].onChange(value => updateParameters("width", value));
-	gui.boxFolder.children[1].onChange(value => updateParameters("height", value));
-	gui.boxFolder.children[2].onChange(value => updateParameters("depth", value));
-	gui.boxFolder.children[3].onChange(value => updateThickness(value));
-	
+	gui.boxFolder.children[gui.boxIdx.length].onChange(value => updateParameters("width", value));
+	gui.boxFolder.children[gui.boxIdx.height].onChange(value => updateParameters("height", value));
+	gui.boxFolder.children[gui.boxIdx.width].onChange(value => updateParameters("depth", value));
+	gui.boxFolder.children[gui.boxIdx.thickness].onChange(value => updateThickness(value));
 	function updateParameters(changedParam, value){
 		if (currentObject.geometry.parameters[changedParam] != value){  // don't regenerate to the object if we're just updating the gui
 			const pos = {...gui.posParams};  // threejs makes the centre of the object stay in the same place but we want the corner to stay the same instead
@@ -673,9 +666,8 @@ function initBoxGui(){
   
 
 function initSphereGui(){
-	gui.sphereFolder.children[0].onChange(updateParameters);
-	gui.sphereFolder.children[0].onChange(value => updateThickness(value));
-	
+	gui.sphereFolder.children[gui.sphIdx.radius].onChange(updateParameters);
+	gui.sphereFolder.children[gui.sphIdx.thickness].onChange(value => updateThickness(value));
 	function updateParameters(){
 		if (currentObject.geometry.parameters.radius != gui.sphereParams.radius) {
 			const pos = {...gui.posParams};
@@ -687,10 +679,9 @@ function initSphereGui(){
 
 
 function initCylinderGui(){
-	gui.cylinderFolder.children[0].onChange(value => updateParameters("radiusTop", value));
-	gui.cylinderFolder.children[0].onChange(value => updateParameters("length", value));
-	gui.cylinderFolder.children[0].onChange(value => updateThickness(value));
-	
+	gui.cylinderFolder.children[gui.cylIdx.radius].onChange(value => updateParameters("radiusTop", value));
+	gui.cylinderFolder.children[gui.cylIdx.length].onChange(value => updateParameters("height", value));
+	gui.cylinderFolder.children[gui.cylIdx.thickness].onChange(value => updateThickness(value));
 	function updateParameters(changedParam, value){
 		if (currentObject.geometry.parameters[changedParam] != value){  // don't regenerate to the object if we're just updating the gui
 			const pos = {...gui.posParams};
@@ -710,16 +701,14 @@ function initCylinderGui(){
 
 
 function initObliqueCylinderGui(){
-	
-	gui.obliqueCylinderFolder.children[0].onChange(value => updateParameters("radiusTop", value));
-	gui.obliqueCylinderFolder.children[1].onChange(value => updateParameters("radiusBottom", value));
-	gui.obliqueCylinderFolder.children[2].onChange(value => updateParameters("height", value));
-	gui.obliqueCylinderFolder.children[3].onChange(value => updateParameters("leftTransY", value));
-	gui.obliqueCylinderFolder.children[4].onChange(value => updateParameters("leftTransZ", value));
-	gui.obliqueCylinderFolder.children[5].onChange(value => updateParameters("rightTransY", value));
-	gui.obliqueCylinderFolder.children[6].onChange(value => updateParameters("rightTransZ", value));
-	gui.obliqueCylinderFolder.children[7].onChange(value => updateThickness(value));
-	
+	gui.obliqueCylinderFolder.children[gui.oblIdx.leftRadius].onChange(value => updateParameters("radiusTop", value));
+	gui.obliqueCylinderFolder.children[gui.oblIdx.rightRadius].onChange(value => updateParameters("radiusBottom", value));
+	gui.obliqueCylinderFolder.children[gui.oblIdx.length].onChange(value => updateParameters("height", value));
+	gui.obliqueCylinderFolder.children[gui.oblIdx.leftTransY].onChange(value => updateParameters("leftTransY", value));
+	gui.obliqueCylinderFolder.children[gui.oblIdx.leftTransZ].onChange(value => updateParameters("leftTransZ", value));
+	gui.obliqueCylinderFolder.children[gui.oblIdx.rightTransY].onChange(value => updateParameters("rightTransY", value));
+	gui.obliqueCylinderFolder.children[gui.oblIdx.rightTransZ].onChange(value => updateParameters("rightTransZ", value));
+	gui.obliqueCylinderFolder.children[gui.oblIdx.thickness].onChange(value => updateThickness(value));
 	function updateParameters(changedParam, value){
 		if (changedParam == "leftTransY" || changedParam == "rightTransY"){
 			changedParam = "topSkewX";
@@ -750,17 +739,16 @@ function initObliqueCylinderGui(){
 
 
 function initTrapezoidGui(){
-	gui.trapezoidFolder.children[0].onChange(value => updateParameters("leftTransY", value));
-	gui.trapezoidFolder.children[1].onChange(value => updateParameters("leftTransZ", value));
-	gui.trapezoidFolder.children[2].onChange(value => updateParameters("leftDimensY", value));
-	gui.trapezoidFolder.children[3].onChange(value => updateParameters("leftDimensZ", value));
-	gui.trapezoidFolder.children[4].onChange(value => updateParameters("rightTransY", value));
-	gui.trapezoidFolder.children[5].onChange(value => updateParameters("rightTransZ", value));
-	gui.trapezoidFolder.children[6].onChange(value => updateParameters("rightDimensY", value));
-	gui.trapezoidFolder.children[7].onChange(value => updateParameters("rightDimensZ", value));
-	gui.trapezoidFolder.children[8].onChange(value => updateParameters("width", value));
-	gui.trapezoidFolder.children[9].onChange(value => updateThickness(value));
-	
+	gui.trapezoidFolder.children[gui.trapIdx.leftTransY].onChange(value => updateParameters("leftTransY", value));
+	gui.trapezoidFolder.children[gui.trapIdx.leftTransZ].onChange(value => updateParameters("leftTransZ", value));
+	gui.trapezoidFolder.children[gui.trapIdx.leftHeight].onChange(value => updateParameters("leftDimensY", value));
+	gui.trapezoidFolder.children[gui.trapIdx.leftWidth].onChange(value => updateParameters("leftDimensZ", value));
+	gui.trapezoidFolder.children[gui.trapIdx.rightTransY].onChange(value => updateParameters("rightTransY", value));
+	gui.trapezoidFolder.children[gui.trapIdx.rightTransZ].onChange(value => updateParameters("rightTransZ", value));
+	gui.trapezoidFolder.children[gui.trapIdx.rightHeight].onChange(value => updateParameters("rightDimensY", value));
+	gui.trapezoidFolder.children[gui.trapIdx.rightWidth].onChange(value => updateParameters("rightDimensZ", value));
+	gui.trapezoidFolder.children[gui.trapIdx.length].onChange(value => updateParameters("width", value));
+	gui.trapezoidFolder.children[gui.trapIdx.thickness].onChange(value => updateThickness(value));
 	function updateParameters(changedParam, value){
 		if (currentObject.geometry.parameters[changedParam] != value){  // don't regenerate to the object if we're just updating the gui
 			const pos = {...gui.posParams};
@@ -777,12 +765,11 @@ function initTrapezoidGui(){
 
 
 function initBeamGui(){
-	gui.beamFolder.children[0].onChange(value => updateParameters("width", value));
-	gui.beamFolder.children[1].onChange(value => updateParameters("h", value));
-	gui.beamFolder.children[2].onChange(value => updateParameters("s", value));
-	gui.beamFolder.children[3].onChange(value => updateParameters("t", value));
-	gui.beamFolder.children[4].onChange(value => updateParameters("b", value));
-
+	gui.beamFolder.children[gui.beamIdx.length].onChange(value => updateParameters("width", value));
+	gui.beamFolder.children[gui.beamIdx.h].onChange(value => updateParameters("h", value));
+	gui.beamFolder.children[gui.beamIdx.s].onChange(value => updateParameters("s", value));
+	gui.beamFolder.children[gui.beamIdx.t].onChange(value => updateParameters("t", value));
+	gui.beamFolder.children[gui.beamIdx.b].onChange(value => updateParameters("b", value));
 	function updateParameters(changedParam, value){
 		if (currentObject.geometry.parameters[changedParam] != value){  // don't regenerate to the object if we're just updating the gui
 			const pos = {...gui.posParams};
@@ -839,10 +826,10 @@ function updateRelationship(value){
 		}
 		// Show dropdown to select nature of relationship
 		if (value == 'joint' || value == 'connection'){
-			gui.relationFolder.children[6].show();
-			gui.relationFolder.children[6].setValue(currentRelationshipNature());
+			gui.relationFolder.children[gui.relIdx.natures].show();
+			gui.relationFolder.children[gui.relIdx.natures].setValue(currentRelationshipNature());
 		} else {
-			gui.relationFolder.children[6].hide();
+			gui.relationFolder.children[gui.relIdx.natures].hide();
 		}
 	}
 }
@@ -856,20 +843,21 @@ function updateRelationshipNature(value){
 
 
 function toggleHighlightUnrelated(value){
+	const colourScheme = gui.gui.children[gui.guiIdx.colours].children[gui.colIdx.scheme].getValue();
 	if (value == true){
 		// Deselect selected objects to avoid confusion
 		try {
-			resetColour(gui.gui.children[1].children[0].getValue(), selectedObjects[0]);
+			resetColour(colourScheme, selectedObjects[0]);
 			selectedObjects[0] = undefined;
 		} catch (TypeError) {;}
 		try {
-			resetColour(gui.gui.children[1].children[0].getValue(), selectedObjects[1]);
+			resetColour(colourScheme, selectedObjects[1]);
 			selectedObjects[1] = undefined;
 		} catch (TypeError) {;}
-		gui.relationFolder.children[3].hide();
-		gui.relationFolder.children[4].hide();
-		gui.relationFolder.children[5].hide();
-		gui.relationFolder.children[6].hide();
+		gui.relationFolder.children[gui.relIdx.freeTypes].hide();
+		gui.relationFolder.children[gui.relIdx.connTypes].hide();
+		gui.relationFolder.children[gui.relIdx.groundTypes].hide();
+		gui.relationFolder.children[gui.relIdx.natures].hide();
 		
 		// Highlight orphaned elements
 		for (let el of cElements){
@@ -878,7 +866,7 @@ function toggleHighlightUnrelated(value){
 			}
 		}
 	} else {
-		resetColours(gui.gui.children[1].children[0].getValue());
+		resetColours(colourScheme);
 	}
 	render();
 }

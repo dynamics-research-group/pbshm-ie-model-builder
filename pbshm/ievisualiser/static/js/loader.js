@@ -15,10 +15,10 @@ export function loadFile(filepath, purpose='viewer', saveUrl=''){
       function ( data ) {
         // output the text to the console
         const info = modelInfo(data);
-        gui.modelDetailsFolder.children[0].setValue(info.name);
-        gui.modelDetailsFolder.children[1].setValue(info.description);
-        gui.modelDetailsFolder.children[2].setValue(info.population);
-        gui.modelDetailsFolder.children[3].setValue(info.type);
+        gui.modelDetailsFolder.children[gui.modelIdx.name].setValue(info.name);
+        gui.modelDetailsFolder.children[gui.modelIdx.desc].setValue(info.description);
+        gui.modelDetailsFolder.children[gui.modelIdx.pop].setValue(info.population);
+        gui.modelDetailsFolder.children[gui.modelIdx.type].setValue(info.type);
         const shapes = extractShapes(data);
         if (shapes.length > 0){
           if (purpose == 'viewer') {
