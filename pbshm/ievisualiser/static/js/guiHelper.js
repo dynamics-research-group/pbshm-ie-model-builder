@@ -15,25 +15,118 @@ e.g. relTYPE -> where the relationship type is given.
 */
 
 
-export const gui = new GUI();
-export const guiIdx = {details: 0, colours: 1, relationships:2, elements:3}  // indexes of gui folders
-
-
+/*** Variables storing the data displayed in the gui  **/
 export const modelDetails = {'Name': '', 'Description': '', 'Population': '', 'Type': 'grounded'};
+export const elInfo = {'Name': ''}
+export const posParams = {'x': 0,
+                          'y': 0,
+                          'z': 0};
+export const rotateParams = {'x': 0,
+                             'y': 0,
+                             'z': 0}
+export const transIdx = {x:0, y:1, z:2};
+export const rotIdx = {x:0, y:1, z:2};
+export const material = {"Type": "other"};
+export const context = {'Type': 'other'};
+export const geometry = {"Type": undefined}
+export const boxParams = {'length': 5,
+                          'height': 5,
+                          'width': 5,
+                          'thickness': 1};
+export const sphereParams = {'radius': 3,
+					         'thickness': 1}
+export const cylinderParams = {'radius': 3,
+							   'length': 5,
+						       'thickness': 1}
+export const obliqueCylinderParams = {'Faces left radius': 3,
+                                      'Faces right radius': 3,
+                                      'Faces Left Trans. y': 0,
+                                      'Faces Left Trans. z': 0,
+                                      'Faces Right Trans. y': 0,
+                                      'Faces Right Trans. z': 0,
+                                      'length': 5,
+                                      'thickness': 1}
+export const trapezoidParams = {"Faces Left Trans. y": 1.5,
+                                "Faces Left Trans. z": 1.5,
+                                "Faces Left Height": 2,
+                                "Faces Left Width": 2,
+                                "Faces Right Trans. y": 0,
+                                "Faces Right Trans. z": 0,
+                                "Faces Right Height": 5,
+                                "Faces Right Width": 5,
+                                "length": 5,
+                                "thickness": 1}
+export const beamParams = {"length": 8,
+                           "h": 4,
+                           "s": 1,
+                           "t": 1,
+                           "b": 3}
+// Geometry information - lists which IE model geometry names are valid for which threejs geometries.
+const jsonGeometryMappings = {"box": ["solid translate cuboid", "shell translate cuboid",
+                                    "solid translate other", "shell translate other", "other"], 
+                            "sphere": ["solid translate sphere", "shell translate sphere",
+                                        "solid translate other", "shell translate other", "other"], 
+                            "cylinder": ["solid translate cylinder", "shell translate cylinder",
+                                        "solid translate other", "shell translate other", "other"], 
+                            "beam": ["beam rectangular", "beam i-beam", "beam other", "other"], 
+                            "trapezoid": ["solid translateAndScale cuboid", "shell translateAndScale cuboid",
+                                            "solid translateAndScale other", "shell translateAndScale other", "other"], 
+                            "obliqueCylinder": ["solid translateAndScale cylinder", "shell translateAndScale cylinder",
+                                                "solid translateAndScale other", "shell translateAndScale other", "other"]};
+export const geometryKeys = Object.keys(jsonGeometryMappings);
+geometryKeys.sort();
+
+
+/*** Folders within the gui ***/
+export const gui = new GUI();
 export const modelDetailsFolder = gui.addFolder('Model details');
+export const coloursFolder = gui.addFolder('Colours');
+export const relationFolder = gui.addFolder('Relationships');
+export const elementFolder = gui.addFolder('Element');
+elementFolder.add(elInfo, 'Name');
+export const coordsFolder = elementFolder.addFolder('Coordinates');
+export const gCoordsFolder = coordsFolder.addFolder('Global');
+export const transFolder = gCoordsFolder.addFolder('Translational');
+export const rotFolder = gCoordsFolder.addFolder('Rotational');
+export const materialFolder = elementFolder.addFolder('Material');
+export const contextualFolder = elementFolder.addFolder('Contextual');
+export const geometryFolder = elementFolder.addFolder('Geometry');
+export const boxFolder = elementFolder.addFolder('Geometry Dimensions');
+export const sphereFolder = elementFolder.addFolder('Geometry Dimensions');
+export const cylinderFolder = elementFolder.addFolder('Geometry Dimensions');
+export const obliqueCylinderFolder = elementFolder.addFolder('Geometry Dimensions');
+export const trapezoidFolder = elementFolder.addFolder('Geometry Dimensions');
+export const beamFolder = elementFolder.addFolder('Geometry Dimensions');
+export let currentFolder;
+export function setCurrentFolder(folder){
+    currentFolder = folder;
+}
+
+/*** Indexes of the controllers within the gui. ***/
+export const guiIdx = {details: 0, colours: 1, relationships:2, elements:3}  // indexes of gui folders
+export const colIdx = {scheme: 0};
+export const modelIdx = {name:0, desc:1, pop:2, type:3};
+export const relIdx = {showOrphans:0, orphanColour:1, hideConn:2, freeTypes:3, connTypes:4, groundTypes:5, natures:6};
+export const eleIdx = {name: 0};
+export const matIdx = {type: 0};
+export const conIdx = {type: 0};
+export const boxIdx = {length:0, height:1, width:2, thickness:3};
+export const sphIdx = {radius:0, thickness:1};
+export const cylIdx = {radius:0, length:1, thickness:2};
+export const oblIdx = {leftRadius:0, rightRadius:1, length:2, leftTransY:3, leftTransZ:4, rightTransY:5, rightTransZ:6, thickness:7};
+export const trapIdx = {leftTransY:0, leftTransZ:1, leftHeight:2, leftWidth:3,
+                       rightTransY:4, rightTransZ:5, rightHeight:6, rightWidth:7,
+                       length:8, thickness:9};
+export const beamIdx = {length:0, h:1, s:2, t:3, b:4};
+
+
+/*** Add the controllers to the gui folders. ***/
 modelDetailsFolder.add(modelDetails, 'Name').onChange( value => { modelDetails['Name'] = value; });
 modelDetailsFolder.add(modelDetails, 'Description').onChange( value => { modelDetails['Description'] = value; });
 modelDetailsFolder.add(modelDetails, 'Population').onChange( value => { modelDetails['Population'] = value; });
 modelDetailsFolder.add(modelDetails, 'Type', ['grounded', 'free']);
-export const modelIdx = {name:0, desc:1, pop:2, type:3};
-
-
-export const coloursFolder = gui.addFolder('Colours');
-export const colIdx = {scheme: 0};
-
 
 // Folder for defining relationships between elements
-export const relationFolder = gui.addFolder('Relationships');
 const elRelationship = {'Relationship': 'none', 'Nature': undefined}  // current relationship type selected
 const relationshipTypes = {'free': ['none', 'perfect', 'connection', 'joint'],
                         'connection': ['none', 'connection'],
@@ -49,71 +142,21 @@ relationFolder.add(elRelationship, 'Relationship', relationshipTypes['free']);
 relationFolder.add(elRelationship, 'Relationship', relationshipTypes['connection']);
 relationFolder.add(elRelationship, 'Relationship', relationshipTypes['grounded']);
 relationFolder.add(elRelationship, 'Nature', relationshipTypes['nature']);
-export const relIdx = {showOrphans:0, orphanColour:1, hideConn:2, freeTypes:3, connTypes:4, groundTypes:5, natures:6};
 relationFolder.children[relIdx.freeTypes].hide();
 relationFolder.children[relIdx.connTypes].hide();
 relationFolder.children[relIdx.groundTypes].hide();
 relationFolder.children[relIdx.natures].hide();
 
-
-export const elementFolder = gui.addFolder('Element');
-export const elInfo = {'Name': ''}
-elementFolder.add(elInfo, 'Name');
 elementFolder.hide();
-export const eleIdx = {name: 0};
-
-
-// Coordinates folders
-export const posParams = {'x': 0,
-                          'y': 0,
-                          'z': 0};
-export const rotateParams = {'x': 0,
-                             'y': 0,
-                             'z': 0}
-export const coordsFolder = elementFolder.addFolder('Coordinates');
-export const gCoordsFolder = coordsFolder.addFolder('Global');
-export const transFolder = gCoordsFolder.addFolder('Translational');
-export const rotFolder = gCoordsFolder.addFolder('Rotational');
 transFolder.add(posParams, 'x');
 transFolder.add(posParams, 'y');
 transFolder.add(posParams, 'z');
 rotFolder.add(rotateParams, 'x', 0, 360);
 rotFolder.add(rotateParams, 'y', 0, 360);
 rotFolder.add(rotateParams, 'z', 0, 360);
-export const transIdx = {x:0, y:1, z:2};
-export const rotIdx = {x:0, y:1, z:2};
 
-
-// Material information
-export const material = {"Type": "other"};
-export const materialFolder = elementFolder.addFolder('Material');
 materialFolder.add(material, 'Type', materialColourKeys);
-export const matIdx = {type: 0};
-
-
-// Contextual information
-export const context = {'Type': 'other'};
-export const contextualFolder = elementFolder.addFolder('Contextual');
 contextualFolder.add(context, 'Type', contextualColourKeys);
-export const conIdx = {type: 0};
-
-
-// Geometry information
-export const geometry = {"Type": undefined}
-const jsonGeometryMappings = {"box": ["solid translate cuboid", "shell translate cuboid",
-                                    "solid translate other", "shell translate other", "other"], 
-                            "sphere": ["solid translate sphere", "shell translate sphere",
-                                        "solid translate other", "shell translate other", "other"], 
-                            "cylinder": ["solid translate cylinder", "shell translate cylinder",
-                                        "solid translate other", "shell translate other", "other"], 
-                            "beam": ["beam rectangular", "beam i-beam", "beam other", "other"], 
-                            "trapezoid": ["solid translateAndScale cuboid", "shell translateAndScale cuboid",
-                                            "solid translateAndScale other", "shell translateAndScale other", "other"], 
-                            "obliqueCylinder": ["solid translateAndScale cylinder", "shell translateAndScale cylinder",
-                                                "solid translateAndScale other", "shell translateAndScale other", "other"]};
-export const geometryKeys = Object.keys(jsonGeometryMappings);
-geometryKeys.sort();
-export const geometryFolder = elementFolder.addFolder('Geometry');
 for (let i=0; i<geometryKeys.length; i++){
     geometryFolder.add(geometry, 'Type', jsonGeometryMappings[geometryKeys[i]]);
     geometryFolder.children[i].hide();
@@ -121,68 +164,22 @@ for (let i=0; i<geometryKeys.length; i++){
 geometryFolder.hide();
 
 
-// Geometry parameters
-export const boxParams = {'length': 5,
-				'height': 5,
-				'width': 5,
-				'thickness': 1};
-export const sphereParams = {'radius': 3,
-					'thickness': 1}
-export const cylinderParams = {'radius': 3,
-							'length': 5,
-						'thickness': 1}
-export const obliqueCylinderParams = {'Faces left radius': 3,
-									'Faces right radius': 3,
-							'Faces Left Trans. y': 0,
-							'Faces Left Trans. z': 0,
-							'Faces Right Trans. y': 0,
-							'Faces Right Trans. z': 0,
-								'length': 5,
-							'thickness': 1}
-export const trapezoidParams = {"Faces Left Trans. y": 1.5,
-						"Faces Left Trans. z": 1.5,
-						"Faces Left Height": 2,
-						"Faces Left Width": 2,
-						"Faces Right Trans. y": 0,
-						"Faces Right Trans. z": 0,
-						"Faces Right Height": 5,
-						"Faces Right Width": 5,
-						"length": 5,
-						"thickness": 1}
-export const beamParams = {"length": 8,
-					"h": 4,
-					"s": 1,
-					"t": 1,
-					"b": 3}
-
-
-// Geometry folders (that set the parameters)
-export const boxFolder = elementFolder.addFolder('Geometry Dimensions');
-export const boxIdx = {length:0, height:1, width:2, thickness:3};
+// Geometry folders (to set their parameters)
 boxFolder.add(boxParams, 'length');
 boxFolder.add(boxParams, 'height');
 boxFolder.add(boxParams, 'width');
 boxFolder.add(boxParams, 'thickness');
 boxFolder.children[boxIdx.thickness].hide();  // Thickness is only necesssary for shells so hide until shell geometry is chosen
 
-
-export const sphereFolder = elementFolder.addFolder('Geometry Dimensions');
-export const sphIdx = {radius:0, thickness:1};
 sphereFolder.add(sphereParams, 'radius');
 sphereFolder.add(sphereParams, 'thickness');
 sphereFolder.children[sphIdx.thickness].hide();  // Thickness is only necesssary for shells so hide until shell geometry is chosen
 
-
-export const cylinderFolder = elementFolder.addFolder('Geometry Dimensions');
-export const cylIdx = {radius:0, length:1, thickness:2};
 cylinderFolder.add(cylinderParams, 'radius');
 cylinderFolder.add(cylinderParams, 'length');
 cylinderFolder.add(cylinderParams, 'thickness');
 cylinderFolder.children[cylIdx.thickness].hide();  // Thickness is only necesssary for shells so hide until shell geometry is chosen
 
-
-export const obliqueCylinderFolder = elementFolder.addFolder('Geometry Dimensions');
-export const oblIdx = {leftRadius:0, rightRadius:1, length:2, leftTransY:3, leftTransZ:4, rightTransY:5, rightTransZ:6, thickness:7};
 obliqueCylinderFolder.add(obliqueCylinderParams, 'Faces left radius');
 obliqueCylinderFolder.add(obliqueCylinderParams, 'Faces right radius');
 obliqueCylinderFolder.add(obliqueCylinderParams, 'length');
@@ -193,11 +190,6 @@ obliqueCylinderFolder.add(obliqueCylinderParams, 'Faces Right Trans. z');
 obliqueCylinderFolder.add(obliqueCylinderParams, 'thickness');
 obliqueCylinderFolder.children[oblIdx.thickness].hide();  // Thickness is only necesssary for shells so hide until shell geometry is chosen
 
-
-export const trapezoidFolder = elementFolder.addFolder('Geometry Dimensions');
-export const trapIdx = {leftTransY:0, leftTransZ:1, leftHeight:2, leftWidth:3,
-                       rightTransY:4, rightTransZ:5, rightHeight:6, rightWidth:7,
-                       length:8, thickness:9};
 trapezoidFolder.add(trapezoidParams, "Faces Left Trans. y");
 trapezoidFolder.add(trapezoidParams, "Faces Left Trans. z");
 trapezoidFolder.add(trapezoidParams, "Faces Left Height");
@@ -210,9 +202,6 @@ trapezoidFolder.add(trapezoidParams, "length");
 trapezoidFolder.add(trapezoidParams, 'thickness');
 trapezoidFolder.children[trapIdx.thickness].hide();  // Thickness is only necesssary for shells so hide until shell geometry is chosen
 
-
-export const beamFolder = elementFolder.addFolder('Geometry Dimensions');
-export const beamIdx = {length:0, h:1, s:2, t:3, b:4};
 beamFolder.add(beamParams, "length");
 beamFolder.add(beamParams, "h");
 beamFolder.add(beamParams, "s");
@@ -220,11 +209,7 @@ beamFolder.add(beamParams, "t");
 beamFolder.add(beamParams, "b");
 
 
-export let currentFolder;
-export function setCurrentFolder(folder){
-    currentFolder = folder;
-}
-   
+/* To set which goemetry folder is displayed, hiding all others. */   
 export function setGeometryFolder(currentObject){
     hideGeometryFolders();  // First hide all, then show the one relevant folder
     const geometryType = currentObject.geometry.type;
@@ -322,6 +307,9 @@ export function hideGeometryFolders(){
     folders.forEach(folder => folder.hide());
 }
 
+/* Show the json geometry types (e.g. "solid translate sphere")
+   that are valid for the given threejs geometry,
+   highlighting which has been pre-selected (if any). */
 function showGeometryDropdown(geom, currentObject){
 	// Hide whichever geometry dropdown is on display
 	for (let i=0; i<geometryKeys.length; i++){
@@ -334,7 +322,7 @@ function showGeometryDropdown(geom, currentObject){
 	geometryFolder.children[idx].setValue(currentObject.el_geometry);
 }
 
-
+/* Disable the ability to edit anything in the gui. */
 export function setViewerMode(){
     relationFolder.hide();
 	let child;

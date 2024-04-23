@@ -1,9 +1,9 @@
-const otherColours = {"ground": 0x5e5c64,
+export const otherColours = {"ground": 0x5e5c64,
                       "Orphans": 0xFDEE00,
                       "Selected element": 0xFEFEFA};
 
 
-const builderColours = {"BoxGeometry": 0xe6194b,
+export const builderColours = {"BoxGeometry": 0xe6194b,
 						"SphereGeometry": 0x3cb44b,
 						"CylinderGeometry": 0xE0B0FF,
 						"ObliqueCylinderGeometry": 0x7FFFD4,
@@ -13,7 +13,7 @@ const builderColours = {"BoxGeometry": 0xe6194b,
                         "ground": 0x5e5c64}
 
 
-const contextualColours = {"slab":0xa96645, "column":0x58C2EB, "beam":0x7b6bb0,
+export const contextualColours = {"slab":0xa96645, "column":0x58C2EB, "beam":0x7b6bb0,
                  "block":0x783372, "cable":0x71c1fe, "wall":0x5363cc,
                  "plate":0xd1dfb9, "deck":0xe59bc1,
                  "aerofoil":0x79a9b9, "wing":0xf1c533, "fuselage":0x47620e,
@@ -24,7 +24,7 @@ const contextualColours = {"slab":0xa96645, "column":0x58C2EB, "beam":0x7b6bb0,
     ceramics: green,
     polymers: blue
     composites: purple */
-const materialColours = {"metal-ferrousAlloy":0xEE204E,
+export const materialColours = {"metal-ferrousAlloy":0xEE204E,
                           "metal-ferrousAlloy-steel":0xAB274F,
                           "metal-ferrousAlloy-iron":0x7C0902,
                           "metal-aluminiumAlloy":0xFE6F5E,
@@ -50,7 +50,7 @@ const materialColours = {"metal-ferrousAlloy":0xEE204E,
    plates: purple,
    solids: red,
    shells: green */
-const geometryColours = {"beam rectangular": 0x00B9E8,
+export const geometryColours = {"beam rectangular": 0x00B9E8,
                           "beam circular": 0x5D8AA8,
                           "beam i-beam": 0x6CB4EE,
                           "beam other": 0x0070BB,
@@ -80,7 +80,7 @@ const geometryColours = {"beam rectangular": 0x00B9E8,
    connection dynamic: purple,
    joint static: red,
    joint dynamic: green */
-const relationshipColours = {'perfect': 0x000000,
+export const relationshipColours = {'perfect': 0x000000,
                             'boundary': 0x5e5c64,
                             'connection static bolted': 0x00B9E8,
                             'connection static welded': 0x5D8AA8,
@@ -101,22 +101,25 @@ const relationshipColours = {'perfect': 0x000000,
                             'joint dynamic other': 0x004225}
 
 
-const contextualColourKeys = Object.keys(contextualColours);
+export const contextualColourKeys = Object.keys(contextualColours);
 contextualColourKeys.sort();
-const materialColourKeys = Object.keys(materialColours);
+
+export const materialColourKeys = Object.keys(materialColours);
 materialColourKeys.sort();
+
 const geometryColourKeys = Object.keys(geometryColours);
 geometryColourKeys.sort();
+
 const relationshipColourKeys = Object.keys(relationshipColours);
 relationshipColourKeys.sort();
 
 
 let contextualColoursFolder, materialColoursFolder, geometryColoursFolder, relationshipColoursFolder;
-let cElements = [];
-let cLines = [];
+export let cElements = [];  // list of model elements as threejs objects
+export let cLines = [];  // list of threejs lines (highlighting connections in an attributed graph)
 
 
-function addColourFolders(coloursFolder, render, defaultScheme="contextual", includeNetworkEdges=false) {
+export function addColourFolders(coloursFolder, render, defaultScheme="contextual", includeNetworkEdges=false) {
     // Find out what contexts, materials and geometries are used by the cElements
     let schemes;
     if (defaultScheme == 'builder'){
@@ -229,9 +232,10 @@ function addColourFolders(coloursFolder, render, defaultScheme="contextual", inc
     }
 }
 
+
 /* Update the list of colours to include the contextual/material/geometry colour used by a given element.
    Called from builder.js */
-function makeContextColourVisible(context){
+export function makeContextColourVisible(context){
     if (context != undefined) {  // context will be undefined if the element has only just been created
         const i = contextualColourKeys.indexOf(context);
         contextualColoursFolder.children[i].show();
@@ -239,7 +243,7 @@ function makeContextColourVisible(context){
 }
 
 
-function makeMaterialColourVisible(material){
+export function makeMaterialColourVisible(material){
     if (material != undefined) {
         const i = materialColourKeys.indexOf(material);
         if (i == -1) { console.log(material)};
@@ -248,7 +252,7 @@ function makeMaterialColourVisible(material){
 }
 
 
-function makeGeometryColourVisible(geometry){
+export function makeGeometryColourVisible(geometry){
     if (geometry != undefined) {
         const i = geometryColourKeys.indexOf(geometry);
         geometryColoursFolder.children[i].show();
@@ -256,7 +260,7 @@ function makeGeometryColourVisible(geometry){
 }
 
 
-function makeEdgeColourVisible(relationship){
+export function makeEdgeColourVisible(relationship){
     if (relationship != undefined) {
         const i = relationshipColourKeys.indexOf(relationship);
         relationshipColoursFolder.children[i].show();
@@ -265,7 +269,7 @@ function makeEdgeColourVisible(relationship){
 
 
 /* Of a single element */
-function resetColour(scheme, element){
+export function resetColour(scheme, element){
     if (element.el_contextual == "ground") {
         element.material.color.setHex(otherColours["ground"]);
     } else {
@@ -282,12 +286,8 @@ function resetColour(scheme, element){
 }
 
 /* Of all elements */
-function resetColours(scheme){
+export function resetColours(scheme){
     for (let el of cElements){
         resetColour(scheme, el);
     }
 }
-
-
-export {otherColours, builderColours, contextualColours, materialColours, geometryColours, relationshipColours, cElements, cLines, materialColourKeys, contextualColourKeys,
-        addColourFolders, makeContextColourVisible, makeMaterialColourVisible, makeGeometryColourVisible, makeEdgeColourVisible, resetColour, resetColours};

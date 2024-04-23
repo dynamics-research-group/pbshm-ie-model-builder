@@ -3,7 +3,7 @@ import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import * as gui from './guiHelper.js';
 
 import { geometryDetails } from './geometryHelper.js';
-import { addColourFolders, makeContextColourVisible, makeMaterialColourVisible, makeGeometryColourVisible, cElements } from './colourHelper.js';
+import * as colours from './colourHelper.js';
 
 
 let elements = [];  // for accessing all IEs in the model
@@ -28,7 +28,7 @@ function plotElements(canvas, scene, shapes){
 		minZ = Math.min(minZ, shape.position.z - shape.geometry.boundingBox.min.z);
 		scene.add(shape);
 		elements.push(shape);
-		cElements.push(shape);
+		colours.cElements.push(shape);
 	}
 
 	// Set up the display
@@ -83,16 +83,16 @@ function plotModel(shapes) {
 	const viewer = plotElements(canvas, scene, shapes);
 
 	// GUI for changing the colour scheme
-	addColourFolders(gui.coloursFolder, render, "contextual");
+	colours.addColourFolders(gui.coloursFolder, render, "contextual");
 	gui.setViewerMode();
 	
 	
 	// Show the relevant colours
 	for (let shape of viewer.elements) {
 		if (shape.el_contextual != "ground") {
-			makeContextColourVisible(shape.el_contextual);
-			makeMaterialColourVisible(shape.el_material);
-			makeGeometryColourVisible(shape.el_geometry);
+			colours.makeContextColourVisible(shape.el_contextual);
+			colours.makeMaterialColourVisible(shape.el_material);
+			colours.makeGeometryColourVisible(shape.el_geometry);
 		}
 	}
     

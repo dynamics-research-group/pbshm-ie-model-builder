@@ -7,9 +7,7 @@ import { Line2 } from 'three/addons/lines/Line2.js';
 
 import * as gui from './guiHelper.js';
 import { extractRelationships } from './jsonHelper.js';
-import { otherColours, contextualColours, addColourFolders, cElements, cLines, relationshipColours, makeEdgeColourVisible,
-         makeContextColourVisible, makeMaterialColourVisible, makeGeometryColourVisible } from './colourHelper.js';
-
+import * as colours from './colourHelper.js';
 
 
 function plotNetworkFromFile(rawtext){
@@ -168,7 +166,7 @@ function drawNetwork(coords, edges, elInfo, natures, threeD=true){
     controls.update();
 
     // GUI for changing the colour scheme
-	addColourFolders(gui.coloursFolder, render, "contextual", true);
+	colours.addColourFolders(gui.coloursFolder, render, "contextual", true);
 	gui.setViewerMode();
   
     // Add ambient light because otherwise the shadow from the directional light is too dark
@@ -184,27 +182,23 @@ function drawNetwork(coords, edges, elInfo, natures, threeD=true){
                                     coords[i][1],
                                     coords[i][2],
                                     elInfo[i]);
-        cElements.push(shape);
+        colours.cElements.push(shape);
         if (shape.el_contextual != "ground") {
-			makeContextColourVisible(shape.el_contextual);
-			makeMaterialColourVisible(shape.el_material);
-			makeGeometryColourVisible(shape.el_geometry);
+			colours.makeContextColourVisible(shape.el_contextual);
+			colours.makeMaterialColourVisible(shape.el_material);
+			colours.makeGeometryColourVisible(shape.el_geometry);
 		}
     }
     
     // Plot the edges
     let pos1, pos2;
-    const matLine = new LineMaterial( {
-        color: 0xff0000,
-        linewidth: 0.001 // in world units with size attenuation, pixels otherwise
-    } );
     for (let i=0; i<nNodes; i++){
         pos1 = coords[i];
         for (let j=0; j<edges[i].length; j++){
             if (i < edges[i][j]) {  // don't draw lines twice (once for each way)
                 pos2 = coords[edges[i][j]];
                 const nature = currentRelationshipNature(elInfo[i].name, elInfo[edges[i][j]].name);
-                makeEdgeColourVisible(nature);
+                colours.makeEdgeColourVisible(nature);
                 drawLine(pos1, pos2, nature);
             }
         }
@@ -217,7 +211,7 @@ function drawNetwork(coords, edges, elInfo, natures, threeD=true){
 		let pointer = new THREE.Vector2();
 		pointer.set( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1 );
 		raycaster.setFromCamera( pointer, camera );
-		const intersects = raycaster.intersectObjects( cElements, false );
+		const intersects = raycaster.intersectObjects( colours.cElements, false );
 		if ( intersects.length > 0 ) {
             const currentObject = intersects[0].object;
             gui.setGeometryFolder(currentObject);
@@ -285,9 +279,9 @@ function drawNetwork(coords, edges, elInfo, natures, threeD=true){
         }
         let colour;
         if (element_type == "ground"){
-            colour = otherColours["ground"];
+            colour = colours.otherColours["ground"];
         } else {
-            colour = contextualColours[element_type];
+            colour = colours.contextualColours[element_type];
         }
         const material = new THREE.MeshPhongMaterial({color: colour});
         const shape = new THREE.Mesh(geometry, material);
@@ -306,9 +300,9 @@ function drawNetwork(coords, edges, elInfo, natures, threeD=true){
     function drawLine(pos1, pos2, nature){
       const geometry = new LineGeometry();
       geometry.setPositions([pos1[0], pos1[1], pos1[2], pos2[0], pos2[1], pos2[2]]);
-      const edge = new Line2( geometry, new LineMaterial( {color: relationshipColours[nature], linewidth: 0.002 } ) )
+      const edge = new Line2( geometry, new LineMaterial( {color: colours.relationshipColours[nature], linewidth: 0.002 } ) )
       edge.nature = nature;
-      cLines.push(edge);
+      colours.cLines.push(edge);
       scene.add(edge);
     }
     

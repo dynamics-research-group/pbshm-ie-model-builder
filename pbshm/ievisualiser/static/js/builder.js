@@ -8,10 +8,7 @@ import {TrapezoidGeometry} from './trapezoid.js'
 import {generateBeam} from './geometryHelper.js';
 import {jsonToGl} from './translationHelper.js';
 import { save } from './jsonHelper.js';
-import { builderColours, addColourFolders, contextualColours, materialColours, geometryColours,
-	     cElements, resetColour, resetColours,
-	     makeContextColourVisible, makeMaterialColourVisible, makeGeometryColourVisible, otherColours} from './colourHelper.js';
-
+import * as colours from './colourHelper.js';
 
 
 const canvas = document.querySelector('#c');
@@ -57,7 +54,7 @@ const objects = [];  // list of all objects in the scene
 
 
 function setupGui(saveUrl){
-	addColourFolders(gui.coloursFolder, render, "builder");
+	colours.addColourFolders(gui.coloursFolder, render, "builder");
 
 	gui.modelDetailsFolder.children[gui.modelIdx.type].onChange( value => {
                                                                 gui.modelDetails['Type'] = value;
@@ -99,7 +96,7 @@ function setupGui(saveUrl){
 	initBeamGui();
 	initGroundGui();  // Not added to list of folders so it is always visible
 
-	const saver = {'Save': function() {save(saveUrl, gui.modelDetails, relationships, relationshipNatures, cElements);}};
+	const saver = {'Save': function() {save(saveUrl, gui.modelDetails, relationships, relationshipNatures, colours.cElements);}};
 	gui.gui.add(saver, 'Save');
 
 }
@@ -159,15 +156,15 @@ function buildModel(saveUrl, shapes=undefined, preRelationships=undefined, preNa
 			e.currentAngleY = 0;
 			e.currentAngleZ = 0;
 			if (e.el_contextual != "ground") {
-				makeContextColourVisible(e.el_contextual);
-				makeMaterialColourVisible(e.el_material);
-				makeGeometryColourVisible(e.el_geometry);
+				colours.makeContextColourVisible(e.el_contextual);
+				colours.makeMaterialColourVisible(e.el_material);
+				colours.makeGeometryColourVisible(e.el_geometry);
 			}
 			e.relationshipCount = 0;
 			elementDict[e.name] = e;  // relationships are referred to by name in json
 			nextID++;
 		}
-		resetColours(gui.gui.children[gui.guiIdx.colours].children[gui.colIdx.scheme].getValue());  // Set the colours to match the colourScheme chosen in the GUI
+		colours.resetColours(gui.gui.children[gui.guiIdx.colours].children[gui.colIdx.scheme].getValue());  // Set the colours to match the colourScheme chosen in the GUI
 		controls = info.controls;
 		floor = info.floor;
 		floorParams.width = floor.geometry.parameters.width;
@@ -261,7 +258,7 @@ function onPointerDown( event ) {
 			if ( intersect.object !== floor ) {
 				scene.remove( intersect.object );
 				objects.splice( objects.indexOf( intersect.object ), 1 );
-				cElements.splice( cElements.indexOf( intersect.object ), 1 );
+				colours.cElements.splice( colours.cElements.indexOf( intersect.object ), 1 );
 			}
 			// delete any relationships involving this object
 			for (let key of Object.keys(relationships)){
@@ -283,7 +280,7 @@ function onPointerDown( event ) {
 				const selectedIndex = selectedObjects.indexOf(intersect.object);
 				if (selectedIndex >= 0){
 					// If it was already selected, deselect it
-					resetColour(gui.gui.children[gui.guiIdx.colours].children[gui.colIdx.scheme].getValue(), intersect.object);
+					colours.resetColour(gui.gui.children[gui.guiIdx.colours].children[gui.colIdx.scheme].getValue(), intersect.object);
 					gui.relationFolder.children[gui.relIdx.freeTypes].hide();
 					gui.relationFolder.children[gui.relIdx.connTypes].hide();
 					gui.relationFolder.children[gui.relIdx.groundTypes].hide();
@@ -294,7 +291,7 @@ function onPointerDown( event ) {
 					selectedObjects.pop();
 				} else {
 					// Select the object
-					intersect.object.material.color.setHex(otherColours['Selected element']);
+					intersect.object.material.color.setHex(colours.otherColours['Selected element']);
 					selectedObjects.push(intersect.object);
 				}
 				if (selectedObjects.length >= 2) {
@@ -390,7 +387,7 @@ function onPointerDown( event ) {
 				}
 
 				// create new object
-				const voxel = new THREE.Mesh(currentGeometry, new THREE.MeshLambertMaterial({color: builderColours[currentGeometry.type]}));
+				const voxel = new THREE.Mesh(currentGeometry, new THREE.MeshLambertMaterial({color: colours.builderColours[currentGeometry.type]}));
 				voxel.position.copy(intersect.point);
 				// Find the size of the geometry in the y-axis and raise it so it's not half-way through the floor
 				voxel.geometry.computeBoundingBox()
@@ -412,7 +409,7 @@ function onPointerDown( event ) {
 				scene.add( voxel );
 				objects.push( voxel );
 				currentObject = voxel;
-				cElements.push(voxel);
+				colours.cElements.push(voxel);
 			} else {
 				// select existing object to edit unless it's the floor
 				if (intersect.object.name != "plane") {
@@ -598,11 +595,11 @@ function rotateGeometryZ(){
 
 function updateContext(){
 	currentObject.el_contextual = gui.context.Type;
-	makeContextColourVisible(gui.context.Type);
+	colours.makeContextColourVisible(gui.context.Type);
 	if (gui.gui.children[gui.guiIdx.colours].children[gui.colIdx.scheme].getValue() == "contextual"
-			&& currentObject.material.color.getHex() != otherColours['Orphans']
-			&& currentObject.material.color.getHex() != otherColours['Selected element']) {
-		currentObject.material.color.setHex(contextualColours[currentObject.el_contextual]);
+			&& currentObject.material.color.getHex() != colours.otherColours['Orphans']
+			&& currentObject.material.color.getHex() != colours.otherColours['Selected element']) {
+		currentObject.material.color.setHex(colours.contextualColours[currentObject.el_contextual]);
 	}
 	render();
 }
@@ -610,11 +607,11 @@ function updateContext(){
 
 function updateMaterial(){
 	currentObject.el_material = gui.material.Type;
-	makeMaterialColourVisible(gui.material.Type);
+	colours.makeMaterialColourVisible(gui.material.Type);
 	if (gui.gui.children[gui.guiIdx.colours].children[gui.colIdx.scheme].getValue() == "material"
-			&& currentObject.material.color.getHex() != otherColours['Orphans']
-			&& currentObject.material.color.getHex() != otherColours['Selected element']) {
-		currentObject.material.color.setHex(materialColours[currentObject.el_material]);
+			&& currentObject.material.color.getHex() != colours.otherColours['Orphans']
+			&& currentObject.material.color.getHex() != colours.otherColours['Selected element']) {
+		currentObject.material.color.setHex(colours.materialColours[currentObject.el_material]);
 	}
 	render();
 }
@@ -622,11 +619,11 @@ function updateMaterial(){
 
 function updateJsonGeometry(){
 	currentObject.el_geometry = gui.geometry.Type;
-	makeGeometryColourVisible(gui.geometry.Type);
+	colours.makeGeometryColourVisible(gui.geometry.Type);
 	if (gui.gui.children[gui.guiIdx.colours].children[gui.colIdx.scheme].getValue() == "geometry"
-			&& currentObject.material.color.getHex() != otherColours['Orphans']
-			&& currentObject.material.color.getHex() != otherColours['Selected element']) {
-		currentObject.material.color.setHex(geometryColours[currentObject.el_geometry]);
+			&& currentObject.material.color.getHex() != colours.otherColours['Orphans']
+			&& currentObject.material.color.getHex() != colours.otherColours['Selected element']) {
+		currentObject.material.color.setHex(colours.geometryColours[currentObject.el_geometry]);
 	}
 	if (gui.geometry.Type != undefined && gui.geometry.Type.substring(0, 5) == "shell"){
 		// Show the thickness parameter within the (last child of the) geometry folder
@@ -847,11 +844,11 @@ function toggleHighlightUnrelated(value){
 	if (value == true){
 		// Deselect selected objects to avoid confusion
 		try {
-			resetColour(colourScheme, selectedObjects[0]);
+			colours.resetColour(colourScheme, selectedObjects[0]);
 			selectedObjects[0] = undefined;
 		} catch (TypeError) {;}
 		try {
-			resetColour(colourScheme, selectedObjects[1]);
+			colours.resetColour(colourScheme, selectedObjects[1]);
 			selectedObjects[1] = undefined;
 		} catch (TypeError) {;}
 		gui.relationFolder.children[gui.relIdx.freeTypes].hide();
@@ -860,13 +857,13 @@ function toggleHighlightUnrelated(value){
 		gui.relationFolder.children[gui.relIdx.natures].hide();
 		
 		// Highlight orphaned elements
-		for (let el of cElements){
+		for (let el of colours.cElements){
 			if (el.relationshipCount == 0){
-				el.material.color.setHex(otherColours['Orphans']);
+				el.material.color.setHex(colours.otherColours['Orphans']);
 			}
 		}
 	} else {
-		resetColours(colourScheme);
+		colours.resetColours(colourScheme);
 	}
 	render();
 }
@@ -892,13 +889,13 @@ function currentRelationshipNature(){
 
 function toggleHideConnected(value){
 	if (value == true){
-		for (let el of cElements){
+		for (let el of colours.cElements){
 			if (el.relationshipCount > 0){
 				el.visible = false;
 			}
 		}
 	} else {
-		for (let el of cElements){
+		for (let el of colours.cElements){
 			el.visible = true;
 		}
 	}
