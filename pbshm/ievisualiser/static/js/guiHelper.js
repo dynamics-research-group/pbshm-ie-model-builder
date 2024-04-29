@@ -260,7 +260,7 @@ export function setGeometryFolder(currentObject){
         beamFolder.children[beamIdx.h].setValue(currentObject.geometry.parameters["h"]);
         beamFolder.children[beamIdx.s].setValue(currentObject.geometry.parameters["s"]);
         beamFolder.children[beamIdx.t].setValue(currentObject.geometry.parameters["t"]);
-        beamFolder.children[beamIdx.t].setValue(currentObject.geometry.parameters["b"]);
+        beamFolder.children[beamIdx.b].setValue(currentObject.geometry.parameters["b"]);
         currentFolder = beamFolder;
         showGeometryDropdown("beam", currentObject);
     } else {
