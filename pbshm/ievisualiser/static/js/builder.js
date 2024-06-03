@@ -562,9 +562,7 @@ function rotateGeometryX(){
 	const rotation = newAngle - currentObject.currentAngleX;
 	currentObject.rotateX(rotation);
 	currentObject.currentAngleX = newAngle;
-	if (!currentObject.isGroup){
-		currentObject.geometry.attributes.position.needsUpdate = true;
-	}
+	moveGeometryXYZ();  // Ensure the front left corner is still in the correct location
 	render();
 }
 
@@ -574,9 +572,7 @@ function rotateGeometryY(){
 	const rotation = newAngle - currentObject.currentAngleY;
 	currentObject.rotateY(rotation);
 	currentObject.currentAngleY = newAngle;
-	if (!currentObject.isGroup){
-		currentObject.geometry.attributes.position.needsUpdate = true;
-	}
+	moveGeometryXYZ();  // Ensure the front left corner is still in the correct location
 	render();
 }
 
@@ -586,9 +582,7 @@ function rotateGeometryZ(){
 	const rotation = newAngle - currentObject.currentAngleZ;
 	currentObject.rotateZ(rotation);
 	currentObject.currentAngleZ = newAngle;
-	if (!currentObject.isGroup){
-		currentObject.geometry.attributes.position.needsUpdate = true;
-	}
+	moveGeometryXYZ();  // Ensure the front left corner is still in the correct location
 	render();
 }
 
