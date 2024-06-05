@@ -3,12 +3,11 @@ import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
 import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { Line2 } from 'three/addons/lines/Line2.js';
-import { GUI } from 'three/addons/libs/lil-gui.module.min.js';
 
-import * as picker from './pickerHelper.js';
-import { otherColours, contextualColours, addColourFolders, cElements,
-         makeContextColourVisible, makeMaterialColourVisible, makeGeometryColourVisible } from './colourHelper.js';
 
+import * as gui from './guiHelper.js';
+import { extractRelationships } from './jsonHelper.js';
+import * as colours from './colourHelper.js';
 
 
 function plotNetworkFromFile(rawtext){
@@ -26,22 +25,41 @@ function plotNetworkFromFile(rawtext){
     elements.forEach((node) => {
         elNames.push(node.name);
     });
-    let i1, i2, i, x, y, z;
+    let nodej, nodek, i, j, k, x, y, z;
     for (i=0; i<relat.length; i++){
-        i1 = elNames.indexOf(relat[i].elements[0].name);
-        i2 = elNames.indexOf(relat[i].elements[1].name);
-        edges[i1].push(i2);
-        edges[i2].push(i1);
-        counts[i1]++;
-        counts[i2]++;
+        for (j=0; j<relat[i].elements.length-1; j++){
+            nodej = elNames.indexOf(relat[i].elements[j].name);
+            for (k=1; k<relat[i].elements.length; k++){
+                nodek = elNames.indexOf(relat[i].elements[k].name);
+                edges[nodej].push(nodek);
+                edges[nodek].push(nodej);
+                counts[nodej]++;
+                counts[nodek]++;
+            }
+        }
         if ("coordinates" in relat[0].elements[1]){
             x = relat[i].elements[0].coordinates.global.translational.x.value;
             y = relat[i].elements[0].coordinates.global.translational.y.value;
             z = relat[i].elements[0].coordinates.global.translational.z.value;
-            edgeCoords[i1].push([x, y, z])
-            edgeCoords[i2].push([x, y, z])
+            edgeCoords[nodej].push([x, y, z])
+            edgeCoords[nodek].push([x, y, z])
         }
     }
+    
+    // Get natures of relationships and unpack groups of more than two in a connection
+    // to just the paired natures
+    const [relationships, natures] = extractRelationships(rawtext);
+    let naturePairs = [];
+    const keys = Object.keys(natures)
+    for (i=0; i<keys.length; i++){
+        const groupedElNames = keys[i].split(',');
+        for (j=0; j<groupedElNames.length-1; j++){
+            for (k=1; k<groupedElNames.length; k++){
+                naturePairs[[groupedElNames[j], groupedElNames[k]]] = natures[keys[i]];
+            }
+        }
+    }
+
     let nodeCoords;
     // See if there were any coordinates given detailing where two elements join
     let totalCoords = 0;
@@ -56,7 +74,7 @@ function plotNetworkFromFile(rawtext){
     // If none were given then calculate where to position the nodes.
     if (totalCoords == 0){
         nodeCoords = fruchterman_reingold(edges);
-        drawNetwork(nodeCoords, edges, elInfo, true)
+        drawNetwork(nodeCoords, edges, elInfo, naturePairs, true)
     }
     // If joint coordinates were given then use them to decide on node coordinates
     else{
@@ -64,7 +82,7 @@ function plotNetworkFromFile(rawtext){
             return arr.slice();
         });
         nodeCoords = getNodeCoords(tempEdges, edgeCoords, counts);
-        drawNetwork(nodeCoords, edges, elInfo);
+        drawNetwork(nodeCoords, edges, elInfo, naturePairs);
     }
     
 }
@@ -98,7 +116,7 @@ function getNodeCoords(edges, edgeCoords, counts){
     return nodeCoords;
 }
 
-function drawNetwork(coords, edges, elInfo, threeD=true){
+function drawNetwork(coords, edges, elInfo, natures, threeD=true){
     const nNodes = coords.length;
     let minX = 0;
     let minY = 0
@@ -148,8 +166,8 @@ function drawNetwork(coords, edges, elInfo, threeD=true){
     controls.update();
 
     // GUI for changing the colour scheme
-	const gui = new GUI();
-    addColourFolders(gui, render, "contextual");
+	colours.addColourFolders(gui.coloursFolder, render, "contextual", true);
+	gui.setViewerMode();
   
     // Add ambient light because otherwise the shadow from the directional light is too dark
     const color = 0xFFFFFF;
@@ -164,37 +182,52 @@ function drawNetwork(coords, edges, elInfo, threeD=true){
                                     coords[i][1],
                                     coords[i][2],
                                     elInfo[i]);
-        cElements.push(shape);
+        colours.cElements.push(shape);
         if (shape.el_contextual != "ground") {
-			makeContextColourVisible(shape.el_contextual);
-			makeMaterialColourVisible(shape.el_material);
-			makeGeometryColourVisible(shape.el_geometry);
+			colours.makeContextColourVisible(shape.el_contextual);
+			colours.makeMaterialColourVisible(shape.el_material);
+			colours.makeGeometryColourVisible(shape.el_geometry);
 		}
     }
     
     // Plot the edges
     let pos1, pos2;
-    const matLine = new LineMaterial( {
-        color: 0xff0000,
-        linewidth: 0.001 // in world units with size attenuation, pixels otherwise
-    } );
     for (let i=0; i<nNodes; i++){
         pos1 = coords[i];
         for (let j=0; j<edges[i].length; j++){
             if (i < edges[i][j]) {  // don't draw lines twice (once for each way)
                 pos2 = coords[edges[i][j]];
-                drawLine(pos1, pos2)
+                const nature = currentRelationshipNature(elInfo[i].name, elInfo[edges[i][j]].name);
+                colours.makeEdgeColourVisible(nature);
+                drawLine(pos1, pos2, nature);
             }
         }
     }
 
-    // Print the name of the currently selected node
-	picker.setup(scene, camera);
-	picker.clearPickPosition();
-    document.addEventListener('mousedown', picker.selectPickPosition, false);
-    // window.addEventListener('mouseout', picker.clearPickPosition);
-    // window.addEventListener('mouseleave', picker.clearPickPosition);
+    document.addEventListener('pointerdown', selectElement);
 
+	function selectElement(event){
+		let raycaster = new THREE.Raycaster();
+		let pointer = new THREE.Vector2();
+		pointer.set( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1 );
+		raycaster.setFromCamera( pointer, camera );
+		const intersects = raycaster.intersectObjects( colours.cElements, false );
+		if ( intersects.length > 0 ) {
+            const currentObject = intersects[0].object;
+            gui.setGeometryFolder(currentObject);
+            gui.gCoordsFolder.hide();
+            gui.sphereFolder.hide();
+		}
+	}
+
+    function currentRelationshipNature(id1, id2){
+        //console.log(id1, id2)
+        if (natures[[id1, id2]] != undefined){
+            return natures[[id1, id2]];
+        } else if (natures[[id2, id1]] != undefined){
+            return natures[[id2, id1]];
+        }
+    }
 
     
     function render() {
@@ -237,18 +270,18 @@ function drawNetwork(coords, edges, elInfo, threeD=true){
                 }
             }
             try {
-                element_geom = [info.geometry.type.name, info.geometry.type.type.name, info.geometry.type.type.type.name].join("-");
+                element_geom = [info.geometry.type.name, info.geometry.type.type.name, info.geometry.type.type.type.name].join(" ");
             } catch(TypeError) {
-                element_geom = [info.geometry.type.name, info.geometry.type.type.name].join("-");
+                element_geom = [info.geometry.type.name, info.geometry.type.type.name].join(" ");
             }
         } else {
             element_type = "ground";
         }
         let colour;
         if (element_type == "ground"){
-            colour = otherColours["ground"];
+            colour = colours.otherColours["ground"];
         } else {
-            colour = contextualColours[element_type];
+            colour = colours.contextualColours[element_type];
         }
         const material = new THREE.MeshPhongMaterial({color: colour});
         const shape = new THREE.Mesh(geometry, material);
@@ -264,10 +297,13 @@ function drawNetwork(coords, edges, elInfo, threeD=true){
         return shape;
     }
     
-    function drawLine(pos1, pos2){
+    function drawLine(pos1, pos2, nature){
       const geometry = new LineGeometry();
       geometry.setPositions([pos1[0], pos1[1], pos1[2], pos2[0], pos2[1], pos2[2]]);
-      scene.add(new Line2( geometry, matLine ));
+      const edge = new Line2( geometry, new LineMaterial( {color: colours.relationshipColours[nature], linewidth: 0.002 } ) )
+      edge.nature = nature;
+      colours.cLines.push(edge);
+      scene.add(edge);
     }
     
     requestAnimationFrame(render);
@@ -391,7 +427,6 @@ function fruchterman_reingold(edges, iterations=50, scale=1){
 	return pos;
 
 }
-
 
 
 export {plotNetworkFromFile};

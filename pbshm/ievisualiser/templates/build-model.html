@@ -30,6 +30,14 @@
         <input type="radio" name="voxel" id="obliqueCylinder"><label for="obliqueCylinder" style="background-position: -0% -500%"></label>
       </div>
     </div>
+    <div id="uigroundinfo">
+      <p>Ground</p>
+    </div>
+    <div id="uiground">
+      <div class="tiles">
+        <input type="radio" name="voxel" id="ground"><label for="ground" style="background-position: -0% -700%"></label></br>
+      </div>
+    </div>
     <!-- Javascript Setup -->
     <script type="importmap">
       {
@@ -42,11 +50,13 @@
     <script type="module">
       import { buildModel } from "{{ url_for('ie-visualiser.static', filename='js/builder.js') }}";
       import { loadFile } from "{{ url_for('ie-visualiser.static', filename='js/loader.js') }}";
+      const saveUrl = "{{ url_for('ie-visualiser.save_model', id=id) }}";
       if ("{{ id }}" == '') {
-        buildModel();
+        buildModel(saveUrl);
       } else {
-        loadFile("{{ url_for('ie-visualiser.view_model', id=id) }}", 'builder');
+        loadFile("{{ url_for('ie-visualiser.view_model', id=id) }}", 'builder', saveUrl);
       }
+      
     </script>
   </body>
 </html>

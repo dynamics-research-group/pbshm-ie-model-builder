@@ -1,18 +1,19 @@
-const otherColours = {"ground": 0x5e5c64,
+export const otherColours = {"ground": 0x5e5c64,
                       "Orphans": 0xFDEE00,
                       "Selected element": 0xFEFEFA};
 
 
-const builderColours = {"BoxGeometry": 0xe6194b,
+export const builderColours = {"BoxGeometry": 0xe6194b,
 						"SphereGeometry": 0x3cb44b,
 						"CylinderGeometry": 0xE0B0FF,
 						"ObliqueCylinderGeometry": 0x7FFFD4,
 						"TrapezoidGeometry": 0x4363d8,
 						"IBeamGeometry": 0xf58231,
-						"CBeamGeometry": 0xfbceb1}
+						"CBeamGeometry": 0xfbceb1,
+                        "ground": 0x5e5c64}
 
 
-const contextualColours = {"slab":0xa96645, "column":0x58C2EB, "beam":0x7b6bb0,
+export const contextualColours = {"slab":0xa96645, "column":0x58C2EB, "beam":0x7b6bb0,
                  "block":0x783372, "cable":0x71c1fe, "wall":0x5363cc,
                  "plate":0xd1dfb9, "deck":0xe59bc1,
                  "aerofoil":0x79a9b9, "wing":0xf1c533, "fuselage":0x47620e,
@@ -23,7 +24,7 @@ const contextualColours = {"slab":0xa96645, "column":0x58C2EB, "beam":0x7b6bb0,
     ceramics: green,
     polymers: blue
     composites: purple */
-const materialColours = {"metal-ferrousAlloy":0xEE204E,
+export const materialColours = {"metal-ferrousAlloy":0xEE204E,
                           "metal-ferrousAlloy-steel":0xAB274F,
                           "metal-ferrousAlloy-iron":0x7C0902,
                           "metal-aluminiumAlloy":0xFE6F5E,
@@ -49,45 +50,77 @@ const materialColours = {"metal-ferrousAlloy":0xEE204E,
    plates: purple,
    solids: red,
    shells: green */
-const geometryColours = {"beam-rectangular": 0x00B9E8,
-                          "beam-circular": 0x5D8AA8,
-                          "beam-i-beam": 0x6CB4EE,
-                          "beam-other": 0x0070BB,
-                          "plate-rectangular": 0xB284BE,
-                          "plate-circular": 0x702963,
-                          "plate-other": 0x9966CC,
-                          "solid-translate-cuboid": 0xAB274F,
-                          "solid-translate-sphere": 0x7C0902,
-                          "solid-translate-cylinder": 0xFE6F5E,
-                          "solid-translate-other": 0xFB607F,
-                          "shell-translate-cuboid": 0x90EE90,
-                          "shell-translate-sphere": 0x8DB600,
-                          "shell-translate-cylinder": 0x7BA05B,
-                          "shell-translate-other": 0x568203,
-                          "solid-translateAndScale-cuboid": 0x800020,
-                          "solid-translateAndScale-cylinder": 0xFDBCB4,
-                          "solid-translateAndScale-other": 0xC51E3A,
-                          "shell-translateAndScale-cuboid": 0x004225,
-                          "shell-translateAndScale-cylinder": 0xACE1AF,
-                          "shell-translateAndScale-other": 0xADFF2F,
+export const geometryColours = {"beam rectangular": 0x00B9E8,
+                          "beam circular": 0x5D8AA8,
+                          "beam i-beam": 0x6CB4EE,
+                          "beam other": 0x0070BB,
+                          "plate rectangular": 0xB284BE,
+                          "plate circular": 0x702963,
+                          "plate other": 0x9966CC,
+                          "solid translate cuboid": 0xAB274F,
+                          "solid translate sphere": 0x7C0902,
+                          "solid translate cylinder": 0xFE6F5E,
+                          "solid translate other": 0xFB607F,
+                          "shell translate cuboid": 0x90EE90,
+                          "shell translate sphere": 0x8DB600,
+                          "shell translate cylinder": 0x7BA05B,
+                          "shell translate other": 0x568203,
+                          "solid translateAndScale cuboid": 0x800020,
+                          "solid translateAndScale cylinder": 0xFDBCB4,
+                          "solid translateAndScale other": 0xC51E3A,
+                          "shell translateAndScale cuboid": 0x004225,
+                          "shell translateAndScale cylinder": 0xACE1AF,
+                          "shell translateAndScale other": 0xADFF2F,
                           "other":0x63452c};
 
 
-const contextualColourKeys = Object.keys(contextualColours);
+/* perfect: brown,
+   boundary: grey,
+   connection static: blue,
+   connection dynamic: purple,
+   joint static: red,
+   joint dynamic: green */
+export const relationshipColours = {'perfect': 0x000000,
+                            'boundary': 0x5e5c64,
+                            'connection static bolted': 0x00B9E8,
+                            'connection static welded': 0x5D8AA8,
+                            'connection static adhesive': 0x6CB4EE,
+                            'connection static other': 0x0070BB,
+                            'connection dynamic hinge': 0x702963,
+                            'connection dynamic ballAndSocket': 0x9966CC,
+                            'connection dynamic pinned': 0xB284BE,
+                            'connection dynamic other': 0xB53389,
+                            'joint static bolted': 0xAB274F,
+                            'joint static welded': 0x7C0902,
+                            'joint static adhesive': 0xFE6F5E,
+                            'joint static other': 0xFB607F,
+                            'joint dynamic hinge': 0x90EE90,
+                            'joint dynamic ballAndSocket': 0x8DB600,
+                            'joint dynamic pinned': 0x7BA05B,
+                            'joint dynamic expansion': 0xACE1AF,
+                            'joint dynamic other': 0x004225}
+
+
+export const contextualColourKeys = Object.keys(contextualColours);
 contextualColourKeys.sort();
-const materialColourKeys = Object.keys(materialColours);
+
+export const materialColourKeys = Object.keys(materialColours);
 materialColourKeys.sort();
+
 const geometryColourKeys = Object.keys(geometryColours);
 geometryColourKeys.sort();
 
+const relationshipColourKeys = Object.keys(relationshipColours);
+relationshipColourKeys.sort();
 
-let contextualColoursFolder, materialColoursFolder, geometryColoursFolder;
-let cElements = [];
+
+let contextualColoursFolder, materialColoursFolder, geometryColoursFolder, relationshipColoursFolder;
+export let cElements = [];  // list of model elements as threejs objects
+export let cLines = [];  // list of threejs lines (highlighting connections in an attributed graph)
 
 
-function addColourFolders(gui, render, defaultScheme="contextual") {
+export function addColourFolders(coloursFolder, render, defaultScheme="contextual", includeNetworkEdges=false) {
     // Find out what contexts, materials and geometries are used by the cElements
-    const coloursFolder = gui.addFolder('Colours');
     let schemes;
     if (defaultScheme == 'builder'){
         schemes = ['builder', 'contextual', 'material', 'geometry'];
@@ -123,6 +156,14 @@ function addColourFolders(gui, render, defaultScheme="contextual") {
     for (i=0; i<geometryColourKeys.length; i++) {
         geometryColoursFolder.addColor(geometryColours, geometryColourKeys[i]).onChange( value => {updateColourScheme('geometry')} );;
         geometryColoursFolder.children[i].hide();
+    }
+
+    if (includeNetworkEdges){
+        relationshipColoursFolder = coloursFolder.addFolder('Relationship Colours');
+        for (i=0; i<relationshipColourKeys.length; i++) {
+            relationshipColoursFolder.addColor(relationshipColours, relationshipColourKeys[i]).onChange( value => {updateColourScheme('edges')} );;
+            relationshipColoursFolder.children[i].hide();
+        }
     }
 
 
@@ -181,14 +222,20 @@ function addColourFolders(gui, render, defaultScheme="contextual") {
                     cElements[i].material.color.setHex(builderColours[cElements[i].geometry.type]);
                 }
             }
+        } else if (scheme == "edges") {
+            for (let i=0; i<cLines.length; i++) {
+                cLines[i].material.color.setHex(relationshipColours[cLines[i].nature]);
+            }
+
         }
         render();
     }
 }
 
+
 /* Update the list of colours to include the contextual/material/geometry colour used by a given element.
    Called from builder.js */
-function makeContextColourVisible(context){
+export function makeContextColourVisible(context){
     if (context != undefined) {  // context will be undefined if the element has only just been created
         const i = contextualColourKeys.indexOf(context);
         contextualColoursFolder.children[i].show();
@@ -196,7 +243,7 @@ function makeContextColourVisible(context){
 }
 
 
-function makeMaterialColourVisible(material){
+export function makeMaterialColourVisible(material){
     if (material != undefined) {
         const i = materialColourKeys.indexOf(material);
         if (i == -1) { console.log(material)};
@@ -205,15 +252,24 @@ function makeMaterialColourVisible(material){
 }
 
 
-function makeGeometryColourVisible(geometry){
+export function makeGeometryColourVisible(geometry){
     if (geometry != undefined) {
         const i = geometryColourKeys.indexOf(geometry);
         geometryColoursFolder.children[i].show();
     }
 }
 
+
+export function makeEdgeColourVisible(relationship){
+    if (relationship != undefined) {
+        const i = relationshipColourKeys.indexOf(relationship);
+        relationshipColoursFolder.children[i].show();
+    }
+}
+
+
 /* Of a single element */
-function resetColour(scheme, element){
+export function resetColour(scheme, element){
     if (element.el_contextual == "ground") {
         element.material.color.setHex(otherColours["ground"]);
     } else {
@@ -230,12 +286,8 @@ function resetColour(scheme, element){
 }
 
 /* Of all elements */
-function resetColours(scheme){
+export function resetColours(scheme){
     for (let el of cElements){
         resetColour(scheme, el);
     }
 }
-
-
-export {otherColours, builderColours, contextualColours, materialColours, geometryColours, cElements, materialColourKeys, contextualColourKeys,
-        addColourFolders, makeContextColourVisible, makeMaterialColourVisible, makeGeometryColourVisible, resetColour, resetColours};

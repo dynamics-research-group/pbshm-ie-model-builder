@@ -1,5 +1,5 @@
 from bson.objectid import ObjectId
-from flask import Blueprint, render_template, jsonify
+from flask import Blueprint, render_template, jsonify, request
 
 from pbshm.authentication import authenticate_request
 from pbshm.db import default_collection
@@ -47,6 +47,17 @@ def view_model(id):
     ]):
         models.append(document)
     return jsonify(models[0]) if len(models) > 0 else jsonify()
+
+# Save Route
+@bp.route("/model/<id>/save", methods=["POST"])
+@authenticate_request("ie-visualiser-save-json")
+def save_model(id=None):
+    if id == None:
+        result = default_collection().insert_one(request.json)
+        return jsonify({"id": result.inserted_id})
+    else:
+        result = default_collection().update_one({"_id": ObjectId(id)}, {"$set": request.json})
+        return jsonify({"id": result.upserted_id})
 
 # Explore Route
 @bp.route("/model/<id>/explore")
