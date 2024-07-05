@@ -4,12 +4,15 @@ import { LineGeometry } from 'three/addons/lines/LineGeometry.js';
 import { LineMaterial } from 'three/addons/lines/LineMaterial.js';
 import { Line2 } from 'three/addons/lines/Line2.js';
 
-
 import * as gui from './guiHelper.js';
 import { extractRelationships } from './jsonHelper.js';
 import * as colours from './colourHelper.js';
 
 
+/**
+ * Create an attributed graph of a model from the json file.
+ * @param {string} rawtext Raw json formatted string
+ */
 function plotNetworkFromFile(rawtext){
     // Get information on network edges
     const data = JSON.parse(rawtext);
@@ -17,10 +20,13 @@ function plotNetworkFromFile(rawtext){
     const relat  = data.models.irreducibleElement.relationships;
     const nElements = elements.length;
     // Store the edges in both directions of the bi-directional graph
-    let edgeCoords = [...Array(nElements)].map(e => Array());
-    let edges = [...Array(nElements)].map(e => Array());
-    let elInfo = [];
+    // edgeCoords is used when we know the locations of where two elements are connected (but not the location of the element)
+    // so we can use this information to draw the nodes of the graph in roughly the correct area that they appear in the structure.
+    let edgeCoords = [...Array(nElements)].map(e => Array()); 
+    let edges = [...Array(nElements)].map(e => Array());  // which other nodes each node is connected too
+    let elInfo = [];  // i.e. context, material, etc.
     let elNames = [];
+    // Keep a count of how many edges each node has
     let counts = new Array(nElements); for (let i=0; i<nElements; ++i) counts[i] = 0;
     elements.forEach((node) => {
         elNames.push(node.name);
@@ -47,7 +53,7 @@ function plotNetworkFromFile(rawtext){
     }
     
     // Get natures of relationships and unpack groups of more than two in a connection
-    // to just the paired natures
+    // to just the paired natures.
     const [relationships, natures] = extractRelationships(rawtext);
     let naturePairs = [];
     const keys = Object.keys(natures)
@@ -60,23 +66,24 @@ function plotNetworkFromFile(rawtext){
         }
     }
 
-    let nodeCoords;
-    // See if there were any coordinates given detailing where two elements join
-    let totalCoords = 0;
-    for (i=0; i<edgeCoords.length; i++){
-        totalCoords += edgeCoords[i].length;
-    }
+    // Get information on context, material, etc for each element.
     for (i=0; i<elNames.length; i++){
         try {
             elInfo[i] = elements[i]
         } catch {;}  // no material type given
     }
+    // See if there were any coordinates given detailing where two elements join.
+    let totalCoords = 0;
+    for (i=0; i<edgeCoords.length; i++){
+        totalCoords += edgeCoords[i].length;
+    }
+    let nodeCoords;
     // If none were given then calculate where to position the nodes.
     if (totalCoords == 0){
         nodeCoords = fruchterman_reingold(edges);
         drawNetwork(nodeCoords, edges, elInfo, naturePairs, true)
     }
-    // If joint coordinates were given then use them to decide on node coordinates
+    // If joint coordinates were given then use them to decide on node coordinates.
     else{
         let tempEdges = edges.map(function(arr) {
             return arr.slice();
@@ -84,17 +91,20 @@ function plotNetworkFromFile(rawtext){
         nodeCoords = getNodeCoords(tempEdges, edgeCoords, counts);
         drawNetwork(nodeCoords, edges, elInfo, naturePairs);
     }
-    
 }
 
-/*  Given edgeCoords (where two elements are joined),
-    decide what the coordinates of the nodes should be.
-    Returns an ordered list of coordinates for each node.
-    
-    This method takes the least popular node and uses the coordinates of
-    its first known joint with another element to decide where to place the node.
-    It then cycles through, looking at the next least popular node, until all
-    have been considered.*/
+/**
+ * Given edgeCoords (where two elements are joined),
+ * decide what the coordinates of the nodes should be.
+ *   
+ * This method takes the least popular node and uses the coordinates of
+ * its first known joint with another element to decide where to place the node.
+ * It then cycles through, looking at the next least popular node, until all have been considered.
+ * @param {int[int[]]} edges 2D array listing all node edges
+ * @param {int[int[]]} edgeCoords 2D array listing the coordinates where elements are connected in the real structure
+ * @param {int[]} counts 1D array listing how many edges each node has
+ * @returns Array of [x, y, z] coordinates for each node.
+ */
 function getNodeCoords(edges, edgeCoords, counts){
     let e1, e2;
     const nElements = edges.length;
@@ -116,6 +126,15 @@ function getNodeCoords(edges, edgeCoords, counts){
     return nodeCoords;
 }
 
+
+/**
+ * Render the network graph using threejs.
+ * @param {int[int[]]} coords Array of [x,y,z] coordinates for each node.
+ * @param {int[int[]]} edges 2D array listing all node edges
+ * @param {dict} elInfo Information relating to each node
+ * @param {string[]} natures Array of relationship nature types of each edge
+ * @param {boolean} threeD Plot the model as three-dimensional (default) or two-dimensional
+ */
 function drawNetwork(coords, edges, elInfo, natures, threeD=true){
     const nNodes = coords.length;
     let minX = 0;
@@ -123,7 +142,6 @@ function drawNetwork(coords, edges, elInfo, natures, threeD=true){
     let maxX = 0;
     let maxY = 0;
     let maxZ = 0;
-    // let maxX, maxY;
     coords.forEach((node) => {
         minX = Math.min(minX, node[0]);
         minY = Math.min(minY, node[1]);
@@ -147,12 +165,12 @@ function drawNetwork(coords, edges, elInfo, natures, threeD=true){
     scene.background = new THREE.Color( 'white' );
     let camera;
     if (threeD){
-        const fov = 30;	// field of view - determines width of near and far planes
-        const aspect = 2;	// the canvas default	(300 x 150)
-        const near = 1;	// height of near plane
-        const far = 500;	// height of far plane
+        const fov = 30;	 // field of view - determines width of near and far planes
+        const aspect = 2;  // the canvas default (300 x 150)
+        const near = 1;	 // height of near plane
+        const far = 500;  // height of far plane
         camera = new THREE.PerspectiveCamera(fov, aspect, near, far);
-        camera.position.set(0, 0, Math.min(300));	// where the camera is located
+        camera.position.set(0, 0, Math.min(300));  // where the camera is located
     }
     else{
         camera = new THREE.OrthographicCamera(-150, 150, 75, -75, -1, 1);
@@ -169,11 +187,9 @@ function drawNetwork(coords, edges, elInfo, natures, threeD=true){
 	colours.addColourFolders(gui.coloursFolder, render, "contextual", true);
 	gui.setViewerMode();
   
-    // Add ambient light because otherwise the shadow from the directional light is too dark
-    const color = 0xFFFFFF;
-    const intensity2 = 3;
-    const light2 = new THREE.AmbientLight(color, intensity2);
-    scene.add(light2);
+    const intensity = 3;
+    const light = new THREE.AmbientLight(0xFFFFFF, intensity);
+    scene.add(light);
     
     // Plot the nodes
     for (let i=0; i<nNodes; i++){
@@ -206,6 +222,10 @@ function drawNetwork(coords, edges, elInfo, natures, threeD=true){
 
     document.addEventListener('pointerdown', selectElement);
 
+    /**
+     * If a node is selected by the user, set the gui to show the information.
+     * @param {event} event pointerDown event
+     */
 	function selectElement(event){
 		let raycaster = new THREE.Raycaster();
 		let pointer = new THREE.Vector2();
@@ -220,8 +240,13 @@ function drawNetwork(coords, edges, elInfo, natures, threeD=true){
 		}
 	}
 
+    /**
+     * Find out the relationship nature of the two elements
+     * @param {int} id1 Index of element 1 within the 2D array of edges
+     * @param {int} id2 Index of element 2
+     * @returns Relationship nature as string
+     */
     function currentRelationshipNature(id1, id2){
-        //console.log(id1, id2)
         if (natures[[id1, id2]] != undefined){
             return natures[[id1, id2]];
         } else if (natures[[id2, id1]] != undefined){
@@ -229,7 +254,9 @@ function drawNetwork(coords, edges, elInfo, natures, threeD=true){
         }
     }
 
-    
+    /**
+     * Render the threejs elements.
+     */
     function render() {
       if ( resizeRendererToDisplaySize( renderer ) ) {
         const canvas = renderer.domElement;
@@ -240,6 +267,11 @@ function drawNetwork(coords, edges, elInfo, natures, threeD=true){
       requestAnimationFrame( render );
     }
 
+    /**
+     * Check if the threejs elements need to be updated because the screen is resized (avoids distortion).
+     * @param {THREE.render} renderer 
+     * @returns boolean
+     */
     function resizeRendererToDisplaySize( renderer ) {
         const canvas = renderer.domElement;
         const width = canvas.clientWidth;
@@ -251,9 +283,16 @@ function drawNetwork(coords, edges, elInfo, natures, threeD=true){
         return needResize;
     }
     
-    // Add a shape to the scene
+    /**
+     * Add a shape to the threejs scene.
+     * @param {THREE.geometry} geometry 
+     * @param {float} x coordinate
+     * @param {float} y coordinate
+     * @param {float} z coordinate
+     * @param {dict} info information of the element (e.g. material, contextual type, etc.)
+     * @returns THREE.mesh object of the node that has been added to the scene
+     */
     function makeInstance(geometry, x, y, z, info) {
-        // Get contextual, material and geometry information used by colour picker
         let element_type;
         let element_material;
         let element_geom;
@@ -281,7 +320,7 @@ function drawNetwork(coords, edges, elInfo, natures, threeD=true){
         if (element_type == "ground"){
             colour = colours.otherColours["ground"];
         } else {
-            colour = colours.contextualColours[element_type];
+            colour = colours.contextualColours[element_type];  // contextual is the default colour scheme on load
         }
         const material = new THREE.MeshPhongMaterial({color: colour});
         const shape = new THREE.Mesh(geometry, material);
@@ -297,6 +336,12 @@ function drawNetwork(coords, edges, elInfo, natures, threeD=true){
         return shape;
     }
     
+    /**
+     * Draw the network edge between two nodes
+     * @param {[float, float, float]} pos1 [x,y,z] of one end of the edge
+     * @param {[float, float, float]} pos2 [x,y,z] of the other end of the edge
+     * @param {string} nature relationship nature type of the connection
+     */
     function drawLine(pos1, pos2, nature){
       const geometry = new LineGeometry();
       geometry.setPositions([pos1[0], pos1[1], pos1[2], pos2[0], pos2[1], pos2[2]]);
@@ -309,17 +354,26 @@ function drawNetwork(coords, edges, elInfo, natures, threeD=true){
     requestAnimationFrame(render);
 }
 
-
-
-/* Decide on the coordinates of the nodes given a list of edges
-Edges is a list of lists. Each row is a node and each element in a
-row lists the indexes of the edges shared with the node.
-Using method detailed in
-    Fruchterman, Thomas MJ, and Edward M. Reingold.
-    "Graph drawing by force‐directed placement."
-    Software: Practice and experience 21, no. 11 (1991): 1129-1164.
-*/
-function fruchterman_reingold(edges, iterations=50, scale=1){
+/**
+ * Decide on the coordinates of the nodes given a list of edges.
+ * Edges is a list of lists. Each row is a node and each element in a
+ * row lists the indexes of the edges shared with the node.
+ * Uses the method in
+ *     Fruchterman, Thomas MJ, and Edward M. Reingold.
+ *     "Graph drawing by force‐directed placement."
+ *     Software: Practice and experience 21, no. 11 (1991): 1129-1164.
+ * @param {*} edges 2D array listing all node edges
+ * @param {int} iterations Total iterations with which to loop the process
+ * @returns A list of [x,y] coordinates for each node
+ */
+function fruchterman_reingold(edges, iterations=50){
+    /**
+     * Create a two-dimensional array and fill each index with the same value
+     * @param {int} w width
+     * @param {int} h height
+     * @param {*} val value
+     * @returns 
+     */
     function makeArray(w, h, val) {
         var arr = [];
         for(let i = 0; i < h; i++) {
@@ -354,7 +408,7 @@ function fruchterman_reingold(edges, iterations=50, scale=1){
     }
 	
 	// Set initial temperature
-	const arrayColumn = (arr, n) => arr.map(x => x[n]);  // to get a column of an array
+	const arrayColumn = (arr, n) => arr.map(x => x[n]);
 	let t = Math.max((Math.max.apply(Math, arrayColumn(pos, 0)) - Math.min.apply(Math, arrayColumn(pos, 0))),
 	                 (Math.max.apply(Math, arrayColumn(pos, 1)) - Math.min.apply(Math, arrayColumn(pos, 1))));
 	const dt = t / (iterations + 1);
@@ -369,7 +423,6 @@ function fruchterman_reingold(edges, iterations=50, scale=1){
 				displacement[i][j] = 0;
 			}
 		}
-		
 		for (i=0; i<nVertices; i++){
 			// Get the euclidean distance between this node's position and all others
 			delta = makeArray(2, nVertices, 0);
@@ -409,7 +462,7 @@ function fruchterman_reingold(edges, iterations=50, scale=1){
 		t -= dt;
 	}
 
-	// // Rescale
+	// Rescale
 	let meanX = 0;
 	let meanY = 0;
 	for (i=0; i<nVertices; i++){
@@ -423,10 +476,7 @@ function fruchterman_reingold(edges, iterations=50, scale=1){
 		pos[i][1] -= meanY;
 	}
 	
-	
 	return pos;
-
 }
-
 
 export {plotNetworkFromFile};

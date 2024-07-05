@@ -115,10 +115,17 @@ relationshipColourKeys.sort();
 
 
 let contextualColoursFolder, materialColoursFolder, geometryColoursFolder, relationshipColoursFolder;
-export let cElements = [];  // list of model elements as threejs objects
+export let cElements = [];  // list of threejs meshes that are on the screen (excluding the floor)
 export let cLines = [];  // list of threejs lines (highlighting connections in an attributed graph)
 
 
+/**
+ * Add objects for handling colours to the lilgui coloursFolder.
+ * @param {lilgui.folder} coloursFolder The folder in which colours are to be added
+ * @param {function} render The function used to render threejs graphics
+ * @param {string} defaultScheme The colour scheme to be automatically selected on load (default:"contextual")
+ * @param {boolean} includeNetworkEdges Whether to show colour options for the edges in an attributed graph (choose false if not rendering a graph) (default:false)
+ */
 export function addColourFolders(coloursFolder, render, defaultScheme="contextual", includeNetworkEdges=false) {
     // Find out what contexts, materials and geometries are used by the cElements
     let schemes;
@@ -166,7 +173,10 @@ export function addColourFolders(coloursFolder, render, defaultScheme="contextua
         }
     }
 
-
+    /**
+     * Update the colour of ground elements.
+     * @param {hex} value Colour of ground elements
+     */
     function updateGroundColour(value){
         for (let i=0; i<cElements.length; i++) {
             if (cElements[i].el_contextual == "ground") {
@@ -176,7 +186,10 @@ export function addColourFolders(coloursFolder, render, defaultScheme="contextua
         render();
     }
 
-
+    /**
+     * Update the colours of all elements on the screen to the selected colour scheme.
+     * @param {string} scheme Selected colour scheme from the gui dropdown box
+     */
     function updateColourScheme(scheme){
         if (scheme == "material") {
             contextualColoursFolder.hide();
@@ -233,8 +246,10 @@ export function addColourFolders(coloursFolder, render, defaultScheme="contextua
 }
 
 
-/* Update the list of colours to include the contextual/material/geometry colour used by a given element.
-   Called from builder.js */
+/**
+ * Update the list of colours within the gui to show the contextual colour used by a given element.
+ * @param {string} context The contextual type to be shown.
+ */
 export function makeContextColourVisible(context){
     if (context != undefined) {  // context will be undefined if the element has only just been created
         const i = contextualColourKeys.indexOf(context);
@@ -242,16 +257,21 @@ export function makeContextColourVisible(context){
     }
 }
 
-
+/**
+ * Update the list of colours within the gui to show the material colour used by a given element.
+ * @param {string} context The material type to be shown.
+ */
 export function makeMaterialColourVisible(material){
     if (material != undefined) {
         const i = materialColourKeys.indexOf(material);
-        if (i == -1) { console.log(material)};
         materialColoursFolder.children[i].show();
     }
 }
 
-
+/**
+ * Update the list of colours within the gui to show the geometry colour used by a given element.
+ * @param {string} context The geometry type to be shown.
+ */
 export function makeGeometryColourVisible(geometry){
     if (geometry != undefined) {
         const i = geometryColourKeys.indexOf(geometry);
@@ -259,7 +279,10 @@ export function makeGeometryColourVisible(geometry){
     }
 }
 
-
+/**
+ * Update the list of colours within the gui to show the relationship colour used by a given element.
+ * @param {string} context The relationship type to be shown.
+ */
 export function makeEdgeColourVisible(relationship){
     if (relationship != undefined) {
         const i = relationshipColourKeys.indexOf(relationship);
@@ -267,8 +290,12 @@ export function makeEdgeColourVisible(relationship){
     }
 }
 
-
-/* Of a single element */
+/**
+ * Reset the colour of a specific element to the original colour in the scheme.
+ * Used when an element temporarily changed colour (e.g. when selecting it).
+ * @param {string} scheme The selected colour scheme.
+ * @param {THREE.Mesh} element The element to be updated.
+ */
 export function resetColour(scheme, element){
     if (element.el_contextual == "ground") {
         element.material.color.setHex(otherColours["ground"]);
@@ -285,7 +312,11 @@ export function resetColour(scheme, element){
     }
 }
 
-/* Of all elements */
+/**
+ * Resets the colour of all elements of the model to the original colours in the scheme.
+ * Used when elements have temporarily changed colour (e.g. when selecting them).
+ * @param {string} scheme The selected colour scheme.
+ */
 export function resetColours(scheme){
     for (let el of cElements){
         resetColour(scheme, el);

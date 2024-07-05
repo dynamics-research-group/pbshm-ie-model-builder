@@ -5,14 +5,13 @@ import { materialColourKeys, contextualColourKeys, otherColours} from './colourH
 
 
 /*
-Note that any parts of the gui that are related to colours are handled in colourHelper.js
-The colour folder is added to the gui here but it is empty,
-and colours must be added using colourHelper.addColourFolders(), which requires a renderer.
+ * Note that any parts of the gui that are related to colours are handled in colourHelper.js
+ * The colour folder is added to the gui here but it is empty,
+ * and colours must be added using colourHelper.addColourFolders(), which requires a render function.
 
-Constants are used to help with indexing the children of folders.
-The first three letters are used to indicate the folder, followed by a description of the child.
-e.g. relTYPE -> where the relationship type is given.
-*/
+ * Constants are used to help with indexing the children of folders.
+ * e.g. boxIdx.length -> the index of where the length of a box geometry is stored within boxFolder.children[]
+ */
 
 
 /*** Variables storing the data displayed in the gui  **/
@@ -61,7 +60,7 @@ export const beamParams = {"length": 8,
                            "s": 1,
                            "t": 1,
                            "b": 3}
-// Geometry information - lists which IE model geometry names are valid for which threejs geometries.
+// List of which IE model geometry types are valid for which threejs geometries.
 const jsonGeometryMappings = {"box": ["solid translate cuboid", "shell translate cuboid",
                                     "solid translate other", "shell translate other", "other"], 
                             "sphere": ["solid translate sphere", "shell translate sphere",
@@ -83,7 +82,7 @@ export const modelDetailsFolder = gui.addFolder('Model details');
 export const coloursFolder = gui.addFolder('Colours');
 export const relationFolder = gui.addFolder('Relationships');
 export const elementFolder = gui.addFolder('Element');
-elementFolder.add(elInfo, 'Name');
+elementFolder.add(elInfo, 'Name');  // Put this line here to make it so the name is the first part of the element folder
 export const coordsFolder = elementFolder.addFolder('Coordinates');
 export const gCoordsFolder = coordsFolder.addFolder('Global');
 export const transFolder = gCoordsFolder.addFolder('Translational');
@@ -147,6 +146,7 @@ relationFolder.children[relIdx.connTypes].hide();
 relationFolder.children[relIdx.groundTypes].hide();
 relationFolder.children[relIdx.natures].hide();
 
+// Folders for setting translational and rotational coordinates
 elementFolder.hide();
 transFolder.add(posParams, 'x');
 transFolder.add(posParams, 'y');
@@ -155,6 +155,7 @@ rotFolder.add(rotateParams, 'x', 0, 360);
 rotFolder.add(rotateParams, 'y', 0, 360);
 rotFolder.add(rotateParams, 'z', 0, 360);
 
+// Folders for setting details on material, context and geometry types.
 materialFolder.add(material, 'Type', materialColourKeys);
 contextualFolder.add(context, 'Type', contextualColourKeys);
 for (let i=0; i<geometryKeys.length; i++){
@@ -163,8 +164,7 @@ for (let i=0; i<geometryKeys.length; i++){
 }
 geometryFolder.hide();
 
-
-// Geometry folders (to set their parameters)
+// Geometry folders (to set the dimensions of the elements)
 boxFolder.add(boxParams, 'length');
 boxFolder.add(boxParams, 'height');
 boxFolder.add(boxParams, 'width');
@@ -173,12 +173,12 @@ boxFolder.children[boxIdx.thickness].hide();  // Thickness is only necesssary fo
 
 sphereFolder.add(sphereParams, 'radius');
 sphereFolder.add(sphereParams, 'thickness');
-sphereFolder.children[sphIdx.thickness].hide();  // Thickness is only necesssary for shells so hide until shell geometry is chosen
+sphereFolder.children[sphIdx.thickness].hide();
 
 cylinderFolder.add(cylinderParams, 'radius');
 cylinderFolder.add(cylinderParams, 'length');
 cylinderFolder.add(cylinderParams, 'thickness');
-cylinderFolder.children[cylIdx.thickness].hide();  // Thickness is only necesssary for shells so hide until shell geometry is chosen
+cylinderFolder.children[cylIdx.thickness].hide();
 
 obliqueCylinderFolder.add(obliqueCylinderParams, 'Faces left radius');
 obliqueCylinderFolder.add(obliqueCylinderParams, 'Faces right radius');
@@ -188,7 +188,7 @@ obliqueCylinderFolder.add(obliqueCylinderParams, 'Faces Left Trans. z');
 obliqueCylinderFolder.add(obliqueCylinderParams, 'Faces Right Trans. y');
 obliqueCylinderFolder.add(obliqueCylinderParams, 'Faces Right Trans. z');
 obliqueCylinderFolder.add(obliqueCylinderParams, 'thickness');
-obliqueCylinderFolder.children[oblIdx.thickness].hide();  // Thickness is only necesssary for shells so hide until shell geometry is chosen
+obliqueCylinderFolder.children[oblIdx.thickness].hide();
 
 trapezoidFolder.add(trapezoidParams, "Faces Left Trans. y");
 trapezoidFolder.add(trapezoidParams, "Faces Left Trans. z");
@@ -200,7 +200,7 @@ trapezoidFolder.add(trapezoidParams, "Faces Right Height");
 trapezoidFolder.add(trapezoidParams, "Faces Right Width");
 trapezoidFolder.add(trapezoidParams, "length");
 trapezoidFolder.add(trapezoidParams, 'thickness');
-trapezoidFolder.children[trapIdx.thickness].hide();  // Thickness is only necesssary for shells so hide until shell geometry is chosen
+trapezoidFolder.children[trapIdx.thickness].hide();
 
 beamFolder.add(beamParams, "length");
 beamFolder.add(beamParams, "h");
@@ -209,7 +209,10 @@ beamFolder.add(beamParams, "t");
 beamFolder.add(beamParams, "b");
 
 
-/* To set which goemetry folder is displayed, hiding all others. */   
+/**
+ * Set which goemetry folder is displayed in the gui, hiding all others.
+ * @param {THREE.mesh} currentObject The threejs mesh that is currently being edited.
+ */
 export function setGeometryFolder(currentObject){
     hideGeometryFolders();  // First hide all, then show the one relevant folder
     const geometryType = currentObject.geometry.type;
@@ -276,6 +279,8 @@ export function setGeometryFolder(currentObject){
         materialFolder.hide();
         geometryFolder.hide();
     }
+    // If an element has been selected and that element has a "shell" geometry type then
+    // show the "thickness" dimensions option in the gui. Otherwise, hide it.
     if (currentFolder != undefined){
         if (currentObject.el_geometry != undefined && currentObject.el_geometry.substring(0, 5) == "shell"){
             // Show the thickness parameter within the (last child of the) geometry folder
@@ -301,15 +306,22 @@ export function setGeometryFolder(currentObject){
     }
 }
 
+/**
+ * Hide all folders relating to the dimensions of elements.
+ */
 export function hideGeometryFolders(){
     const folders = [boxFolder, sphereFolder, cylinderFolder, obliqueCylinderFolder,
                      trapezoidFolder, beamFolder];
     folders.forEach(folder => folder.hide());
 }
 
-/* Show the json geometry types (e.g. "solid translate sphere")
-   that are valid for the given threejs geometry,
-   highlighting which has been pre-selected (if any). */
+
+/**
+ * Show the json geometry types (e.g. "solid translate sphere")
+ * that are valid for the given threejs geometry, highlighting which has been pre-selected (if any).
+ * @param {string} geom The geometry type (e.g. "box", "sphere").
+ * @param {THREE.Mesh} currentObject The object being edited.
+ */
 function showGeometryDropdown(geom, currentObject){
 	// Hide whichever geometry dropdown is on display
 	for (let i=0; i<geometryKeys.length; i++){
@@ -322,23 +334,24 @@ function showGeometryDropdown(geom, currentObject){
 	geometryFolder.children[idx].setValue(currentObject.el_geometry);
 }
 
-/* Disable the ability to edit anything in the gui. */
+
+/**
+ * Disable the ability to edit anything in the gui.
+ */
 export function setViewerMode(){
     relationFolder.hide();
-	let child;
 	elementFolder.children[eleIdx.name].disable();
+	let child;
 	for (child of modelDetailsFolder.children){ child.disable(); }
 	for (child of transFolder.children){ child.disable(); }
 	for (child of rotFolder.children){ child.disable(); }
 	for (child of materialFolder.children){ child.disable(); }
 	for (child of contextualFolder.children){ child.disable(); }
 	for (child of geometryFolder.children){ child.disable(); }
-	
 	for (child of boxFolder.children){ child.disable(); }
 	for (child of sphereFolder.children){ child.disable(); }
 	for (child of cylinderFolder.children){ child.disable(); }
 	for (child of obliqueCylinderFolder.children){ child.disable(); }
 	for (child of trapezoidFolder.children){ child.disable(); }
 	for (child of beamFolder.children){ child.disable(); }
-	
 }

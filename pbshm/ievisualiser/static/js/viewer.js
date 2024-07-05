@@ -1,22 +1,30 @@
 import * as THREE from 'three';
 import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
-import * as gui from './guiHelper.js';
 
+import * as gui from './guiHelper.js';
 import { geometryDetails } from './geometryHelper.js';
 import * as colours from './colourHelper.js';
 
 
-let elements = [];  // for accessing all IEs in the model
+let elements = [];  // list all IEs in the model so we can check which one the user clicked on
 
+/**
+ * Set the scene (adding camera, controls, lights and floor) and add the model elements.
+ * @param {THREE.canvas} canvas 
+ * @param {THREE.scene} scene 
+ * @param {list} shapes Details of each element (provided by jsonHelper.extractShapes) (when loading a model)
+ * @returns Dict with keys 'elements' (a list of THREE.Mesh objects), 'camera', 'controls', and 'floor'.
+ * Note that the elements in the dict are pre-loaded into the scene.
+ */
 function plotElements(canvas, scene, shapes){
-// Some shapes are too big to easily display, so find the range
-	// of x, y and z values (for calculating FOV) and then scale them down.
-	// To know how big the floor needs to be
+	// Find the boundaries of the model to figure out a suitable camera position and floor size/location.
 	let minX = 0;
 	let minZ = 0;
 	let maxX = 0;
 	let maxY = 0;
 	let maxZ = 0;
+	// Sometimes a model is too large to display without becoming distorted
+	// so use scaleFactor to set the amount by which to divide the model to make it smaller.
 	const scaleFactor = 1;
 	for (let i=0; i<shapes.length; i++){
 		const shape = geometryDetails(shapes[i], scaleFactor);
@@ -74,6 +82,10 @@ function plotElements(canvas, scene, shapes){
 			'floor': floor};
 }
 
+/**
+ * Create a threejs rendering of the model and add it to the html canvas labelled 'c'.
+ * @param {list} shapes Details of each element (provided by jsonHelper.extractShapes) (when loading a model)
+ */
 function plotModel(shapes) {
 	const canvas = document.querySelector('#c');
 	const renderer = new THREE.WebGLRenderer({antialias: true, canvas});
@@ -86,8 +98,7 @@ function plotModel(shapes) {
 	colours.addColourFolders(gui.coloursFolder, render, "contextual");
 	gui.setViewerMode();
 	
-	
-	// Show the relevant colours
+	// Show the relevant colours used by the model
 	for (let shape of viewer.elements) {
 		if (shape.el_contextual != "ground") {
 			colours.makeContextColourVisible(shape.el_contextual);
@@ -97,8 +108,11 @@ function plotModel(shapes) {
 	}
     
 	document.addEventListener('pointerdown', selectElement);
-    
-	
+
+	/**
+	 * Show details of the seleted element (if any) in the gui.
+	 * @param {event} event pointerDown event
+	 */	
 	function selectElement(event){
 		let raycaster = new THREE.Raycaster();
 		let pointer = new THREE.Vector2();
@@ -113,7 +127,11 @@ function plotModel(shapes) {
 		}
 	}
 
-
+    /**
+     * Check if the threejs elements need to be updated because the screen is resized (avoids distortion).
+     * @param {THREE.render} renderer 
+     * @returns boolean
+     */
     function resizeRendererToDisplaySize( renderer ) {
         const canvas = renderer.domElement;
         const width = canvas.clientWidth;
@@ -125,6 +143,9 @@ function plotModel(shapes) {
         return needResize;
     }
 
+	/**
+     * Render the threejs elements.
+     */
 	function render() {
 		if ( resizeRendererToDisplaySize( renderer ) ) {
 			const canvas = renderer.domElement;
@@ -134,9 +155,7 @@ function plotModel(shapes) {
 		renderer.render( scene, viewer.camera );
 		requestAnimationFrame( render );
 	}
-
 	requestAnimationFrame(render);
 }
-
 
 export {plotElements, plotModel};

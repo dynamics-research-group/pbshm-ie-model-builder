@@ -11,20 +11,27 @@ import { save } from './jsonHelper.js';
 import * as colours from './colourHelper.js';
 
 
+// Variables used for rendering
 const canvas = document.querySelector('#c');
-let camera, scene, renderer, controls;
-let floor;
-let pointer, raycaster, isShiftDown = false, isCtrlDown = false;
-let relationships = {};
-let relationshipNatures = {};
-let selectedObjects = []; // Selecting objects for relationships
-let floorFolder;
-let nextID = 0;  // for automatically assigning unique names when creating objects
+let camera, scene, renderer, controls, pointer, raycaster;
 
+let isShiftDown = false;  // to delete an object
+let isCtrlDown = false;  // to select an object
+let selectedObjects = [];
+let relationships = {};  // {[objects]: relationship_type}
+let relationshipNatures = {};  // {[objects]: relationship_nature}
+let nextID = 0;  // for automatically assigning unique names ('element#nextID') when creating objects
+
+// Variables relating to visualising the floor that the model is built on
+let floor;
+let floorFolder;
+let planeGeometry;
 const floorParams = {'width': 300,
 					'depth': 300};
-const groundRadius = 3;
 
+const groundRadius = 3;  // radius of the spheres that are used to represent ground elements
+
+// Variables related to showing where an object will be placed when hovering over the floor
 let rollOverMesh;
 const rollOverMaterial = new THREE.MeshBasicMaterial( { color: 0xff0000, opacity: 0.5, transparent: true } );
 const rollOverCubeGeo = new THREE.BoxGeometry(gui.boxParams.length, gui.boxParams.height, gui.boxParams.width);
@@ -45,14 +52,15 @@ const rollOverCBeamGeo = generateBeam("c-beam", gui.beamParams.length, gui.beamP
 const rollOverGroundGeo = new THREE.SphereGeometry(groundRadius);
 rollOverCylinderGeo.rotateZ(Math.PI/2);
 rollOverObliqueCylinderGeo.rotateZ(Math.PI/2);
-let planeGeometry;
 
-let currentId;  // name of the new geometry object to be added
-let currentGeometry;
-let currentObject;  // specific existing object to be edited
-const objects = [];  // list of all objects in the scene
+let currentId;  // the type of geometry selected from the panel in the html file (e.g. 'cube', 'sphere').
+let currentObject;  // threejs mesh object that the user has selected
+const objects = [];  // list of all objects in the scene, including the floor. This is necessary for checking which object a user has selected.
 
-
+/**
+ * Create all necessary folders in the gui (except for the colour folder which is handled in colourHelper.js)
+ * @param {string} saveUrl The URL required for the post request
+ */
 function setupGui(saveUrl){
 	colours.addColourFolders(gui.coloursFolder, render, "builder");
 
@@ -94,13 +102,16 @@ function setupGui(saveUrl){
 	initObliqueCylinderGui();
 	initTrapezoidGui();
 	initBeamGui();
-	initGroundGui();  // Not added to list of folders so it is always visible
+	initGroundGui();
 
 	const saver = {'Save': function() {save(saveUrl, gui.modelDetails, relationships, relationshipNatures, colours.cElements);}};
 	gui.gui.add(saver, 'Save');
-
 }
 
+
+/**
+ * Create a threejs environment with just one object representing the floor.
+ */
 function loadBlankBuilder(){
 	camera = new THREE.PerspectiveCamera( 45, window.innerWidth / window.innerHeight, 1, 10000 );
 	camera.position.set( floorParams.width/2, 100, 300 );
@@ -125,19 +136,24 @@ function loadBlankBuilder(){
 	// Lights
 	const ambientLight = new THREE.AmbientLight( 0x606060, 3 );
 	scene.add( ambientLight );
-
 	const directionalLight = new THREE.DirectionalLight( 0xffffff, 3 );
 	directionalLight.position.set( 1, 0.75, 0.5 ).normalize();
 	scene.add( directionalLight );
-
 }
 
 
+/**
+ * Create the builder environment into the html canvas labelled 'c'.
+ * Pre-loads an existing model if shapes, preRelationships and preNatures are provided.
+ * @param {string} saveUrl The URL required for the post request
+ * @param {list} shapes Details of each element (provided by jsonHelper.extractShapes) (when loading a model)
+ * @param {dict} preRelationships Details of pre-existing relationship types (when loading a model)
+ * @param {dict} preNatures Details of pre-existing relationship natures (when loading a model)
+ */
 function buildModel(saveUrl, shapes=undefined, preRelationships=undefined, preNatures=undefined) {
 	setupGui(saveUrl);
 	scene = new THREE.Scene();
 	scene.background = new THREE.Color( 0xf0f0f0 );
-	
 	renderer = new THREE.WebGLRenderer( { antialias: true }, canvas );
 	renderer.setPixelRatio( window.devicePixelRatio );
 	renderer.setSize( window.innerWidth, window.innerHeight );
@@ -149,7 +165,7 @@ function buildModel(saveUrl, shapes=undefined, preRelationships=undefined, preNa
 	} else {
 		info = plotElements(renderer.domElement, scene, shapes);
 		camera = info.camera
-		const elementDict = {}  // to help track relationships
+		const elementDict = {}  // to help with loading relationship info
 		for (let e of info.elements) {
 			objects.push(e)
 			e.currentAngleX = 0;
@@ -170,13 +186,12 @@ function buildModel(saveUrl, shapes=undefined, preRelationships=undefined, preNa
 		floorParams.width = floor.geometry.parameters.width;
 		floorParams.depth = floor.geometry.parameters.height;
 		objects.push(floor);
-
 		for (const [key, value] of Object.entries(preRelationships)){
 			const relatedEls = key.split(',');
 			let relationshipGroup = [];
 			for (let i=0; i<relatedEls.length; i++) {
 				elementDict[relatedEls[i]].relationshipCount++;
-				relationshipGroup.push(elementDict[relatedEls[i]].id);
+				relationshipGroup.push(elementDict[relatedEls[i]].id);  // relationships are now referred to by id in case of name changes
 			}
 			relationships[relationshipGroup] = value;
 			if (value == 'joint' || value == 'connection') {
@@ -189,7 +204,6 @@ function buildModel(saveUrl, shapes=undefined, preRelationships=undefined, preNa
 	controls.addEventListener("change", () => renderer.render(scene, camera));
 	controls.update();
 
-	
 	// Roll-over helpers
 	rollOverMesh = new THREE.Mesh(rollOverIBeamGeo, rollOverMaterial);
 	rollOverMesh.visible = false;
@@ -199,12 +213,10 @@ function buildModel(saveUrl, shapes=undefined, preRelationships=undefined, preNa
 	raycaster = new THREE.Raycaster();
 	pointer = new THREE.Vector2();
 
-
 	document.addEventListener( 'pointermove', onPointerMove );
 	document.addEventListener( 'pointerdown', onPointerDown );
 	document.addEventListener( 'keydown', onDocumentKeyDown );
 	document.addEventListener( 'keyup', onDocumentKeyUp );
-	
 	document.querySelectorAll( '#ui .tiles input[type=radio][name=voxel]' ).forEach( ( elem ) => {
 		elem.addEventListener( 'click', allowUncheck );
 	} );
@@ -214,15 +226,15 @@ function buildModel(saveUrl, shapes=undefined, preRelationships=undefined, preNa
 	document.querySelectorAll( '#uiground .tiles input[type=radio][name=voxel]' ).forEach( ( elem ) => {
 		elem.addEventListener( 'click', allowUncheck );
 	} );
-
 	window.addEventListener( 'resize', onWindowResize );
-
-	
 	
 	gui.hideGeometryFolders; // Initially hide all folders, then show only the ones we want when required
 	render();
 }
 
+/**
+ * Update object rendering on window resize so graphics don't become distorted.
+ */
 function onWindowResize() {
 	camera.aspect = window.innerWidth / window.innerHeight;
 	camera.updateProjectionMatrix();
@@ -230,7 +242,10 @@ function onWindowResize() {
 	render();
 }
 
-
+/**
+ * If a geometry is selected in the builder panel, then move the rollover mesh to the location of the cursor.
+ * @param {event} event Event of moving the cursor
+ */
 function onPointerMove( event ) {
 	if (currentId != undefined){
 		pointer.set( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1 );
@@ -247,6 +262,13 @@ function onPointerMove( event ) {
 	}
 }
 
+/**
+ * If shift is down, delete the object under the cursor.
+ * If ctrl is down, select the object under the cursor.
+ * If a geometry is selected in the builder panel, place the object at the cursor location.
+ * Otherwise, do nothing.
+ * @param {event} event Event of clicking on the screen
+ */
 function onPointerDown( event ) {
 	pointer.set( ( event.clientX / window.innerWidth ) * 2 - 1, - ( event.clientY / window.innerHeight ) * 2 + 1 );
 	raycaster.setFromCamera( pointer, camera );
@@ -307,7 +329,7 @@ function onPointerDown( event ) {
 							}
 						}
 					}
-					// Show the existing relationship they have //TODO: change, don't event need to pass anything
+					// Show the existing relationship they have, or select 'none'
 					const currentRelat = currentRelationship();
 					gui.relationFolder.show();
 					if (selectedObjects.length == 2 && (selectedObjects[0].el_contextual == "ground" || selectedObjects[1].el_contextual == "ground")){
@@ -344,6 +366,7 @@ function onPointerDown( event ) {
 		} else {
 			if (currentId != undefined){
 				// Add new object
+				let currentGeometry;
 				if (currentId == "cube"){
 					currentGeometry = new THREE.BoxGeometry(gui.boxParams.length, gui.boxParams.height, gui.boxParams.width);
 					currentGeometry.parameters['thickness'] = gui.boxParams.thickness;
@@ -422,28 +445,22 @@ function onPointerDown( event ) {
 	render();
 }
 
-
+/**
+ * Note if shift or ctrl are pressed.
+ * @param {event} event When a key is pressed
+ */
 function onDocumentKeyDown( event ) {
 	switch ( event.keyCode ) {
 		case 16: isShiftDown = true; break;
 		case 17: isCtrlDown = true; break;
-		// case 37:  // left
-		// 	break;
-		// case 38:  // up
-		// 	break;
-		// case 39:  // right
-		// 	break;
-		// case 40:  // down
-		// 	break;
-		// case 83:  // s
-		// 	break;
-		// case 87:  // w
-		// 	break;
 	}
 	render();
 }
 
-
+/**
+ * Note if shift or ctrl have been released.
+ * @param {event} event When a key is resleased
+ */
 function onDocumentKeyUp( event ) {
 	switch ( event.keyCode ) {
 		case 16: isShiftDown = false; break;
@@ -451,7 +468,9 @@ function onDocumentKeyUp( event ) {
 	}
 }
 
-
+/**
+ * Note which geometry (if any) has been selected from the builder selection panel and show/hide gui folders as appropriate.
+ */
 function allowUncheck() {
 	if ( this.id === currentId ) {
 		this.checked = false;
@@ -488,16 +507,22 @@ function allowUncheck() {
 		rollOverMesh.visible = true;
 	}
 	gui.hideGeometryFolders;
-	
 }
 
+/**
+ * Update the geometry of the mesh and re-render the graphics.
+ * @param {THREE.mesh} mesh The mesh containing the old geometry
+ * @param {THREE.geometry} geometry The new geometry
+ */
 function updateGeometry(mesh, geometry){
 	mesh.geometry.dispose();
 	mesh.geometry = geometry;
 	render();
 }
 
-
+/**
+ * Add a folder to the gui that enables the user to resize the floor.
+ */
 function initGroundGui(){
 	floorFolder = gui.gui.addFolder('Ground dimensions (visual only)');
 	floorFolder.add(floorParams, 'width').onChange(generateGeometry);
@@ -516,39 +541,45 @@ function initGroundGui(){
 	}
 }
 
-
+/** Update the name of the element to that given in the gui. */
 function updateElementName(){
 	currentObject.name = gui.elInfo.Name;
 }
 
-
-
-// It's necessary to handle each dimension separately,
+// It is sometimes necessary to handle each dimension separately,
 // otherwise the object's position attributes can get overwritten by whatever old values
-// are in the gui before the gui has been updated to show the parameters.
-// of the object that has just been selected.
+// are in the gui before the gui has been updated to show the parameters of the new object that has just been selected.
+/**
+ * Move the selected geometry (stored in currentObject) to the x location set in the gui.
+ */
 function moveGeometryX(){
 	currentObject.position.x = jsonToGl(currentObject, "x", gui.posParams.x);
 	currentObject.geometry.attributes.position.needsUpdate = true;
 	render();
 }
 
-
+/**
+ * Move the selected geometry (stored in currentObject) to the y location set in the gui.
+ */
 function moveGeometryY(){
 	currentObject.position.y = jsonToGl(currentObject, "y", gui.posParams.y);
 	currentObject.geometry.attributes.position.needsUpdate = true;
 	render();
 }
 
-
+/**
+ * Move the selected geometry (stored in currentObject) to the z location set in the gui.
+ */
 function moveGeometryZ(){
 	currentObject.position.z = jsonToGl(currentObject, "z", gui.posParams.z);
 	currentObject.geometry.attributes.position.needsUpdate = true;
 	render();
 }
 
-
-function moveGeometryXYZ(pos){
+/**
+ * Move the selected geometry (stored in currentObject) to the (x,y,z) location set in the gui.
+ */
+function moveGeometryXYZ(){
 	currentObject.position.x = jsonToGl(currentObject, "x", gui.posParams.x);
 	currentObject.position.y = jsonToGl(currentObject, "y", gui.posParams.y);
 	currentObject.position.z = jsonToGl(currentObject, "z", gui.posParams.z);
@@ -556,7 +587,9 @@ function moveGeometryXYZ(pos){
 	render();
 }
 
-
+/**
+ * Rotate the selected geometry (stored in currentObject) on the x-axis according to the angle (in degrees) set in the gui.
+ */
 function rotateGeometryX(){
 	const newAngle = gui.rotateParams.x * (Math.PI/180)
 	const rotation = newAngle - currentObject.currentAngleX;
@@ -566,7 +599,9 @@ function rotateGeometryX(){
 	render();
 }
 
-
+/**
+ * Rotate the selected geometry (stored in currentObject) on the y-axis according to the angle (in degrees) set in the gui.
+ */
 function rotateGeometryY(){
 	const newAngle = gui.rotateParams.y * (Math.PI/180)
 	const rotation = newAngle - currentObject.currentAngleY;
@@ -576,7 +611,9 @@ function rotateGeometryY(){
 	render();
 }
 
-
+/**
+ * Rotate the selected geometry (stored in currentObject) on the z-axis according to the angle (in degrees) set in the gui.
+ */
 function rotateGeometryZ(){
 	const newAngle = gui.rotateParams.z * (Math.PI/180)
 	const rotation = newAngle - currentObject.currentAngleZ;
@@ -586,7 +623,9 @@ function rotateGeometryZ(){
 	render();
 }
 
-
+/**
+ * Update the contextual type of the selected object to that selected in the gui.
+ */
 function updateContext(){
 	currentObject.el_contextual = gui.context.Type;
 	colours.makeContextColourVisible(gui.context.Type);
@@ -598,7 +637,9 @@ function updateContext(){
 	render();
 }
 
-
+/**
+ * Update the material type of the selected object to that selected in the gui.
+ */
 function updateMaterial(){
 	currentObject.el_material = gui.material.Type;
 	colours.makeMaterialColourVisible(gui.material.Type);
@@ -610,7 +651,9 @@ function updateMaterial(){
 	render();
 }
 
-
+/**
+ * Update the geometry type (that will be stored in the json file) of the selected object to that selected in the gui.
+ */
 function updateJsonGeometry(){
 	currentObject.el_geometry = gui.geometry.Type;
 	colours.makeGeometryColourVisible(gui.geometry.Type);
@@ -619,8 +662,8 @@ function updateJsonGeometry(){
 			&& currentObject.material.color.getHex() != colours.otherColours['Selected element']) {
 		currentObject.material.color.setHex(colours.geometryColours[currentObject.el_geometry]);
 	}
+	// If a "shell" geometry is chosen then show the thickenss parameter in the gui, otherwise hide it.
 	if (gui.geometry.Type != undefined && gui.geometry.Type.substring(0, 5) == "shell"){
-		// Show the thickness parameter within the (last child of the) geometry folder
 		gui.currentFolder.children[gui.currentFolder.children.length-1].show();
 	} else {
 		const lastFolderItem =  gui.currentFolder.children[gui.currentFolder.children.length-1]
@@ -631,13 +674,25 @@ function updateJsonGeometry(){
 	render();
 }
 
-
-
+/**
+ * Update the thickness of the selected object with the given value.
+ * @param {float} value 
+ */
 function updateThickness(value){
 	currentObject.geometry.parameters['thickness'] = value;
 }
 
+/* Note that each init##Gui() function has a check like:
+ * if (currentObject.geometry.parameters[changedParam] != value)
+ * This is because when we select an object the gui gets updated to show the dimensions of that object,
+ * which then triggers the gui.onChange() effect.
+ * The if-statement therefore checks if the parameter was actually changed by the user (in which case we need to re-render the object)
+ * or if it is just a change in which object the user has selected (in which case we don't need to do anything).
+ */
 
+/**
+ * Initialise the gui folder used for editing the dimensions of a cuboid.
+ */
 function initBoxGui(){
 	gui.boxFolder.children[gui.boxIdx.length].onChange(value => updateParameters("width", value));
 	gui.boxFolder.children[gui.boxIdx.height].onChange(value => updateParameters("height", value));
@@ -645,37 +700,38 @@ function initBoxGui(){
 	gui.boxFolder.children[gui.boxIdx.thickness].onChange(value => updateThickness(value));
 	function updateParameters(changedParam, value){
 		if (currentObject.geometry.parameters[changedParam] != value){  // don't regenerate to the object if we're just updating the gui
-			const pos = {...gui.posParams};  // threejs makes the centre of the object stay in the same place but we want the corner to stay the same instead
 			const newParams = {...currentObject.geometry.parameters};
 			newParams[changedParam] = value;
 			updateGeometry(currentObject,
 						new THREE.BoxGeometry(newParams.width, newParams.height, newParams.depth));
-			moveGeometryXYZ(pos);  // move the object back into its correct corner location
+			moveGeometryXYZ();  // move the object back into its correct corner location
 		}
 	}
 }
   
-
+/**
+ * Initialise the gui folder used for editing the dimensions of a sphere.
+ */
 function initSphereGui(){
 	gui.sphereFolder.children[gui.sphIdx.radius].onChange(updateParameters);
 	gui.sphereFolder.children[gui.sphIdx.thickness].onChange(value => updateThickness(value));
 	function updateParameters(){
 		if (currentObject.geometry.parameters.radius != gui.sphereParams.radius) {
-			const pos = {...gui.posParams};
 			updateGeometry(currentObject, new THREE.SphereGeometry(gui.sphereParams.radius));
-			moveGeometryXYZ(pos);
+			moveGeometryXYZ();
 		}
 	}
 }
 
-
+/**
+ * Initialise the gui folder used for editing the dimensions of a cylinder.
+ */
 function initCylinderGui(){
 	gui.cylinderFolder.children[gui.cylIdx.radius].onChange(value => updateParameters("radiusTop", value));
 	gui.cylinderFolder.children[gui.cylIdx.length].onChange(value => updateParameters("height", value));
 	gui.cylinderFolder.children[gui.cylIdx.thickness].onChange(value => updateThickness(value));
 	function updateParameters(changedParam, value){
 		if (currentObject.geometry.parameters[changedParam] != value){  // don't regenerate to the object if we're just updating the gui
-			const pos = {...gui.posParams};
 			const newParams = {...currentObject.geometry.parameters};
 			newParams[changedParam] = value;
 			if (changedParam == "radiusTop"){
@@ -685,12 +741,14 @@ function initCylinderGui(){
 						new THREE.CylinderGeometry(newParams.radiusTop, newParams.radiusBottom, newParams.height));
 			currentObject.geometry.rotateZ(Math.PI/2);
 			render();
-			moveGeometryXYZ(pos);
+			moveGeometryXYZ();
 		}
 	}
 }
 
-
+/**
+ * Initialise the gui folder used for editing the dimensions of an oblique cylinder (translateAndScale cylinder).
+ */
 function initObliqueCylinderGui(){
 	gui.obliqueCylinderFolder.children[gui.oblIdx.leftRadius].onChange(value => updateParameters("radiusTop", value));
 	gui.obliqueCylinderFolder.children[gui.oblIdx.rightRadius].onChange(value => updateParameters("radiusBottom", value));
@@ -709,7 +767,6 @@ function initObliqueCylinderGui(){
 			value = -(gui.obliqueCylinderParams['Faces Right Trans. z']  - gui.obliqueCylinderParams['Faces Left Trans. z']);
 		}
 		if (currentObject.geometry.parameters[changedParam] != value){  // don't regenerate to the object if we're just updating the gui
-			const pos = {...gui.posParams};
 			const newParams = {...currentObject.geometry.parameters};
 			newParams[changedParam] = value;
 			updateGeometry(currentObject,
@@ -721,14 +778,14 @@ function initObliqueCylinderGui(){
 			currentObject.geometry.parameters['Faces Right Trans. y'] = gui.obliqueCylinderParams['Faces Right Trans. y']
 			currentObject.geometry.parameters['Faces Right Trans. z'] = gui.obliqueCylinderParams['Faces Right Trans. z']
 			render();
-			moveGeometryXYZ(pos);
+			moveGeometryXYZ();
 		}
 	}
 }
 
-
-
-
+/**
+ * Initialise the gui folder used for editing the dimensions of a trapezoid (translateAndScale cuboid).
+ */
 function initTrapezoidGui(){
 	gui.trapezoidFolder.children[gui.trapIdx.leftTransY].onChange(value => updateParameters("leftTransY", value));
 	gui.trapezoidFolder.children[gui.trapIdx.leftTransZ].onChange(value => updateParameters("leftTransZ", value));
@@ -742,19 +799,20 @@ function initTrapezoidGui(){
 	gui.trapezoidFolder.children[gui.trapIdx.thickness].onChange(value => updateThickness(value));
 	function updateParameters(changedParam, value){
 		if (currentObject.geometry.parameters[changedParam] != value){  // don't regenerate to the object if we're just updating the gui
-			const pos = {...gui.posParams};
 			const newParams = {...currentObject.geometry.parameters};
 			newParams[changedParam] = value;
 			updateGeometry(currentObject,
 				new TrapezoidGeometry(newParams.leftTransY, newParams.leftTransZ, newParams.leftDimensY, newParams.leftDimensZ,
 									newParams.rightTransY, newParams.rightTransZ, newParams.rightDimensY, newParams.rightDimensZ,
 									newParams.width));
-			moveGeometryXYZ(pos);
+			moveGeometryXYZ();
 		}
 	}
 }
 
-
+/**
+ * Initialise the gui folder used for editing the dimensions of a beam (I or C).
+ */
 function initBeamGui(){
 	gui.beamFolder.children[gui.beamIdx.length].onChange(value => updateParameters("width", value));
 	gui.beamFolder.children[gui.beamIdx.h].onChange(value => updateParameters("h", value));
@@ -763,7 +821,6 @@ function initBeamGui(){
 	gui.beamFolder.children[gui.beamIdx.b].onChange(value => updateParameters("b", value));
 	function updateParameters(changedParam, value){
 		if (currentObject.geometry.parameters[changedParam] != value){  // don't regenerate to the object if we're just updating the gui
-			const pos = {...gui.posParams};
 			const newParams = {...currentObject.geometry.parameters};
 			newParams[changedParam] = value;
 			let newGeom;
@@ -774,16 +831,22 @@ function initBeamGui(){
 			}
 			currentObject.geometry.dispose();
 			currentObject.geometry = newGeom;
-			moveGeometryXYZ(pos);
+			moveGeometryXYZ();
 			render();
 		}
 	}
 }
 
-/* Functions dealing with relationships between elements.
-The elements involved in a relationship are stored in alphabetical order or element id
-so we can easily check if a relationship already exists between a set of elements. */
+/* The following functions deal with relationships between elements.
+   The elements involved in a relationship are stored in alphabetical order of element id
+   (the id value that threejs has assigned to the object),
+   so we can easily check if a relationship already exists between a set of elements.
+*/
 
+/**
+ * Sort the identification numbers of the selected threejs objects.
+ * @returns list of integers
+ */
 function sortedSelectedIds(){
 	let elementIds = [];
 	for (let i=0; i<selectedObjects.length; i++){
@@ -793,13 +856,16 @@ function sortedSelectedIds(){
 	return elementIds;
 }
 
+/**
+ * Update the dict 'relationships' to assign the given relationship type against the selected objects.
+ * @param {string} value relationship type
+ */
 function updateRelationship(value){
-	// Check if a relationship is already defined
 	if (value != 'none') {
 		const elementIds = sortedSelectedIds();
-		
+		// Check if a relationship is already defined for these elements
 		if (relationships[elementIds] != undefined) {
-			// If they're already paired then update the relationship (or remove it if 'none' has been selected)
+			// If they're already related then update the relationship (or remove it if 'none' has been selected)
 			if (value == 'none'){
 				delete relationships[elementIds];
 				for (let i=0; i<selectedObjects.length; i++){
@@ -825,14 +891,19 @@ function updateRelationship(value){
 	}
 }
 
-
+/**
+ * Update the dict 'relationshipNatures' to assign the given relationship nature against the selected objects.
+ * @param {string} value relationship type
+ */
 function updateRelationshipNature(value){
 	const elementIds = sortedSelectedIds();
-	// Find out which way round the pair is stored
 	relationshipNatures[elementIds] = value;
 }
 
-
+/**
+ * Highlight orphaned elements using the colour given in gui, or set colours back to normal.
+ * @param {boolean} value If the checkbox to selected to highlight orphaned elements
+ */
 function toggleHighlightUnrelated(value){
 	const colourScheme = gui.gui.children[gui.guiIdx.colours].children[gui.colIdx.scheme].getValue();
 	if (value == true){
@@ -862,7 +933,10 @@ function toggleHighlightUnrelated(value){
 	render();
 }
 
-
+/**
+ * Get the current relationship type of the selected elements.
+ * @returns string
+ */
 function currentRelationship(){
 	const elementIds = sortedSelectedIds();
 	if (relationships[elementIds] == undefined){
@@ -871,7 +945,10 @@ function currentRelationship(){
 	return relationships[elementIds]
 }
 
-
+/**
+ * Get the current relationship nature of the selected elements.
+ * @returns string
+ */
 function currentRelationshipNature(){
 	const elementIds = sortedSelectedIds();
 	if (relationshipNatures[elementIds] == undefined){
@@ -880,7 +957,10 @@ function currentRelationshipNature(){
 	return relationshipNatures[elementIds]
 }
 
-
+/**
+ * Hide elements that are connected to others to help see where orphaned elements remain.
+ * @param {boolean} value If the checkbox is selected to hide elements that are connected to others
+ */
 function toggleHideConnected(value){
 	if (value == true){
 		for (let el of colours.cElements){
@@ -896,12 +976,11 @@ function toggleHideConnected(value){
 	render();
 }
 
-
-
-
+/**
+ * Render the graphics.
+ */
 function render() {
 	renderer.render( scene, camera );
 }
-
 
 export {buildModel};

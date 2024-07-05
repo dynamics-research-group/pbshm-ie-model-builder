@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+
 import { glToJson } from "./translationHelper.js";
 import * as gui from './guiHelper.js';
 
@@ -7,6 +8,11 @@ import * as gui from './guiHelper.js';
  * Loading
  **********/
 
+/**
+ * Get high-level model details from the json text.
+ * @param {string} rawtext All text from the json file.
+ * @returns A dict with keys ["name", "description", "population", "type"]
+ */
 function modelInfo(rawtext){
 	const data = JSON.parse(rawtext);
 	return {"name": data.name,
@@ -16,6 +22,12 @@ function modelInfo(rawtext){
 }
 
 
+/**
+ * Get information on all of the elements in the json text.
+ * The returned dict can then be used to generate 3D meshes (using geometryHelper.geometryDetails)
+ * @param {string} rawtext All text from the json file.
+ * @returns A dict containing information on all elements.
+ */
 function extractShapes(rawtext){
 	const data = JSON.parse(rawtext);
 	const elements = data.models.irreducibleElement.elements;
@@ -99,7 +111,6 @@ function extractShapes(rawtext){
 
 	const groundLocs = getGroundLocations(data, elCoords);
 	for (i=0; i<elements.length; i++){
-		// Check if the error is because it's a ground element
 		if (elements[i].type == "ground") {
 			details.push({"full_info": elements[i],
 						"element_name": elements[i].name,
@@ -107,18 +118,23 @@ function extractShapes(rawtext){
 						"element_material": undefined,
 						"element_geometry": undefined,
 						"shape": "sphere",
-						"dimensions": {"radius":1},
+						"dimensions": {"radius":100},
 						"coords": groundLocs[elements[i].name],
 						"rotation": undefined,
 						"method": "translate",
 						"faces": undefined});
 		}
 	}
-	
 	return details;
 }
 
-
+/**
+ * The json file has no information on where an element is connected to the ground, only which elements are connected.
+ * This function works out sensible locations to render ground elements in the viewer, putting them next to the connected element.
+ * @param {dict} data The parsed json text.
+ * @param {dict} elCoords The coordinates of each element.
+ * @returns dict {ground_element_name: [x,y,z]}
+ */
 function getGroundLocations(data, elCoords){
 	const elements = data.models.irreducibleElement.elements;
 	const relationships  = data.models.irreducibleElement.relationships;
@@ -161,6 +177,13 @@ function getGroundLocations(data, elCoords){
 	return locations;
 }
 
+/**
+ * Finds information on the connection types and elements in the json file.
+ * @param {string} rawtext All text from the json file.
+ * @returns List containing two dicts.
+ * Element 0 is a dict of {[elementNames]: relationship_type_string}
+ * Element 1 is a dict of {[elementsNames]: relationship_nature_string}
+ */
 function extractRelationships(rawtext){
 	const relatDict = {};
 	const natureDict = {};
@@ -185,6 +208,16 @@ function extractRelationships(rawtext){
 }
 
 
+
+/**********
+ * Saving
+ **********/
+
+/**
+ * Get the dimensions that need to be saved for the given element.
+ * @param {THREE.Mesh} element
+ * @returns A dict of the dimensions that need to be stored in the json file.
+ */
 function relevantDimensions(element){
 	const dimension_info = {};
 	if (element.geometry.type == "BoxGeometry"){
@@ -249,9 +282,12 @@ function relevantDimensions(element){
 	return dimension_info;
 }
 
-
+/**
+ * Get the details required to correctly store information on the faces of the translateAndScale element.
+ * @param {THREE.Mesh} element 
+ * @returns A dict of the faces info to be stored in the json file.
+ */
 function relevantFaces(element){
-	// For translate and scale elements
 	let faces_info = {"left":
 						{"translational":
 							{"y":
@@ -304,10 +340,14 @@ function relevantFaces(element){
 	return faces_info;
 }
 
-/**********
- * Saving
- **********/
-
+/**
+ * Save the model
+ * @param {string} saveUrl The url required for the POST request.
+ * @param {dict} modelDetails High-level details of model name, description, etc.
+ * @param {dict} relationships The relationship types between elements.
+ * @param {dict} relationshipNatures The relationship natures between elements.
+ * @param {list} elements List of the THREE.Mesh objects.
+ */
 function save(saveUrl, modelDetails, relationships, relationshipNatures, elements){
 	let output = {"version": "1.1.0",
                   "name": modelDetails.Name,
@@ -323,6 +363,7 @@ function save(saveUrl, modelDetails, relationships, relationshipNatures, element
 				};
 	const elements_output = [];
 	let elementIdDict = {};  // used to index relationships
+	// Save individual element info
 	for (const e of elements){
 		elementIdDict[e.id] = e;
 		const el_dict = {};
@@ -362,7 +403,7 @@ function save(saveUrl, modelDetails, relationships, relationshipNatures, element
 					el_dict.geometry["faces"] = relevantFaces(e);
 				}
 			} else {
-				el_dict["geometry"] = {"type": {"name": "undefined"}}; // don't know if it's a solid or shell
+				el_dict["geometry"] = {"type": {"name": "undefined"}}; // the user hasn't said if it's a solid or shell
 				// but we do know if it's translate or not and what shape it is
 				if (e.geometry.type == "BoxGeometry") {
 						el_dict.geometry.type["type"] = {"name": "translate",
@@ -385,7 +426,6 @@ function save(saveUrl, modelDetails, relationships, relationshipNatures, element
 				}
 			}
 				el_dict.geometry["dimensions"] = relevantDimensions(e);
-				
 				// Thickness is only relevant for shell geometries
 				if (e.el_geometry != undefined && e.el_geometry.substring(0, e.el_geometry.indexOf(' ')) == 'shell'){
 					el_dict.geometry.dimensions["thickness"] = {"axis": "z",
@@ -393,13 +433,12 @@ function save(saveUrl, modelDetails, relationships, relationshipNatures, element
 																"unit": "other",
 																"value": e.geometry.parameters.thickness}
 				}
-				
-				
 		}
 		elements_output.push(el_dict);
 	}
 	output.models.irreducibleElement.elements = elements_output;
 
+	// Save relationship info.
 	for (const [key, value] of Object.entries(relationships)){
 		const pair = key.split(',');
 		const element1 = elementIdDict[pair[0]];

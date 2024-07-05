@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+
 import {plotNetworkFromFile} from './networkHelper.js';
 import { plotModel } from './viewer.js';
 import { modelInfo, extractShapes, extractRelationships } from './jsonHelper.js';
@@ -6,6 +7,12 @@ import { buildModel } from './builder.js';
 import  * as gui from './guiHelper.js';
 
 
+/**
+ * Load the json file of a model.
+ * @param {string} filepath Where the json file is stored.
+ * @param {string} purpose If the user intends to user the model "viewer" (default) or "builder".
+ * @param {string} saveUrl The url required for the POST request to save the model if using the builder.
+ */
 export function loadFile(filepath, purpose='viewer', saveUrl=''){
 	const loader = new THREE.FileLoader();
   loader.load(
@@ -13,7 +20,6 @@ export function loadFile(filepath, purpose='viewer', saveUrl=''){
 
       // onLoad callback
       function ( data ) {
-        // output the text to the console
         const info = modelInfo(data);
         gui.modelDetailsFolder.children[gui.modelIdx.name].setValue(info.name);
         gui.modelDetailsFolder.children[gui.modelIdx.desc].setValue(info.description);
@@ -40,7 +46,7 @@ export function loadFile(filepath, purpose='viewer', saveUrl=''){
 
       // onError callback
       function ( err ) {
-        console.error( 'An error happened' );
+        console.error( err );
       }
     );
 }
